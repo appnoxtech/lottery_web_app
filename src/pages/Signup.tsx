@@ -38,7 +38,7 @@ const Signup: React.FC = () => {
     try {
       const signupData = {
         name: data.name,
-        phone: data.phoneNumber,
+        phone_number: `+${data.phoneNumber}`,
         password: data.password,
         password_confirmation: data.confirmPassword,
       };
