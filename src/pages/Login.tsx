@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { loginSchema } from '../utils/validationSchemas';
 import { userSignIn } from '../utils/services/Registration.services';
 import { showToast } from '../utils/toast.util';
-import Input from '../components/common/Input';
-import Button from '../components/common/Button';
-import PhoneInput from '../components/common/PhoneInput';
+import { Input, Button, PhoneInput } from '../components/common';
+import { User, Lock } from 'lucide-react';
+import { setUser } from '../store/slicer/userSlice';
 
 interface LoginFormData {
   phoneNumber: string;
@@ -17,6 +18,7 @@ interface LoginFormData {
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const {
     control,
@@ -34,17 +36,41 @@ const Login: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await userSignIn({
-        phone: data.phoneNumber,
+        phone_number: `+${data.phoneNumber}`,
         password: data.password,
       });
 
-      if (response?.data) {
-        showToast('Login successful!', 'success');
-        // Store user data or token as needed
-        localStorage.setItem('userToken', response.data.token || '');
-        navigate('/dashboard'); // Navigate to dashboard or home page
+      console.log('Login response:', response); // Debug log
+
+      if (response?.data?.success && response?.data?.result) {
+        showToast(response.data.message || 'Login successful!', 'success');
+        
+        // Extract token and user data from the correct response structure
+        const token = response.data.result.token;
+        const userData = response.data.result.data;
+        
+        // Store token and user data in localStorage
+        localStorage.setItem('userToken', token);
+        localStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Dispatch user data to Redux store
+        dispatch(setUser({
+          userData: userData as Record<string, string>,
+          token: token
+        }));
+        
+        console.log('Token stored:', token); // Debug log
+        console.log('User data stored:', userData); // Debug log
+        
+        // Small delay to ensure data is stored before navigation
+        setTimeout(() => {
+          navigate('/home', { replace: true });
+        }, 100);
+      } else {
+        showToast('Login response invalid. Please try again.', 'error');
       }
     } catch (error: any) {
+      console.error('Login error:', error); // Debug log
       const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.';
       showToast(errorMessage, 'error');
     } finally {
@@ -53,29 +79,27 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-blue-100 shadow-lg">
-            <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
+            <User className="h-8 w-8 text-[#1D1F27]" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
             Welcome Back
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-300">
             Don't have an account?{' '}
             <Link
               to="/signup"
-              className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline"
+              className="font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
             >
               Sign up here
             </Link>
           </p>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow-xl rounded-xl border border-gray-200">
+        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <Controller
@@ -104,11 +128,7 @@ const Login: React.FC = () => {
                     isPassword={true}
                     placeholder="Enter your password"
                     error={errors.password?.message}
-                    icon={
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    }
+                    icon={<Lock className="h-5 w-5" />}
                   />
                 )}
               />
@@ -117,7 +137,7 @@ const Login: React.FC = () => {
             <div className="flex items-center justify-center">
               <Link
                 to="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline"
+                className="text-sm font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
               >
                 Forgot your password?
               </Link>
@@ -137,7 +157,7 @@ const Login: React.FC = () => {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Protected by industry-standard encryption
           </p>
         </div>

@@ -37,7 +37,7 @@ const userSlice = createSlice({
       state.userData = null;
       state.authStatus = false;
       state.tokenID = null;
-      persistor.purge();
+      // persistor.purge();
     },
     updateUser: (
       state,

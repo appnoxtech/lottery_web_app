@@ -5,7 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { otpSchema } from '../utils/validationSchemas';
 import { userOTPVerfication, userSendOTP } from '../utils/services/Registration.services';
 import { showToast } from '../utils/toast.util';
-import Button from '../components/common/Button';
+import { Button } from '../components/common';
+import { Shield } from 'lucide-react';
 
 interface OTPFormData {
   otp: string;
@@ -16,7 +17,7 @@ const OTPVerification: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const location = useLocation();
@@ -72,7 +73,7 @@ const OTPVerification: React.FC = () => {
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value !== '' && index < 5) {
+    if (value !== '' && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -85,11 +86,11 @@ const OTPVerification: React.FC = () => {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    const pastedData = e.clipboardData.getData('text').slice(0, 4);
     if (/^\d+$/.test(pastedData)) {
-      const newOtp = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
-      setOtp(newOtp.slice(0, 6));
-      inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
+      const newOtp = pastedData.split('').concat(Array(4 - pastedData.length).fill(''));
+      setOtp(newOtp.slice(0, 4));
+      inputRefs.current[Math.min(pastedData.length, 3)]?.focus();
     }
   };
 
@@ -97,7 +98,7 @@ const OTPVerification: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await userOTPVerfication({
-        phone: phoneNumber,
+        phone_number: `+${phoneNumber}`,
         otp: data.otp,
       });
 
@@ -152,28 +153,26 @@ const OTPVerification: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-yellow-100 shadow-lg">
-            <svg className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
+            <Shield className="h-8 w-8 text-[#1D1F27]" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
             Verify Your Phone
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            We've sent a 6-digit verification code to{' '}
-            <span className="font-semibold text-gray-900 block sm:inline mt-1 sm:mt-0">{phoneNumber}</span>
+          <p className="mt-2 text-center text-sm text-gray-300">
+            We've sent a 4-digit verification code to{' '}
+            <span className="font-semibold text-[#EDB726] block sm:inline mt-1 sm:mt-0">{phoneNumber}</span>
           </p>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow-xl rounded-xl border border-gray-200">
+        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Enter 6-digit OTP
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Enter 4-digit OTP
               </label>
               <div className="flex justify-center space-x-3" onPaste={handlePaste}>
                 {otp.map((digit, index) => (
@@ -188,9 +187,10 @@ const OTPVerification: React.FC = () => {
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     className={`
                       w-14 h-14 text-center text-xl font-bold border-2 rounded-xl shadow-sm
-                      transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:shadow-md
-                      ${errors.otp ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50 focus:bg-white'}
-                      ${digit ? 'border-blue-400 bg-blue-50' : ''}
+                      transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726] focus:shadow-md
+                      bg-[#1D1F27] text-white
+                      ${errors.otp ? 'border-red-500' : 'border-gray-600'}
+                      ${digit ? 'border-[#EDB726] bg-[#2A2D36]' : ''}
                     `}
                     inputMode="numeric"
                     pattern="\d*"
@@ -207,7 +207,7 @@ const OTPVerification: React.FC = () => {
                 type="submit"
                 className="w-full py-3 text-base font-semibold shadow-lg hover:shadow-xl"
                 isLoading={isLoading}
-                disabled={isLoading || otp.join('').length !== 6}
+                disabled={isLoading || otp.join('').length !== 4}
               >
                 {isLoading ? 'Verifying...' : 'Verify OTP'}
               </Button>
@@ -222,12 +222,12 @@ const OTPVerification: React.FC = () => {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={isResending}
-                  className="font-semibold text-blue-600 hover:text-blue-500 transition-colors duration-200 hover:underline disabled:opacity-50"
+                  className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50"
                 >
                   {isResending ? 'Resending...' : 'Resend OTP'}
                 </button>
               ) : (
-                <span className="font-medium text-orange-600">
+                <span className="font-medium text-[#EDB726]">
                   Resend in {countdown}s
                 </span>
               )}
@@ -237,7 +237,7 @@ const OTPVerification: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 hover:underline"
+                className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 hover:underline"
               >
                 ← Back to Login
               </button>

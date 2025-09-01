@@ -4,3 +4,7 @@ export { default as ForgotPassword } from './ForgotPassword';
 export { default as OTPVerification } from './OTPVerification';
 export { default as ResetPassword } from './ResetPassword';
 export { default as Dashboard } from './Dashboard';
+export { default as Home } from './Home';
+export { default as NewLottery } from './NewLottery';
+export { default as Tickets } from './Tickets';
+export { default as Winners } from './Winners';

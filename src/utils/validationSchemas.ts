@@ -44,8 +44,8 @@ export const otpSchema = yup.object({
   otp: yup
     .string()
     .required('OTP is required')
-    .length(6, 'OTP must be exactly 6 digits')
-    .matches(/^\d{6}$/, 'OTP must contain only numbers')
+    .length(4, 'OTP must be exactly 4 digits')
+    .matches(/^\d{4}$/, 'OTP must contain only numbers')
 });
 
 // Forgot password validation schema

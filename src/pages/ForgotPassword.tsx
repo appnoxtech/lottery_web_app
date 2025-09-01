@@ -5,8 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { forgotPasswordSchema } from '../utils/validationSchemas';
 import { userForgotPassword } from '../utils/services/Registration.services';
 import { showToast } from '../utils/toast.util';
-import Button from '../components/common/Button';
-import PhoneInput from '../components/common/PhoneInput';
+import { Button, PhoneInput } from '../components/common';
+import { KeyRound } from 'lucide-react';
 
 interface ForgotPasswordFormData {
   phoneNumber: string;
@@ -31,7 +31,7 @@ const ForgotPassword: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await userForgotPassword({
-        phone: data.phoneNumber,
+        phone_number: `+${data.phoneNumber}`,
       });
 
       if (response?.data) {
@@ -52,23 +52,21 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-orange-100 shadow-lg">
-            <svg className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-            </svg>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
+            <KeyRound className="h-8 w-8 text-[#1D1F27]" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
             Reset Password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 max-w-sm mx-auto">
+          <p className="mt-2 text-center text-sm text-gray-300 max-w-sm mx-auto">
             Enter your phone number and we'll send you a verification code to reset your password
           </p>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow-xl rounded-xl border border-gray-200">
+        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <Controller
@@ -102,7 +100,7 @@ const ForgotPassword: React.FC = () => {
             <div className="pt-2 border-t border-gray-200">
               <Link
                 to="/login"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 hover:underline"
+                className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 hover:underline"
               >
                 ← Back to Login
               </Link>
@@ -111,7 +109,7 @@ const ForgotPassword: React.FC = () => {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Secure password recovery process
           </p>
         </div>

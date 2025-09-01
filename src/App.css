@@ -4,66 +4,147 @@
   min-height: 100vh;
 }
 
-/* React Phone Input Styling */
+/* React Phone Input - Dark Theme Focus States */
 .react-tel-input .form-control {
-  width: 100%;
-  height: 3rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  padding-left: 3.5rem;
-  padding-right: 0.75rem;
-  outline: none;
-  transition: all 0.2s ease-in-out;
+  background-color: #1D1F27 !important;
+  color: white !important;
 }
 
 .react-tel-input .form-control:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #EDB726 !important;
+  box-shadow: 0 0 0 2px rgba(237, 183, 38, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
-@media (min-width: 640px) {
-  .react-tel-input .form-control {
-    font-size: 0.875rem;
-  }
+.react-tel-input .form-control:focus.error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 .react-tel-input .flag-dropdown {
-  border: 1px solid #d1d5db;
-  background-color: #f9fafb;
-  border-radius: 0.5rem 0 0 0.5rem;
-  transition: background-color 0.2s ease-in-out;
+  background-color: #2A2D36 !important;
+  margin-right: 2px !important;
 }
 
-.react-tel-input .flag-dropdown:hover,
-.react-tel-input .flag-dropdown.open {
-  background-color: #f3f4f6;
+.react-tel-input .flag-dropdown:hover {
+  background-color: #3A3D46 !important;
+}
+
+.react-tel-input .flag-dropdown:focus {
+  outline: none !important;
+  border-color: #EDB726 !important;
+  box-shadow: 0 0 0 2px rgba(237, 183, 38, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.react-tel-input .flag-dropdown.error:focus {
+  outline: none !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 .react-tel-input .country-list {
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background-color: #2A2D36 !important;
+  border-color: #374151 !important;
+  animation: fadeIn 0.15s ease-out !important;
+  transform-origin: top !important;
 }
 
-.react-tel-input .search-box {
-  padding: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+  }
+}
+
+.react-tel-input .country-list .country {
+  background-color: #2A2D36 !important;
+  color: white !important;
+  transition: background-color 0.1s ease !important;
+  padding: 8px 12px !important;
+}
+
+.react-tel-input .country-list .country:hover {
+  background-color: #3A3D46 !important;
+}
+
+.react-tel-input .country-list .country.highlight {
+  background-color: #EDB726 !important;
+  color: #1D1F27 !important;
 }
 
 .react-tel-input .search {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  outline: none;
-  transition: all 0.2s ease-in-out;
+  background-color: #1D1F27 !important;
+  color: white !important;
+  border-color: #374151 !important;
 }
 
 .react-tel-input .search:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f6;
+  border-color: #EDB726 !important;
+  box-shadow: 0 0 0 1px #EDB726 !important;
+}
+
+.react-tel-input .search::placeholder {
+  color: #9CA3AF !important;
+}
+
+/* Simplified flag dropdown fixes */
+.react-tel-input .selected-flag {
+  padding: 0 0.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important;
+  transition: background-color 0.15s ease !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.react-tel-input .selected-flag:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.react-tel-input .selected-flag .arrow {
+  border-top-color: #9CA3AF !important;
+  margin-left: 0.5rem !important;
+}
+
+.react-tel-input .selected-flag .flag {
+  margin-right: 0.5rem !important;
+  opacity: 1 !important;
+  filter: brightness(1) contrast(1) !important;
+}
+
+/* Prevent any unwanted white backgrounds or padding issues */
+.react-tel-input .flag-dropdown,
+.react-tel-input .flag-dropdown:hover,
+.react-tel-input .flag-dropdown:focus,
+.react-tel-input .flag-dropdown:active {
+  padding: 0 0.5rem !important;
+  margin: 0 !important;
+  min-width: 60px !important;
+  width: auto !important;
+}
+
+.react-tel-input .selected-flag,
+.react-tel-input .selected-flag:focus,
+.react-tel-input .selected-flag:active {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Smooth animations */
+.react-tel-input .flag-dropdown,
+.react-tel-input .country-list {
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Proper dropdown positioning */
+.react-tel-input .country-list {
+  margin-top: 2px !important;
+  min-width: 300px !important;
 }
 
 /* Toast Container Responsive */
