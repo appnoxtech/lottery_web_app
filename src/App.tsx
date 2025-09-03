@@ -12,7 +12,15 @@ import {
   Home,
   NewLottery,
   Tickets,
-  Winners
+  Winners,
+  ProfileLayout,
+  EditProfile,
+  ChangePassword,
+  Transactions,
+  TermsConditions,
+  PrivacyPolicy,
+  LotteryRules,
+  DeleteAccount
 } from './pages';
 import './App.css';
 
@@ -106,18 +114,28 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* Profile Nested Routes */}
           <Route 
-            path="/dashboard" 
+            path="/profile" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ProfileLayout />
               </ProtectedRoute>
-            } 
-          />
+            }
+          >
+            <Route index element={<Navigate to="edit" replace />} /> {/* Default child route */}
+            <Route path="edit" element={<EditProfile />} />
+            <Route path="password" element={<ChangePassword />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="terms" element={<TermsConditions />} />
+            <Route path="privacy" element={<PrivacyPolicy />} />
+            <Route path="rules" element={<LotteryRules />} />
+            <Route path="delete" element={<DeleteAccount />} />
+          </Route>
           
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} /> {/* Change default to home for logged-in users */}
+          <Route path="*" element={<Navigate to="/home" replace />} /> {/* Catch all for protected */}        
         </Routes>
       </div>
     </Router>
