@@ -175,7 +175,7 @@ const ProfileLayout: React.FC = () => {
             <li>
               <button
                 onClick={handleDeleteAccount}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-red-500 hover:bg-[#3A3D46] hover:text-red-400 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-red-500 hover:bg-[#3A3D46] hover:text-red-400 transition-colors cursor-pointer"
               >
                 <div className="flex items-center space-x-3">
                   <Trash2 className="w-5 h-5" />
@@ -191,7 +191,7 @@ const ProfileLayout: React.FC = () => {
         <div className="p-4 border-t border-gray-700 mt-auto">
           <button
             onClick={handleLogoutClick}
-            className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2"
+            className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
             <span>Log Out</span>
@@ -284,7 +284,7 @@ const ProfileLayout: React.FC = () => {
               <li>
                 <button
                   onClick={handleDeleteAccount}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-red-500 hover:bg-[#3A3D46] hover:text-red-400 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-red-500 hover:bg-[#3A3D46] hover:text-red-400 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center space-x-3">
                     <Trash2 className="w-5 h-5" />
@@ -300,7 +300,7 @@ const ProfileLayout: React.FC = () => {
           <div className="p-4 border-t border-gray-700 mt-auto">
             <button
               onClick={handleLogoutClick}
-              className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2"
+              className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
             >
               <LogOut className="w-5 h-5" />
               <span>Log Out</span>

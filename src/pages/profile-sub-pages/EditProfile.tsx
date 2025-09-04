@@ -1,20 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Edit } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateUser } from "../../store/slicer/userSlice";
 import { userUpdateProfile } from "../../utils/services/Registration.services";
+import { showToast } from "../../utils/toast.util";
 
 const EditProfile: React.FC = () => {
   const userData = useSelector((state: any) => state.user.userData);
   const dispatch = useDispatch();
   const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(
-    userData?.profile_image || null
-  );
-  const [username, setUsername] = useState(userData?.name || "");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Initialize state from userData when component mounts or userData changes
+  useEffect(() => {
+    if (userData) {
+      setUsername(userData.name || "");
+      setPreviewImage(userData.profile_image || null);
+    }
+  }, [userData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,8 +33,6 @@ const EditProfile: React.FC = () => {
 
   const handleUpdateProfile = async () => {
     setLoading(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const formData = new FormData();
@@ -36,25 +41,36 @@ const EditProfile: React.FC = () => {
         formData.append("profile_image", profileImage);
       }
 
-      // Call your service function (returns AxiosResponse)
       const response: any = await userUpdateProfile(formData);
 
-      // Check response structure (adjust if needed)
       if (response && response.status === 200 && response.data.success) {
         // Update Redux with new user data
-        dispatch(updateUser({ userData: response.data.result.data }));
-        setSuccess("Profile updated successfully!");
+        const updatedUserData = { ...userData, ...response.data.result };
+        dispatch(updateUser({ userData: updatedUserData }));
+
+        // Show success toast instead of local state message
+        showToast("Profile updated successfully!", "success");
+
         setProfileImage(null);
+
+        // Update local state with new data
+        setUsername(response.data.result.name || "");
+        setPreviewImage(response.data.result.profile_image || null);
       } else {
-        setError(response?.data?.message || "Failed to update profile.");
+        // Show error toast instead of local state message
+        showToast(
+          response?.data?.message || "Failed to update profile.",
+          "error"
+        );
       }
     } catch (err: any) {
-      setError("An error occurred. Please try again.");
+      // Show error toast instead of local state message
+      showToast("An error occurred. Please try again.", "error");
+      console.error("Update profile error:", err);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-[#1D1F27] text-white p-6 rounded-lg shadow-lg flex flex-col items-center">
       {/* Logo */}
@@ -113,7 +129,7 @@ const EditProfile: React.FC = () => {
         />
       </div>
 
-      {/* Error/Success Messages */}
+      {/* Error/Success Messages
       {error && (
         <div className="w-full max-w-sm mb-4 text-red-500 text-center">
           {error}
@@ -123,13 +139,13 @@ const EditProfile: React.FC = () => {
         <div className="w-full max-w-sm mb-4 text-green-500 text-center">
           {success}
         </div>
-      )}
+      )} */}
 
       {/* Update Profile Button */}
       <button
         onClick={handleUpdateProfile}
         disabled={loading}
-        className={`w-full max-w-sm flex items-center justify-center py-3 px-6 rounded-lg mt-4 
+        className={`w-full max-w-sm flex items-center justify-center py-3 px-6 rounded-lg mt-4 cursor-pointer
                    border border-[#EDB726] bg-gradient-to-r from-[#EDB726] to-[#d4a422] 
                    text-[#1D1F27] font-semibold transition-colors ${
                      loading ? "opacity-60 cursor-not-allowed" : ""

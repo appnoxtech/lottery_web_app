@@ -1,41 +1,41 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Ticket, Trophy, Menu, X, Home } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Plus, Ticket, Trophy, Menu, X, Home } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
     {
-      id: 'home',
-      label: 'Dashboard',
+      id: "home",
+      label: "Dashboard",
       icon: Home,
-      path: '/home'
+      path: "/home",
     },
     {
-      id: 'new-lottery',
-      label: 'New Lottery',
+      id: "new-lottery",
+      label: "New Lottery",
       icon: Plus,
-      path: '/new-lottery'
+      path: "/new-lottery",
     },
     {
-      id: 'tickets',
-      label: 'Tickets',
+      id: "tickets",
+      label: "Tickets",
       icon: Ticket,
-      path: '/tickets'
+      path: "/tickets",
     },
     {
-      id: 'winners',
-      label: 'Winners',
+      id: "winners",
+      label: "Winners",
       icon: Trophy,
-      path: '/winners'
-    }
+      path: "/winners",
+    },
   ];
 
   const handleItemClick = (path: string) => {
@@ -59,20 +59,22 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed inset-y-0 left-0 z-40
         w-64 bg-[#2A2D36] border-r border-gray-700
         transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${className}
-      `}>
+      `}
+      >
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="p-6 pb-4 border-b border-gray-700">
@@ -93,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
-                
+
                 return (
                   <li key={item.id}>
                     <button
@@ -101,9 +103,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                       className={`
                         w-full flex items-center space-x-3 px-4 py-3 rounded-lg
                         transition-all duration-200 text-left
-                        ${isActive 
-                          ? 'bg-[#EDB726] text-[#1D1F27] font-semibold' 
-                          : 'text-gray-300 hover:bg-[#3A3D46] hover:text-white'
+                        ${
+                          isActive
+                            ? "bg-[#EDB726] text-[#1D1F27] font-semibold"
+                            : "text-gray-300 hover:bg-[#3A3D46] hover:text-white cursor-pointer"
                         }
                       `}
                     >
@@ -123,7 +126,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                 <span className="text-xs font-bold text-[#1D1F27]">LT</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">Lottery System</p>
+                <p className="text-sm font-medium text-white truncate">
+                  Lottery System
+                </p>
                 <p className="text-xs text-gray-400 truncate">v1.0.0</p>
               </div>
             </div>

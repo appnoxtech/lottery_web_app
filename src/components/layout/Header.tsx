@@ -106,9 +106,9 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors"
+                className="relative p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
-                <Bell className="w-5 h-5 text-gray-300" />
+                <Bell className="w-5 h-5 text-gray-300 " />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#EDB726] text-[#1D1F27] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {unreadCount}
@@ -152,7 +152,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                     ))}
                   </div>
                   <div className="p-4 border-t border-gray-600">
-                    <button className="w-full text-center text-[#EDB726] hover:text-[#d4a422] text-sm font-medium">
+                    <button className="w-full text-center text-[#EDB726] hover:text-[#d4a422] text-sm font-medium cursor-pointer">
                       View All Notifications
                     </button>
                   </div>
@@ -164,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors"
+                className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
                 {/* Profile Image or Avatar */}
                 <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center">
