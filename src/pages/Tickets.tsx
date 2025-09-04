@@ -10,7 +10,7 @@ import { formatDate } from "../hooks/dateFormatter";
 const Tickets: React.FC = () => {
   const [lotteryTickets, setLotteryTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
 
   const userData = useSelector((state: any) => state.user.userData);
@@ -45,10 +45,10 @@ const Tickets: React.FC = () => {
     fetchLotteryRecords();
   }, [fetchLotteryRecords]);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchLotteryRecords();
-  }, [fetchLotteryRecords]);
+  // const onRefresh = useCallback(() => {
+  //   setRefreshing(true);
+  //   fetchLotteryRecords();
+  // }, [fetchLotteryRecords]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

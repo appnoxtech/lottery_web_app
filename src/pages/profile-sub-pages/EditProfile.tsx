@@ -12,8 +12,8 @@ const EditProfile: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
+  // const [success, setSuccess] = useState<string | null>(null);
 
   // Initialize state from userData when component mounts or userData changes
   useEffect(() => {
