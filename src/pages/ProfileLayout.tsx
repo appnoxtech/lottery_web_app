@@ -340,9 +340,7 @@ const ProfileLayout: React.FC = () => {
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center
       ${
-        modalType === "logout"
-          ? "bg-black bg-black/80"
-          : "bg-black bg-opacity-90"
+        modalType === "logout" ? "bg-black bg-black/80" : "bg-black bg-black/80"
       }
     `}
         >
@@ -355,13 +353,13 @@ const ProfileLayout: React.FC = () => {
             <div className="flex justify-between space-x-4">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2 rounded-lg border border-white text-white hover:bg-gray-700 transition-colors"
+                className="flex-1 py-2 rounded-lg border border-white text-white hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 No
               </button>
               <button
                 onClick={handleConfirmModal}
-                className="flex-1 py-2 rounded-lg bg-[#EDB726] text-[#1D1F27] font-semibold hover:bg-[#d4a422] transition-colors"
+                className="flex-1 py-2 rounded-lg bg-[#EDB726] text-[#1D1F27] font-semibold hover:bg-[#d4a422] transition-colors cursor-pointer"
               >
                 Yes
               </button>
