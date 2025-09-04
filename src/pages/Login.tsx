@@ -69,9 +69,12 @@ const Login: React.FC = () => {
       } else {
         showToast('Login response invalid. Please try again.', 'error');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error); // Debug log
-      const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.';
+      let errorMessage = 'Login failed. Please try again.';
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof error.response === 'object' && error.response !== null && 'data' in error.response && typeof error.response.data === 'object' && error.response.data !== null && 'message' in error.response.data) {
+        errorMessage = (error.response.data as { message: string }).message;
+      }
       showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
