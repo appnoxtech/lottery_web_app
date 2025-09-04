@@ -1,12 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { otpSchema } from '../utils/validationSchemas';
-import { userOTPVerfication, userSendOTP } from '../utils/services/Registration.services';
-import { showToast } from '../utils/toast.util';
-import { Button } from '../components/common';
-import { Shield } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useLocation, useNavigate } from "react-router-dom";
+import { otpSchema } from "../utils/validationSchemas";
+import {
+  userOTPVerfication,
+  userSendOTP,
+} from "../utils/services/Registration.services";
+import { showToast } from "../utils/toast.util";
+import { Button } from "../components/common";
+import { Shield } from "lucide-react";
 
 interface OTPFormData {
   otp: string;
@@ -17,30 +20,29 @@ const OTPVerification: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const phoneNumber = location.state?.phoneNumber || '';
+
+  const phoneNumber = location.state?.phoneNumber || "";
   const fromSignup = location.state?.fromSignup || false;
 
   const {
-    control,
     handleSubmit,
     setValue,
     formState: { errors },
   } = useForm<OTPFormData>({
     resolver: yupResolver(otpSchema),
     defaultValues: {
-      otp: '',
+      otp: "",
     },
   });
 
   useEffect(() => {
     if (!phoneNumber) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -61,34 +63,36 @@ const OTPVerification: React.FC = () => {
 
   // Update form value when OTP changes
   useEffect(() => {
-    const otpValue = otp.join('');
-    setValue('otp', otpValue);
+    const otpValue = otp.join("");
+    setValue("otp", otpValue);
   }, [otp, setValue]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return; // Prevent multiple characters
-    
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value !== '' && index < 3) {
+    if (value !== "" && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
+    if (e.key === "Backspace" && otp[index] === "" && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 4);
+    const pastedData = e.clipboardData.getData("text").slice(0, 4);
     if (/^\d+$/.test(pastedData)) {
-      const newOtp = pastedData.split('').concat(Array(4 - pastedData.length).fill(''));
+      const newOtp = pastedData
+        .split("")
+        .concat(Array(4 - pastedData.length).fill(""));
       setOtp(newOtp.slice(0, 4));
       inputRefs.current[Math.min(pastedData.length, 3)]?.focus();
     }
@@ -103,23 +107,24 @@ const OTPVerification: React.FC = () => {
       });
 
       if (response?.data) {
-        showToast('OTP verified successfully!', 'success');
+        showToast("OTP verified successfully!", "success");
         if (fromSignup) {
-          showToast('Account created successfully! Please login.', 'success');
-          navigate('/login');
+          showToast("Account created successfully! Please login.", "success");
+          navigate("/login");
         } else {
           // Handle forgot password flow
-          navigate('/reset-password', { 
-            state: { 
-              phoneNumber, 
-              verified: true 
-            } 
+          navigate("/reset-password", {
+            state: {
+              phoneNumber,
+              verified: true,
+            },
           });
         }
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Invalid OTP. Please try again.';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error?.response?.data?.message || "Invalid OTP. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -129,10 +134,10 @@ const OTPVerification: React.FC = () => {
     setIsResending(true);
     try {
       await userSendOTP({ phone: phoneNumber });
-      showToast('OTP sent successfully!', 'success');
+      showToast("OTP sent successfully!", "success");
       setCountdown(60);
       setCanResend(false);
-      
+
       // Restart countdown
       const timer = setInterval(() => {
         setCountdown((prev) => {
@@ -145,8 +150,10 @@ const OTPVerification: React.FC = () => {
         });
       }, 1000);
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Failed to resend OTP. Please try again.';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Failed to resend OTP. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setIsResending(false);
     }
@@ -163,8 +170,10 @@ const OTPVerification: React.FC = () => {
             Verify Your Phone
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
-            We've sent a 4-digit verification code to{' '}
-            <span className="font-semibold text-[#EDB726] block sm:inline mt-1 sm:mt-0">{phoneNumber}</span>
+            We've sent a 4-digit verification code to{" "}
+            <span className="font-semibold text-[#EDB726] block sm:inline mt-1 sm:mt-0">
+              {phoneNumber}
+            </span>
           </p>
         </div>
 
@@ -174,7 +183,10 @@ const OTPVerification: React.FC = () => {
               <label className="block text-sm font-medium text-gray-300 mb-4">
                 Enter 4-digit OTP
               </label>
-              <div className="flex justify-center space-x-3" onPaste={handlePaste}>
+              <div
+                className="flex justify-center space-x-3"
+                onPaste={handlePaste}
+              >
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -189,8 +201,8 @@ const OTPVerification: React.FC = () => {
                       w-14 h-14 text-center text-xl font-bold border-2 rounded-xl shadow-sm
                       transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726] focus:shadow-md
                       bg-[#1D1F27] text-white
-                      ${errors.otp ? 'border-red-500' : 'border-gray-600'}
-                      ${digit ? 'border-[#EDB726] bg-[#2A2D36]' : ''}
+                      ${errors.otp ? "border-red-500" : "border-gray-600"}
+                      ${digit ? "border-[#EDB726] bg-[#2A2D36]" : ""}
                     `}
                     inputMode="numeric"
                     pattern="\d*"
@@ -198,7 +210,9 @@ const OTPVerification: React.FC = () => {
                 ))}
               </div>
               {errors.otp && (
-                <p className="mt-2 text-sm text-red-600 text-center">{errors.otp.message}</p>
+                <p className="mt-2 text-sm text-red-600 text-center">
+                  {errors.otp.message}
+                </p>
               )}
             </div>
 
@@ -207,16 +221,16 @@ const OTPVerification: React.FC = () => {
                 type="submit"
                 className="w-full py-3 text-base font-semibold shadow-lg hover:shadow-xl"
                 isLoading={isLoading}
-                disabled={isLoading || otp.join('').length !== 4}
+                disabled={isLoading || otp.join("").length !== 4}
               >
-                {isLoading ? 'Verifying...' : 'Verify OTP'}
+                {isLoading ? "Verifying..." : "Verify OTP"}
               </Button>
             </div>
           </form>
 
           <div className="mt-6 text-center space-y-4">
             <p className="text-sm text-gray-600">
-              Didn't receive the code?{' '}
+              Didn't receive the code?{" "}
               {canResend ? (
                 <button
                   type="button"
@@ -224,7 +238,7 @@ const OTPVerification: React.FC = () => {
                   disabled={isResending}
                   className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50"
                 >
-                  {isResending ? 'Resending...' : 'Resend OTP'}
+                  {isResending ? "Resending..." : "Resend OTP"}
                 </button>
               ) : (
                 <span className="font-medium text-[#EDB726]">
@@ -232,11 +246,11 @@ const OTPVerification: React.FC = () => {
                 </span>
               )}
             </p>
-            
+
             <div className="pt-2 border-t border-gray-200">
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 hover:underline"
               >
                 ← Back to Login
