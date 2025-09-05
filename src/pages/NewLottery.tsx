@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { setInitialData, type Lottery } from "../store/slicer/initalDataSlice";
 import { lotteriesData } from "../utils/services/Lotteries.services";
 import { handleApiError } from "../hooks/handleApiError";
+import StripeCheckout from "./StripeCheckout";
+import WhatsAppModal from "./WhatsAppModal";
 
 const NewLottery: React.FC = () => {
   const dispatch = useDispatch();
@@ -22,6 +24,8 @@ const NewLottery: React.FC = () => {
     string | null
   >(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [showStripe, setShowStripe] = useState(false);
 
   useEffect(() => {
     const fetchLotteries = async () => {
@@ -105,10 +109,16 @@ const NewLottery: React.FC = () => {
   };
 
   const handlePaymentMethodSelect = (method: string) => {
-    console.log(`Selected payment method: ${method}`);
-    // Handle the payment process based on the selected method
-    setShowPaymentModal(false);
-    // Proceed with lottery creation
+    if (method === "stripe") {
+      setShowPaymentModal(false);
+      setShowStripe(true);
+    } else if (method === "whatsapp") {
+      setShowPaymentModal(false);
+      setShowWhatsappModal(true);
+    } else {
+      console.log(`Selected payment method: ${method}`);
+      setShowPaymentModal(false);
+    }
   };
 
   const processedNumbers = processNumbers(inputNumbers, selectedDigits);
@@ -483,6 +493,19 @@ const NewLottery: React.FC = () => {
             </p>
           </div>
         </div>
+      )}
+      {showStripe && (
+        <StripeCheckout
+          amount={betAmount || 0}
+          onClose={() => setShowStripe(false)}
+        />
+      )}
+      {showWhatsappModal && (
+        <WhatsAppModal
+          betAmount={betAmount}
+          lottery={selectedLottery}
+          onClose={() => setShowWhatsappModal(false)}
+        />
       )}
     </div>
   );

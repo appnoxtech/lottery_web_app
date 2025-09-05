@@ -5,7 +5,7 @@ import {
   Bell,
   User,
   ChevronDown,
-  Settings,
+  // Settings,
   LogOut,
   Search,
 } from "lucide-react";
@@ -205,10 +205,10 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                       <User className="w-4 h-4" />
                       <span>Profile</span>
                     </Link>
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-300 hover:bg-[#3A3D46] hover:text-white rounded-lg transition-colors">
+                    {/* <button className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-300 hover:bg-[#3A3D46] hover:text-white rounded-lg transition-colors">
                       <Settings className="w-4 h-4" />
                       <span>Settings</span>
-                    </button>
+                    </button> */}
                     <hr className="my-2 border-gray-600" />
                     <button
                       onClick={(e) => {

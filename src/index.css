@@ -25,3 +25,56 @@ body {
   background-color: #1D1F27;
   color: #FFFFFF;
 }
+/* react-phone-number-input custom styles */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+  background: #1D1F27;
+  border: 1px solid #4B5563; /* gray-600 */
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  color: white;
+  width: 100%;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  padding-left: 0.5rem;
+}
+
+.PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.PhoneInputCountrySelect {
+  background: #2A2D36;
+  color: white;
+  border: 1px solid #4B5563;
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+
+.PhoneInputCountrySelect option {
+  background: #1D1F27;
+  color: white;
+}
+.PhoneInputCountrySelect option {
+  position: absolute;
+  top: 100% !important;   /* Force below */
+  bottom: auto !important;
+}
+.PhoneInputCountrySelect {
+  position: relative;
+  z-index: 9999; /* ensures it stays on top */
+}
+
+.modal-content {
+  padding-bottom: 200px; /* extra space at bottom so dropdown prefers downward */
+  overflow-y: auto;
+}
