@@ -120,7 +120,7 @@ const Winners: React.FC = () => {
             };
           }
         );
-        dispatch(addToWinnerList(formattedWinners as WinnerData[]));
+        dispatch(addToWinnerList(formattedWinners));
       } else {
         setError("No winners found for the selected criteria.");
         dispatch(clearWinnersList());

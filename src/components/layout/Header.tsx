@@ -51,29 +51,29 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
     }
   };
 
-  const notifications = [
-    {
-      id: 1,
-      title: "New Winner Announced",
-      message: "Lottery #123 has a new winner!",
-      time: "2 min ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Ticket Sales Update",
-      message: "500 new tickets sold today",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "System Maintenance",
-      message: "Scheduled maintenance tonight",
-      time: "3 hours ago",
-      unread: false,
-    },
-  ];
+  // const notifications = [
+  //   {
+  //     id: 1,
+  //     title: "New Winner Announced",
+  //     message: "Lottery #123 has a new winner!",
+  //     time: "2 min ago",
+  //     unread: true,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Ticket Sales Update",
+  //     message: "500 new tickets sold today",
+  //     time: "1 hour ago",
+  //     unread: true,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "System Maintenance",
+  //     message: "Scheduled maintenance tonight",
+  //     time: "3 hours ago",
+  //     unread: false,
+  //   },
+  // ];
 
   // const unreadCount = notifications.filter((n) => n.unread).length;
 

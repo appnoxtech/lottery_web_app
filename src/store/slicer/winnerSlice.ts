@@ -1,17 +1,22 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-interface Prize {
-  "1st_prize": string[];
-  "2nd_prize": string[];
-  "3rd_prize": string[];
-}
-
-interface WinnerData {
-  [key: string]: Prize;
+interface Winner {
+  id: string;
+  lotteryName: string;
+  ticketNumber: string;
+  winnerName: string;
+  winnerPhone: string;
+  prizeAmount: number;
+  drawDate: string;
+  drawTime: string;
+  claimStatus: string;
+  claimDate: string | null;
+  prizeType: string;
+  lotteryId: number;
 }
 
 interface WinnerState {
-  winnersList: WinnerData[] | null;
+  winnersList: Winner[] | null;
 }
 
 const initialState: WinnerState = {
@@ -22,7 +27,7 @@ const winnerSlice = createSlice({
   name: "winner",
   initialState,
   reducers: {
-    addToWinnerList: (state, action: PayloadAction<WinnerData[]>) => {
+    addToWinnerList: (state, action: PayloadAction<Winner[]>) => {
       state.winnersList = action.payload;
     },
     clearWinnersList: (state) => {
