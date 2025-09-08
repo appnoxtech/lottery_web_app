@@ -80,6 +80,7 @@ const Winners: React.FC = () => {
       let response;
       if (selectedPeriod === "today") {
         response = await getTodayWinningNumber(selectedLottery?.id || "");
+        console.log(response);
       } else {
         response = await getWinnerHistory(
           selectedLottery?.id || "",

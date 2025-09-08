@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { useSelector } from "react-redux";
+import { getTransactions } from "../../utils/services/Transaction.services";
 
 interface Transaction {
   id: number;
@@ -12,22 +13,30 @@ interface Transaction {
 
 const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const userID = 123; // Replace this with actual user ID logic (e.g., from context or Redux)
+  const [error, setError] = useState<string | null>(null);
+  const userID = useSelector((state: any) => state.user.userData?.id); // Fetch user ID from Redux
 
   useEffect(() => {
     const fetchTransactions = async () => {
+      if (!userID) {
+        setError("User ID not found. Please log in.");
+        return;
+      }
       try {
-        const response = await axios.get(
-          `http://localhost:5173/user/${userID}/transactions`
-        );
-        if (response.status === 200 || response.status === 304) {
-          setTransactions(response.data.result || []); // Adjust based on actual API response structure
+        const response = await getTransactions(userID);
+        console.log("API Response:", response); // Debug the response
+        if (response?.status === 200 || response?.status === 202) {
+          // Handle nested result.data structure, set transactions even if success is false
+          setTransactions(response.data.result?.data || []);
+          setError(null);
+        } else {
+          setError("Failed to fetch transactions. Please try again later.");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching transactions:", error);
+        setError("Failed to fetch transactions. Please try again later.");
       }
     };
-
     fetchTransactions();
   }, [userID]);
 
@@ -36,10 +45,17 @@ const Transactions: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6 text-[#EDB726]">
         Transaction History
       </h2>
-
+      {error && <p className="text-center text-red-400 mb-4">{error}</p>}
       <div className="space-y-4">
-        {transactions.length === 0 ? (
-          <p className="text-center text-gray-400">No transactions found.</p>
+        {transactions.length === 0 && !error ? (
+          <div className="flex flex-col items-center justify-center h-48">
+            <p className="text-center text-gray-400 text-lg">
+              No Transactions Found
+            </p>
+            <p className="text-center text-gray-400 text-sm mt-2">
+              Buy lotteries for a chance to win big!
+            </p>
+          </div>
         ) : (
           transactions.map((tx) => (
             <div
@@ -58,7 +74,6 @@ const Transactions: React.FC = () => {
                   <p className="text-xs opacity-80">{tx.date}</p>
                 </div>
               </div>
-
               <div className="flex flex-col items-end space-y-1">
                 {tx.status === "pending" && (
                   <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
