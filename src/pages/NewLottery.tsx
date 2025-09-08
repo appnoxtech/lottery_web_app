@@ -16,6 +16,7 @@ const NewLottery: React.FC = () => {
   ) as Lottery[];
 
   const [inputNumbers, setInputNumbers] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedLottery, setSelectedLottery] = useState<string>("");
   const [betAmount, setBetAmount] = useState<number | "">("");
   const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
@@ -131,7 +132,10 @@ const NewLottery: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
-        <Header />
+        <Header
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        />
 
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">

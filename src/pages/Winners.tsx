@@ -35,6 +35,7 @@ interface Winner {
 }
 
 const Winners: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dispatch = useDispatch();
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -266,7 +267,10 @@ const Winners: React.FC = () => {
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
-        <Header />
+        <Header
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        />
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="w-full mx-auto">
             <div className="mb-8">

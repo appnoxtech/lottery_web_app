@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import { Link } from "react-router-dom";
 
 const Home: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       {/* Sidebar */}
@@ -12,7 +14,10 @@ const Home: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
-        <Header />
+        <Header
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        />
 
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">

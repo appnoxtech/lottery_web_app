@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { Bell, User, ChevronDown, LogOut, Search, Menu, X } from "lucide-react";
+import { User, ChevronDown, LogOut, Search } from "lucide-react";
 import { type RootState } from "../../store";
 import { clearUser } from "../../store/slicer/userSlice";
 
@@ -11,11 +11,7 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  className = "",
-  onMenuToggle,
-  isMenuOpen,
-}) => {
+const Header: React.FC<HeaderProps> = ({ className = "" }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -55,31 +51,31 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const notifications = [
-    {
-      id: 1,
-      title: "New Winner Announced",
-      message: "Lottery #123 has a new winner!",
-      time: "2 min ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Ticket Sales Update",
-      message: "500 new tickets sold today",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "System Maintenance",
-      message: "Scheduled maintenance tonight",
-      time: "3 hours ago",
-      unread: false,
-    },
-  ];
+  // const notifications = [
+  //   {
+  //     id: 1,
+  //     title: "New Winner Announced",
+  //     message: "Lottery #123 has a new winner!",
+  //     time: "2 min ago",
+  //     unread: true,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Ticket Sales Update",
+  //     message: "500 new tickets sold today",
+  //     time: "1 hour ago",
+  //     unread: true,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "System Maintenance",
+  //     message: "Scheduled maintenance tonight",
+  //     time: "3 hours ago",
+  //     unread: false,
+  //   },
+  // ];
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <header

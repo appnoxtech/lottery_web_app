@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { Search, Eye, Ticket } from "lucide-react";
+import { Search, Eye } from "lucide-react";
 import { useSelector } from "react-redux";
 import { getDailyLotteryTickets } from "../utils/services/Order.services";
 import { handleApiError } from "../hooks/handleApiError";
 import { formatDate } from "../hooks/dateFormatter";
 
 const Tickets: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lotteryTickets, setLotteryTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setRefreshing] = useState(false);
@@ -81,7 +82,10 @@ const Tickets: React.FC = () => {
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
-        <Header />
+        <Header
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        />
 
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
