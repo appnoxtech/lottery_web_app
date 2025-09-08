@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { Bell, User, ChevronDown, LogOut, Search, Menu, X } from "lucide-react";
+import { User, ChevronDown, LogOut, Search } from "lucide-react";
 import { type RootState } from "../../store";
 import { clearUser } from "../../store/slicer/userSlice";
 
@@ -11,11 +11,7 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  className = "",
-  onMenuToggle,
-  isMenuOpen,
-}) => {
+const Header: React.FC<HeaderProps> = ({ className = "" }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -79,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({
     },
   ];
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <header
