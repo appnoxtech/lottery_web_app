@@ -46,16 +46,14 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   return (
     <>
       {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#2A2D36] rounded-lg border border-gray-700 shadow-lg"
-      >
-        {isOpen ? (
-          <X className="w-6 h-6 text-white" />
-        ) : (
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 py-3 bg-[#2A2D36] rounded-lg border border-gray-700 shadow-lg"
+        >
           <Menu className="w-6 h-6 text-white" />
-        )}
-      </button>
+        </button>
+      )}
 
       {/* Mobile Overlay */}
       {isOpen && (
@@ -76,8 +74,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       `}
       >
         <div className="flex flex-col h-full">
-          {/* Logo/Brand */}
-          <div className="p-6 pb-4 border-b border-gray-700">
+          {/* Logo/Brand with Close Button */}
+          <div className="p-6 pb-4 border-b border-gray-700 relative">
+            {/* Close Button (X) - Only visible on mobile when sidebar is open */}
+            {isOpen && (
+              <button
+                onClick={() => setIsOpen(false)}
+                className="lg:hidden absolute top-5 right-4 p-1 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            )}
+
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-[#EDB726] rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-[#1D1F27]" />

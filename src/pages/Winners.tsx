@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import {
@@ -7,56 +8,220 @@ import {
   DollarSign,
   Phone,
   Award,
-  Filter,
-  Download,
   Eye,
+  Download,
 } from "lucide-react";
+import {
+  getWinnerHistory,
+  getTodayWinningNumber,
+} from "../utils/services/Winners.services";
+import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
+import { showToast } from "../utils/toast.util";
+import { formatDate } from "../hooks/dateFormatter";
+
+interface Winner {
+  id: string;
+  lotteryName: string;
+  ticketNumber: string;
+  winnerName: string;
+  winnerPhone: string;
+  prizeAmount: number;
+  drawDate: string;
+  drawTime: string;
+  claimStatus: string;
+  claimDate: string | null;
+  prizeType: string;
+  lotteryId: number;
+}
 
 const Winners: React.FC = () => {
+  const dispatch = useDispatch();
   const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Mock winners data
-  const winners = [
-    {
-      id: "WIN001",
-      lotteryName: "Super Lucky Draw",
-      ticketNumber: "123456",
-      winnerName: "John Doe",
-      winnerPhone: "+91 9876543210",
-      prizeAmount: 50000,
-      drawDate: "2024-01-20",
-      drawTime: "18:00",
-      claimStatus: "claimed",
-      claimDate: "2024-01-22",
-      prizeType: "first",
-    },
-    {
-      id: "WIN002",
-      lotteryName: "Mega Jackpot",
-      ticketNumber: "789012",
-      winnerName: "Jane Smith",
-      winnerPhone: "+91 9876543211",
-      prizeAmount: 25000,
-      drawDate: "2024-01-19",
-      drawTime: "20:00",
-      claimStatus: "pending",
-      claimDate: null,
-      prizeType: "second",
-    },
-    {
-      id: "WIN003",
-      lotteryName: "Daily Fortune",
-      ticketNumber: "345678",
-      winnerName: "Bob Johnson",
-      winnerPhone: "+91 9876543212",
-      prizeAmount: 10000,
-      drawDate: "2024-01-18",
-      drawTime: "19:30",
-      claimStatus: "expired",
-      claimDate: null,
-      prizeType: "third",
-    },
+  const winnersList = useSelector((state: any) => state.winner.winnersList);
+  const selectedLottery = useSelector(
+    (state: any) => state.initialData.selectedLotteryData
+  );
+  const lotteries = useSelector((state: any) => state.initialData.initData);
+  const [selectedLotteryType, setSelectedLotteryType] = useState({
+    id: 1,
+    digitType: 2,
+    name: "2-digit",
+  });
+
+  const defaultLotteries = [
+    { id: 1, name: "Super Lucky Draw", abbreviation: "SLD" },
+    { id: 2, name: "Mega Jackpot", abbreviation: "MJ" },
+    { id: 3, name: "Daily Fortune", abbreviation: "DF" },
   ];
+
+  const ticketTypes = [
+    { id: 1, name: "2-digit", digitType: 2 },
+    { id: 2, name: "3-digit", digitType: 3 },
+    { id: 3, name: "4-digit", digitType: 4 },
+  ];
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const fetchWinnerHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let response;
+      if (selectedPeriod === "today") {
+        response = await getTodayWinningNumber(selectedLottery?.id || "");
+      } else {
+        response = await getWinnerHistory(
+          selectedLottery?.id || "",
+          selectedLotteryType.digitType
+        );
+      }
+      if (
+        response?.data?.result?.winners &&
+        response.data.result.winners.length > 0
+      ) {
+        const formattedWinners: Winner[] = response.data.result.winners.map(
+          (item: any, index: number) => {
+            const ticketNumber =
+              item.first_prize ||
+              item.second_prize ||
+              item.third_prize ||
+              "N/A";
+            return {
+              id: `WIN${index + 1}`.padStart(6, "0"),
+              lotteryName:
+                selectedLottery?.name ||
+                lotteries.find((l: any) => l.id === item.lottery_id)?.name ||
+                "Unknown Lottery",
+              ticketNumber,
+              winnerName: item.winner_name || "Anonymous",
+              winnerPhone: item.winner_phone || "N/A",
+              prizeAmount: item.prize_amount || 0,
+              drawDate: formatDate(item.date) || "N/A",
+              drawTime: item.time || "N/A",
+              claimStatus: item.claim_status || "pending",
+              claimDate: item.claim_date || null,
+              prizeType: item.first_prize
+                ? "first"
+                : item.second_prize
+                ? "second"
+                : "third",
+              lotteryId: item.lottery_id || 0,
+            };
+          }
+        );
+        dispatch(addToWinnerList(formattedWinners));
+      } else {
+        setError("No winners found for the selected criteria.");
+        dispatch(clearWinnersList());
+      }
+    } catch (err: any) {
+      setError("Failed to fetch winner history: " + err.message);
+      showToast("Failed to fetch winner history.", "error");
+      dispatch(clearWinnersList());
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    selectedLottery,
+    selectedLotteryType,
+    selectedPeriod,
+    dispatch,
+    lotteries,
+  ]);
+
+  useEffect(() => {
+    fetchWinnerHistory();
+  }, [fetchWinnerHistory]);
+
+  const filteredWinners = useMemo(() => {
+    let list = [...winnersList];
+    if (selectedLottery?.id) {
+      list = list.filter(
+        (winner: Winner) => winner.lotteryId === selectedLottery.id
+      );
+    }
+    list = list.filter((winner: Winner) => {
+      const ticketLength = winner.ticketNumber.replace(/[^0-9]/g, "").length;
+      return ticketLength === selectedLotteryType.digitType;
+    });
+    const today = new Date();
+    if (selectedPeriod === "week") {
+      const oneWeekAgo = new Date(today);
+      oneWeekAgo.setDate(today.getDate() - 7);
+      list = list.filter(
+        (winner: Winner) => new Date(winner.drawDate) >= oneWeekAgo
+      );
+    } else if (selectedPeriod === "month") {
+      const oneMonthAgo = new Date(today);
+      oneMonthAgo.setMonth(today.getMonth() - 1);
+      list = list.filter(
+        (winner: Winner) => new Date(winner.drawDate) >= oneMonthAgo
+      );
+    }
+    if (searchQuery.trim()) {
+      list = list.filter(
+        (winner: Winner) =>
+          winner.drawDate.includes(searchQuery) ||
+          winner.ticketNumber.includes(searchQuery) ||
+          winner.prizeType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          winner.winnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          winner.winnerPhone.includes(searchQuery)
+      );
+    }
+    list.sort(
+      (a: Winner, b: Winner) =>
+        new Date(b.drawDate).getTime() - new Date(a.drawDate).getTime()
+    );
+    return list;
+  }, [
+    winnersList,
+    selectedPeriod,
+    searchQuery,
+    selectedLotteryType,
+    selectedLottery,
+  ]);
+
+  const handleLotterySelection = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const lotteryId = event.target.value;
+    const selected = (lotteries.length > 0 ? lotteries : defaultLotteries).find(
+      (lottery: any) => lottery.id.toString() === lotteryId
+    );
+    if (selected) {
+      dispatch({
+        type: "initialData/setInitialSelectedLottery",
+        payload: selected,
+      });
+    } else {
+      dispatch({
+        type: "initialData/setInitialSelectedLottery",
+        payload: null,
+      });
+    }
+  };
+
+  const handleTicketTypeSelection = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const typeId = event.target.value;
+    const selected = ticketTypes.find(
+      (type: any) => type.id.toString() === typeId
+    );
+    if (selected) {
+      setSelectedLotteryType(selected);
+    }
+  };
 
   const getClaimStatusColor = (status: string) => {
     switch (status) {
@@ -99,17 +264,11 @@ const Winners: React.FC = () => {
 
   return (
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
-        {/* Header */}
         <Header />
-
-        {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white mb-2">
                 Winners Management
@@ -118,68 +277,15 @@ const Winners: React.FC = () => {
                 View and manage lottery winners and prize distributions
               </p>
             </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-400">
-                      Total Winners
-                    </p>
-                    <p className="text-2xl font-bold text-white">156</p>
-                  </div>
-                  <Trophy className="w-8 h-8 text-[#EDB726]" />
-                </div>
-              </div>
-
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-400">
-                      Prizes Claimed
-                    </p>
-                    <p className="text-2xl font-bold text-green-400">89</p>
-                  </div>
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-400">
-                      Pending Claims
-                    </p>
-                    <p className="text-2xl font-bold text-yellow-400">45</p>
-                  </div>
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-400">
-                      Total Prizes
-                    </p>
-                    <p className="text-2xl font-bold text-white">₹8.5L</p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-[#EDB726]" />
-                </div>
-              </div>
-            </div>
-
             {/* Filters */}
-            <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 mb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                {/* Period Filter */}
-                <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1">
+            <div className="bg-[#2A2D36] rounded-lg p-4 md:p-6 border border-gray-700 mb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between  space-y-4 md:space-y-0">
+                <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
                   {["all", "today", "week", "month"].map((period) => (
                     <button
                       key={period}
                       onClick={() => setSelectedPeriod(period)}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         selectedPeriod === period
                           ? "bg-[#EDB726] text-[#1D1F27]"
                           : "text-gray-400 hover:text-white cursor-pointer"
@@ -189,176 +295,365 @@ const Winners: React.FC = () => {
                     </button>
                   ))}
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center space-x-4">
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 hover:text-white hover:border-[#EDB726] transition-colors cursor-pointer">
-                    <Filter className="w-4 h-4" />
-                    <span>Filter</span>
-                  </button>
-
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-[#EDB726] text-[#1D1F27] rounded-lg hover:bg-[#d4a422] transition-colors font-medium cursor-pointer">
-                    <Download className="w-4 h-4" />
-                    <span>Export</span>
-                  </button>
+                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                  <select
+                    value={selectedLottery?.id || ""}
+                    onChange={handleLotterySelection}
+                    className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726] cursor-pointer"
+                  >
+                    <option value="">All Lotteries</option>
+                    {(lotteries.length > 0 ? lotteries : defaultLotteries).map(
+                      (lottery: any) => (
+                        <option key={lottery.id} value={lottery.id}>
+                          {lottery.name}
+                        </option>
+                      )
+                    )}
+                  </select>
+                  {!isMobile && (
+                    <select
+                      value={selectedLotteryType.id}
+                      onChange={handleTicketTypeSelection}
+                      className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726] cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Select Ticket Type
+                      </option>
+                      {ticketTypes.map((type: any) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {isMobile && selectedLottery && (
+                    <div className="flex space-x-2 w-full">
+                      {ticketTypes.map((type) => (
+                        <button
+                          key={type.id}
+                          onClick={() => setSelectedLotteryType(type)}
+                          className={`flex-1 px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            selectedLotteryType.id === type.id
+                              ? "bg-[#EDB726] text-[#1D1F27]"
+                              : "bg-[#1D1F27] text-gray-300 border border-gray-600 hover:text-white"
+                          }`}
+                        >
+                          {type.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!isMobile && (
+                    <input
+                      type="text"
+                      placeholder="Search by date, ticket, or prize"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726]"
+                    />
+                  )}
                 </div>
               </div>
             </div>
-
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">
+                      Total Winners
+                    </p>
+                    <p className="text-xl font-bold text-white">
+                      {filteredWinners.length}
+                    </p>
+                  </div>
+                  <Trophy className="w-6 h-6 text-[#EDB726]" />
+                </div>
+              </div>
+              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">
+                      Prizes Claimed
+                    </p>
+                    <p className="text-xl font-bold text-green-400">
+                      {
+                        filteredWinners.filter(
+                          (w: Winner) => w.claimStatus === "claimed"
+                        ).length
+                      }
+                    </p>
+                  </div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                </div>
+              </div>
+              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">
+                      Pending Claims
+                    </p>
+                    <p className="text-xl font-bold text-yellow-400">
+                      {
+                        filteredWinners.filter(
+                          (w: Winner) => w.claimStatus === "pending"
+                        ).length
+                      }
+                    </p>
+                  </div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                </div>
+              </div>
+              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">
+                      Total Prizes
+                    </p>
+                    <p className="text-xl font-bold text-white">
+                      ₹
+                      {filteredWinners
+                        .reduce(
+                          (sum: number, w: Winner) => sum + w.prizeAmount,
+                          0
+                        )
+                        .toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className="w-6 h-6 text-[#EDB726]" />
+                </div>
+              </div>
+            </div>
             {/* Winners Table */}
-            <div className="bg-[#2A2D36] rounded-lg border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#1D1F27]">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Prize Info
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Winner Details
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Draw Info
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Prize Amount
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Claim Status
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700">
-                    {winners.map((winner) => (
-                      <tr
-                        key={winner.id}
-                        className="hover:bg-[#3A3D46] transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-3">
-                            {getPrizeIcon(winner.prizeType)}
+            {loading ? (
+              <div className="text-center text-gray-400">
+                Loading winners...
+              </div>
+            ) : error ? (
+              <div className="text-center text-red-400">{error}</div>
+            ) : filteredWinners.length === 0 ? (
+              <div className="text-center text-gray-400">
+                No winners found for selected criteria.
+              </div>
+            ) : (
+              <div className="bg-[#2A2D36] rounded-lg border border-gray-700 overflow-x-auto">
+                {/* Desktop Table (large screens) */}
+                <div className="hidden md:block">
+                  <table className="w-full min-w-[700px]">
+                    <thead className="bg-[#1D1F27]">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Prize Info
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Winner Details
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Draw Info
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Prize Amount
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Claim Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {filteredWinners.map((winner: Winner) => (
+                        <tr
+                          key={winner.id}
+                          className="hover:bg-[#3A3D46] transition-colors"
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              {getPrizeIcon(winner.prizeType)}
+                              <div>
+                                <div className="text-sm font-medium text-white">
+                                  {winner.lotteryName}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  Ticket #{winner.ticketNumber}
+                                </div>
+                                <div
+                                  className={`text-xs font-medium ${getPrizeTypeColor(
+                                    winner.prizeType
+                                  )}`}
+                                >
+                                  {winner.prizeType.charAt(0).toUpperCase() +
+                                    winner.prizeType.slice(1)}{" "}
+                                  Prize
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-white">
-                                {winner.lotteryName}
+                                {winner.winnerName}
                               </div>
-                              <div className="text-sm text-gray-400">
-                                Ticket #{winner.ticketNumber}
+                              <div className="flex items-center space-x-1 text-xs text-gray-400">
+                                <Phone className="w-3 h-3" />
+                                <span>{winner.winnerPhone}</span>
                               </div>
-                              <div
-                                className={`text-xs font-medium ${getPrizeTypeColor(
-                                  winner.prizeType
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div>
+                              <div className="flex items-center space-x-1 text-sm text-white">
+                                <Calendar className="w-3 h-3" />
+                                <span>{winner.drawDate}</span>
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {winner.drawTime}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center space-x-1">
+                              <DollarSign className="w-4 h-4 text-[#EDB726]" />
+                              <span className="text-sm font-bold text-[#EDB726]">
+                                ₹{winner.prizeAmount.toLocaleString()}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div>
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getClaimStatusColor(
+                                  winner.claimStatus
                                 )}`}
                               >
-                                {winner.prizeType.charAt(0).toUpperCase() +
-                                  winner.prizeType.slice(1)}{" "}
-                                Prize
-                              </div>
+                                {winner.claimStatus.charAt(0).toUpperCase() +
+                                  winner.claimStatus.slice(1)}
+                              </span>
+                              {winner.claimDate && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Claimed: {winner.claimDate}
+                                </div>
+                              )}
                             </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                            <button className="text-[#EDB726] hover:text-[#d4a422] mr-2">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button className="text-gray-400 hover:text-white">
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Mobile/Tablet Cards (up to 1023px) */}
+                <div className="md:hidden divide-y divide-gray-700">
+                  {filteredWinners.map((winner: Winner) => (
+                    <div
+                      key={winner.id}
+                      className="py-3 px-4 hover:bg-[#3A3D46] transition-colors"
+                    >
+                      <div className="flex items-center space-x-2 mb-2">
+                        {getPrizeIcon(winner.prizeType)}
+                        <div>
+                          <div className="text-sm font-medium text-white">
+                            {winner.lotteryName}
                           </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {winner.winnerName}
-                            </div>
-                            <div className="flex items-center space-x-1 text-sm text-gray-400">
-                              <Phone className="w-3 h-3" />
-                              <span>{winner.winnerPhone}</span>
-                            </div>
+                          <div className="text-xs text-gray-400">
+                            Ticket #{winner.ticketNumber}
                           </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="flex items-center space-x-1 text-sm text-white">
-                              <Calendar className="w-3 h-3" />
-                              <span>{winner.drawDate}</span>
-                            </div>
-                            <div className="text-sm text-gray-400">
-                              {winner.drawTime}
-                            </div>
+                          <div
+                            className={`text-xs font-medium ${getPrizeTypeColor(
+                              winner.prizeType
+                            )}`}
+                          >
+                            {winner.prizeType.charAt(0).toUpperCase() +
+                              winner.prizeType.slice(1)}{" "}
+                            Prize
                           </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-1">
-                            <DollarSign className="w-4 h-4 text-[#EDB726]" />
-                            <span className="text-lg font-bold text-[#EDB726]">
-                              ₹{winner.prizeAmount.toLocaleString()}
-                            </span>
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium text-white mb-1">
+                        {winner.winnerName}
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-400 mb-2">
+                        <Phone className="w-3 h-3" />
+                        <span>{winner.winnerPhone}</span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-sm text-white mb-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{winner.drawDate}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 mb-2">
+                        {winner.drawTime}
+                      </div>
+                      <div className="flex items-center space-x-1 mb-2">
+                        <DollarSign className="w-4 h-4 text-[#EDB726]" />
+                        <span className="text-sm font-bold text-[#EDB726]">
+                          ₹{winner.prizeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="mb-2">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getClaimStatusColor(
+                            winner.claimStatus
+                          )}`}
+                        >
+                          {winner.claimStatus.charAt(0).toUpperCase() +
+                            winner.claimStatus.slice(1)}
+                        </span>
+                        {winner.claimDate && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Claimed: {winner.claimDate}
                           </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getClaimStatusColor(
-                                winner.claimStatus
-                              )}`}
-                            >
-                              {winner.claimStatus.charAt(0).toUpperCase() +
-                                winner.claimStatus.slice(1)}
-                            </span>
-                            {winner.claimDate && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Claimed: {winner.claimDate}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-[#EDB726] hover:text-[#d4a422] mr-3">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white">
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        )}
+                      </div>
+                      <div className="flex justify-end space-x-2 text-sm font-medium">
+                        <button className="text-[#EDB726] hover:text-[#d4a422]">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-gray-400 hover:text-white">
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
+            )}
             {/* Recent Activity */}
-            <div className="mt-8 bg-[#2A2D36] rounded-lg border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
+            <div className="mt-6 bg-[#2A2D36] rounded-lg border border-gray-700 p-4">
+              <h3 className="text-lg font-semibold text-white mb-3">
                 Recent Winner Activity
               </h3>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 p-3 bg-[#1D1F27] rounded-lg">
-                  <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-green-400" />
+              <div className="space-y-3">
+                {filteredWinners.slice(0, 2).map((winner: Winner) => (
+                  <div
+                    key={winner.id}
+                    className="flex items-center space-x-3 p-3 bg-[#1D1F27] rounded-lg"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${getClaimStatusColor(
+                        winner.claimStatus
+                      )}`}
+                    >
+                      {getPrizeIcon(winner.prizeType)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white">
+                        <span className="font-medium">{winner.winnerName}</span>{" "}
+                        {winner.claimStatus} ₹
+                        {winner.prizeAmount.toLocaleString()} prize from{" "}
+                        {winner.lotteryName}
+                      </p>
+                      <p className="text-xs text-gray-400">{winner.drawDate}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">
-                      <span className="font-medium">John Doe</span> claimed
-                      ₹50,000 prize from Super Lucky Draw
-                    </p>
-                    <p className="text-xs text-gray-400">2 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-4 p-3 bg-[#1D1F27] rounded-lg">
-                  <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                    <Award className="w-5 h-5 text-yellow-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">
-                      New winner announced for{" "}
-                      <span className="font-medium">Mega Jackpot</span> -
-                      ₹25,000
-                    </p>
-                    <p className="text-xs text-gray-400">5 hours ago</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
