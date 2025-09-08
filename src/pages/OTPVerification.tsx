@@ -133,7 +133,7 @@ const OTPVerification: React.FC = () => {
   const handleResendOTP = async () => {
     setIsResending(true);
     try {
-      await userSendOTP({ phone: phoneNumber });
+      await userSendOTP({ phone_number: `+${phoneNumber}` });
       showToast("OTP sent successfully!", "success");
       setCountdown(60);
       setCanResend(false);
