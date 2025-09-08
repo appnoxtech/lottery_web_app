@@ -276,7 +276,7 @@ const NewLottery: React.FC = () => {
                             selectedDigits.includes(digit)
                               ? "bg-[#EDB726] text-[#1D1F27]"
                               : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
-                          }`}
+                          } text-xs md:text-sm`}
                         >
                           {digit} Digit
                         </button>
@@ -287,7 +287,7 @@ const NewLottery: React.FC = () => {
                   <div className="flex space-x-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
+                      className="   flex-1 bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <Plus className="w-5 h-5" />
                       <span>Create Lottery</span>
@@ -497,6 +497,7 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={betAmount || 0}
+          lotteryId={selectedLottery} // Pass selectedLottery as lotteryId
           onClose={() => setShowStripe(false)}
         />
       )}

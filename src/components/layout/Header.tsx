@@ -1,22 +1,21 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  Bell,
-  User,
-  ChevronDown,
-  // Settings,
-  LogOut,
-  Search,
-} from "lucide-react";
+import { Bell, User, ChevronDown, LogOut, Search, Menu, X } from "lucide-react";
 import { type RootState } from "../../store";
 import { clearUser } from "../../store/slicer/userSlice";
 
 interface HeaderProps {
   className?: string;
+  onMenuToggle: () => void;
+  isMenuOpen: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ className = "" }) => {
+const Header: React.FC<HeaderProps> = ({
+  className = "",
+  onMenuToggle,
+  isMenuOpen,
+}) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -86,8 +85,22 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
     <header
       className={`bg-[#2A2D36] border-b border-gray-700 flex-shrink-0 ${className}`}
     >
-      <div className="px-6 py-4">
+      <div className="px-4 lg:px-6 py-4">
         <div className="flex items-center justify-between">
+          {/* Mobile menu button */}
+          <div className="lg:hidden mr-12">
+            {/* <button
+              onClick={onMenuToggle}
+              className="p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
+            >
+              {isMenuOpen ? (
+                <X className="w-5 h-5 text-white" />
+              ) : (
+                <Menu className="w-5 h-5 text-white" />
+              )}
+            </button> */}
+          </div>
+
           {/* Search Bar */}
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -95,18 +108,18 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
               <input
                 type="text"
                 placeholder="Search lotteries, tickets, winners..."
-                className="w-full pl-10 pr-4 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                className="w-full pl-10 pr-4 py-3 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
               />
             </div>
           </div>
 
           {/* Right Side - Notifications and User Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 ml-3">
             {/* Notifications */}
-            <div className="relative">
+            {/* <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
+                className="relative p-3 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
                 <Bell className="w-5 h-5 text-gray-300 " />
                 {unreadCount > 0 && (
@@ -115,8 +128,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                   </span>
                 )}
               </button>
-
-              {/* Notifications Dropdown */}
+              Notifications Dropdown
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-[#2A2D36] border border-gray-600 rounded-lg shadow-lg z-50">
                   <div className="p-4 border-b border-gray-600">
@@ -158,10 +170,10 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
 
-            {/* User Menu */}
-            <div className="relative">
+            {/* User Menu - Hidden on small screens, visible on medium and up */}
+            <div className="relative  md:block">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
@@ -198,17 +210,13 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                 <div className="absolute right-0 mt-2 w-48 bg-[#2A2D36] border border-gray-600 rounded-lg shadow-lg z-50">
                   <div className="p-2">
                     <Link
-                      to="/profile/edit"
+                      to="/profile"
                       onClick={() => setShowUserMenu(false)}
                       className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-300 hover:bg-[#3A3D46] hover:text-white rounded-lg transition-colors"
                     >
                       <User className="w-4 h-4" />
                       <span>Profile</span>
                     </Link>
-                    {/* <button className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-300 hover:bg-[#3A3D46] hover:text-white rounded-lg transition-colors">
-                      <Settings className="w-4 h-4" />
-                      <span>Settings</span>
-                    </button> */}
                     <hr className="my-2 border-gray-600" />
                     <button
                       onClick={(e) => {
