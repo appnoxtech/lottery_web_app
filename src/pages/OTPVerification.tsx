@@ -21,6 +21,7 @@ const OTPVerification: React.FC = () => {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [generatedOtp, setGeneratedOtp] = useState<number | null>(null); // New state for generated OTP
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const location = useLocation();
@@ -28,6 +29,7 @@ const OTPVerification: React.FC = () => {
 
   const phoneNumber = location.state?.phoneNumber || "";
   const fromSignup = location.state?.fromSignup || false;
+  const initialOtp = location.state?.otp; // Get OTP from navigation state
 
   const {
     handleSubmit,
@@ -46,6 +48,11 @@ const OTPVerification: React.FC = () => {
       return;
     }
 
+    // Set initial OTP if provided via navigation
+    if (initialOtp) {
+      setGeneratedOtp(initialOtp);
+    }
+
     // Start countdown
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -59,7 +66,7 @@ const OTPVerification: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [phoneNumber, navigate]);
+  }, [phoneNumber, navigate, initialOtp]);
 
   // Update form value when OTP changes
   useEffect(() => {
@@ -133,26 +140,35 @@ const OTPVerification: React.FC = () => {
   const handleResendOTP = async () => {
     setIsResending(true);
     try {
-      await userSendOTP({ phone_number: `+${phoneNumber}` });
-      showToast("OTP sent successfully!", "success");
-      setCountdown(60);
-      setCanResend(false);
+      console.log("Resending OTP for phone number:", `+${phoneNumber}`);
+      const response = await userSendOTP({ phone_number: `+${phoneNumber}` });
+      if (response?.data) {
+        const newOtp = response.data.result.otp;
+        setGeneratedOtp(newOtp); // Store the new OTP
+        showToast("OTP sent successfully!", "success");
+        setCountdown(60);
+        setCanResend(false);
+    
 
-      // Restart countdown
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            setCanResend(true);
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        // Restart countdown
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              setCanResend(true);
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     } catch (error: any) {
+      console.error("Resend OTP Error:", error.response?.data || error);
       const errorMessage =
         error?.response?.data?.message ||
-        "Failed to resend OTP. Please try again.";
+        (error?.response?.data?.errors?.phone_number
+          ? error.response.data.errors.phone_number[0]
+          : "Failed to resend OTP. Please try again.");
       showToast(errorMessage, "error");
     } finally {
       setIsResending(false);
@@ -175,6 +191,11 @@ const OTPVerification: React.FC = () => {
               {phoneNumber}
             </span>
           </p>
+          {generatedOtp !== null && (
+            <p className="mt-4 text-center text-yellow-400 bg-gray-800 p-2 rounded-lg">
+              Generated OTP: {generatedOtp}
+            </p>
+          )}
         </div>
 
         <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
@@ -236,7 +257,7 @@ const OTPVerification: React.FC = () => {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={isResending}
-                  className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50"
+                  className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50 cursor-pointer"
                 >
                   {isResending ? "Resending..." : "Resend OTP"}
                 </button>
@@ -251,7 +272,7 @@ const OTPVerification: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 hover:underline"
+                className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 hover:underline cursor-pointer"
               >
                 ← Back to Login
               </button>

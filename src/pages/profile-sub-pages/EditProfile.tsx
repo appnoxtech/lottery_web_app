@@ -44,33 +44,40 @@ const EditProfile: React.FC = () => {
       const response: any = await userUpdateProfile(formData);
 
       if (response && response.status === 200 && response.data.success) {
-        // Update Redux with new user data
         const updatedUserData = { ...userData, ...response.data.result };
         dispatch(updateUser({ userData: updatedUserData }));
-
-        // Show success toast instead of local state message
         showToast("Profile updated successfully!", "success");
 
         setProfileImage(null);
-
-        // Update local state with new data
         setUsername(response.data.result.name || "");
         setPreviewImage(response.data.result.profile_image || null);
       } else {
-        // Show error toast instead of local state message
         showToast(
           response?.data?.message || "Failed to update profile.",
           "error"
         );
       }
     } catch (err: any) {
-      // Show error toast instead of local state message
-      showToast("An error occurred. Please try again.", "error");
       console.error("Update profile error:", err);
+
+      let errorMessage = "An error occurred. Please try again.";
+
+      if (err.response && err.response.data) {
+        if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.errors) {
+          const errors = err.response.data.errors;
+          const firstKey = Object.keys(errors)[0];
+          errorMessage = errors[firstKey][0] || errorMessage;
+        }
+      }
+
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-[#1D1F27] text-white p-6 rounded-lg shadow-lg flex flex-col items-center">
       {/* Logo */}
@@ -88,8 +95,9 @@ const EditProfile: React.FC = () => {
       </h1>
 
       {/* Profile Image with Edit Icon */}
+      {/* Profile Image with Edit Icon */}
       <div className="relative w-28 h-28 mb-10">
-        <div className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+        <label className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer">
           {previewImage ? (
             <img
               src={previewImage}
@@ -99,15 +107,17 @@ const EditProfile: React.FC = () => {
           ) : (
             <User className="w-14 h-14 text-gray-400" />
           )}
-        </div>
-        <label className="absolute -bottom-0 -right-0 p-2 bg-[#EDB726] rounded-full text-[#1D1F27] border border-[#1D1F27] z-10 shadow-md cursor-pointer">
-          <Edit className="w-4 h-4" />
+          {/* Hidden file input */}
           <input
             type="file"
             accept="image/*"
             className="hidden"
             onChange={handleImageChange}
           />
+          {/* Edit Icon positioned at bottom-right */}
+          <div className="absolute -bottom-0 -right-0 p-2 bg-[#EDB726] rounded-full text-[#1D1F27] border border-[#1D1F27] z-10 shadow-md">
+            <Edit className="w-4 h-4" />
+          </div>
         </label>
       </div>
 
@@ -124,7 +134,8 @@ const EditProfile: React.FC = () => {
           id="username"
           className="w-full px-4 py-3 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value.slice(0, 20))} // limit input length to 20 characters
+          maxLength={20} // HTML attribute to prevent typing more than 20 characters
           placeholder="Enter new username"
         />
       </div>

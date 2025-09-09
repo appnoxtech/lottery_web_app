@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Link, useNavigate } from 'react-router-dom';
-import { signupSchema } from '../utils/validationSchemas';
-import { userSignup } from '../utils/services/Registration.services';
-import { showToast } from '../utils/toast.util';
-import { Input, Button, PhoneInput } from '../components/common';
-import { UserPlus, User, Lock, CheckCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Link, useNavigate } from "react-router-dom";
+import { signupSchema } from "../utils/validationSchemas";
+import { userSignup } from "../utils/services/Registration.services";
+import { showToast } from "../utils/toast.util";
+import { Input, Button, PhoneInput } from "../components/common";
+import { UserPlus, User, Lock, CheckCircle } from "lucide-react";
 
 interface SignupFormData {
   name: string;
@@ -26,10 +26,10 @@ const Signup: React.FC = () => {
   } = useForm<SignupFormData>({
     resolver: yupResolver(signupSchema),
     defaultValues: {
-      name: '',
-      phoneNumber: '',
-      password: '',
-      confirmPassword: '',
+      name: "",
+      phoneNumber: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -46,18 +46,25 @@ const Signup: React.FC = () => {
       const response = await userSignup(signupData);
 
       if (response?.data) {
-        showToast('Registration successful! Please verify your OTP.', 'success');
-        // Navigate to OTP verification page with phone number
-        navigate('/otp-verification', { 
-          state: { 
+        const otp = response.data.result.otp; // Extract OTP from response
+        showToast(
+          "Registration successful! Please verify your OTP.",
+          "success"
+        );
+        // Navigate to OTP verification page with phone number and OTP
+        navigate("/otp-verification", {
+          state: {
             phoneNumber: data.phoneNumber,
-            fromSignup: true 
-          } 
+            fromSignup: true,
+            otp, // Pass OTP to OTPVerification
+          },
         });
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Registration failed. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -67,14 +74,14 @@ const Signup: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-                    <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
             <UserPlus className="h-8 w-8 text-[#1D1F27]" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
             Join Us Today
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link
               to="/login"
               className="font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
@@ -96,7 +103,7 @@ const Signup: React.FC = () => {
                     label="Full Name"
                     placeholder="Enter your full name"
                     error={errors.name?.message}
-icon={<User className="h-5 w-5" />}
+                    icon={<User className="h-5 w-5" />}
                   />
                 )}
               />
@@ -129,7 +136,7 @@ icon={<User className="h-5 w-5" />}
                     isPassword={true}
                     placeholder="Create a strong password"
                     error={errors.password?.message}
-icon={<Lock className="h-5 w-5" />}
+                    icon={<Lock className="h-5 w-5" />}
                   />
                 )}
               />
@@ -146,7 +153,7 @@ icon={<Lock className="h-5 w-5" />}
                     isPassword={true}
                     placeholder="Confirm your password"
                     error={errors.confirmPassword?.message}
-icon={<CheckCircle className="h-5 w-5" />}
+                    icon={<CheckCircle className="h-5 w-5" />}
                   />
                 )}
               />
@@ -159,17 +166,23 @@ icon={<CheckCircle className="h-5 w-5" />}
                 isLoading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </div>
 
             <div className="text-xs text-gray-500 text-center">
-              By creating an account, you agree to our{' '}
-              <Link to="/terms" className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200">
+              By creating an account, you agree to our{" "}
+              <Link
+                to="/terms"
+                className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200"
+              >
                 Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200">
+              </Link>{" "}
+              and{" "}
+              <Link
+                to="/privacy"
+                className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200"
+              >
                 Privacy Policy
               </Link>
             </div>

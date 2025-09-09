@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useSelector } from "react-redux";
-import { resetPasswordSchema } from "../../utils/validationSchemas";
-import { userUpdatePassword } from "../../utils/services/Registration.services";
+import { changePasswordSchema } from "../../utils/validationSchemas";
+import { userChangePassword } from "../../utils/services/Registration.services";
 import { showToast } from "../../utils/toast.util";
 import { Input, Button } from "../../components/common";
 import { Lock, CheckCircle } from "lucide-react";
 import { type RootState } from "../../store";
 
 interface ChangePasswordFormData {
+  oldPassword: string;
   password: string;
   confirmPassword: string;
 }
@@ -24,29 +25,32 @@ const ChangePassword: React.FC = () => {
     control,
     handleSubmit,
     formState: { errors },
+    reset, // add reset here
   } = useForm<ChangePasswordFormData>({
-    resolver: yupResolver(resetPasswordSchema),
+    resolver: yupResolver(changePasswordSchema),
     defaultValues: {
+      oldPassword: "",
       password: "",
       confirmPassword: "",
     },
   });
 
   const onSubmit = async (data: ChangePasswordFormData) => {
-    if (!userPhoneNumber) {
-      showToast("User phone number not found.", "error");
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const response = await userUpdatePassword({
-        phone_number: Number(userPhoneNumber),
+      const response = await userChangePassword({
+        old_password: data.oldPassword,
         new_password: data.password,
       });
 
-      if (response?.data) {
+      if (response?.data?.success) {
         showToast("Password updated successfully!", "success");
+        reset(); // Reset the form fields here
+      } else {
+        showToast(
+          response?.data?.message || "Failed to update password.",
+          "error"
+        );
       }
     } catch (error: any) {
       const errorMessage =
@@ -71,7 +75,7 @@ const ChangePassword: React.FC = () => {
         <span className="text-[#EDB726]">Password?</span>
       </h1>
 
-      <h4 className="mb-6">
+      <h4 className="mb-6 text-center">
         <span className="text-[#EDB726]">
           Change Password for this number -{" "}
         </span>
@@ -83,6 +87,21 @@ const ChangePassword: React.FC = () => {
         className="w-full max-w-sm mb-8 space-y-6"
       >
         <Controller
+          name="oldPassword"
+          control={control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              label="Old Password"
+              isPassword={true}
+              placeholder="Enter your old password"
+              error={errors.oldPassword?.message}
+              icon={<Lock className="h-5 w-5" />}
+            />
+          )}
+        />
+
+        <Controller
           name="password"
           control={control}
           render={({ field }) => (
@@ -90,7 +109,7 @@ const ChangePassword: React.FC = () => {
               {...field}
               label="New Password"
               isPassword={true}
-              placeholder="Create New Password"
+              placeholder="Enter your new password"
               error={errors.password?.message}
               icon={<Lock className="h-5 w-5" />}
             />
@@ -105,7 +124,7 @@ const ChangePassword: React.FC = () => {
               {...field}
               label="Confirm Password"
               isPassword={true}
-              placeholder="Confirm Password"
+              placeholder="Confirm your new password"
               error={errors.confirmPassword?.message}
               icon={<CheckCircle className="h-5 w-5" />}
             />
@@ -126,6 +145,3 @@ const ChangePassword: React.FC = () => {
 };
 
 export default ChangePassword;
-
-
-
