@@ -142,7 +142,6 @@ const OTPVerification: React.FC = () => {
     try {
       console.log("Resending OTP for phone number:", `+${phoneNumber}`);
       const response = await userSendOTP({ phone_number: `+${phoneNumber}` });
-      console.log("Resend OTP Response:", response.data);
       if (response?.data) {
         const newOtp = response.data.result.otp;
         setGeneratedOtp(newOtp); // Store the new OTP
