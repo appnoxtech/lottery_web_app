@@ -249,7 +249,7 @@ const OTPVerification: React.FC = () => {
           </form>
 
           <div className="mt-6 text-center space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-400">
               Didn't receive the code?{" "}
               {canResend ? (
                 <button
