@@ -148,6 +148,7 @@ const OTPVerification: React.FC = () => {
         showToast("OTP sent successfully!", "success");
         setCountdown(60);
         setCanResend(false);
+    
 
         // Restart countdown
         const timer = setInterval(() => {
