@@ -86,6 +86,8 @@ function App() {
           />
           <Route path="/otp-verification" element={<OTPVerification />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/terms" element={<TermsConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* Protected routes */}
           <Route
             path="/home"

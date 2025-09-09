@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { resetPasswordSchema } from '../utils/validationSchemas';
-import { userUpdatePassword } from '../utils/services/Registration.services';
-import { showToast } from '../utils/toast.util';
-import { Input, Button } from '../components/common';
-import { Key, Lock, CheckCircle, Info } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useLocation, useNavigate } from "react-router-dom";
+import { resetPasswordSchema } from "../utils/validationSchemas";
+import { userUpdatePassword } from "../utils/services/Registration.services";
+import { showToast } from "../utils/toast.util";
+import { Input, Button } from "../components/common";
+import { Key, Lock, CheckCircle, Info } from "lucide-react";
 
 interface ResetPasswordFormData {
   password: string;
@@ -18,7 +18,7 @@ const ResetPassword: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const phoneNumber = location.state?.phoneNumber || '';
+  const phoneNumber = location.state?.phoneNumber || "";
   const verified = location.state?.verified || false;
 
   const {
@@ -28,14 +28,14 @@ const ResetPassword: React.FC = () => {
   } = useForm<ResetPasswordFormData>({
     resolver: yupResolver(resetPasswordSchema),
     defaultValues: {
-      password: '',
-      confirmPassword: '',
+      password: "",
+      confirmPassword: "",
     },
   });
 
   useEffect(() => {
     if (!phoneNumber || !verified) {
-      navigate('/forgot-password');
+      navigate("/forgot-password");
     }
   }, [phoneNumber, verified, navigate]);
 
@@ -48,12 +48,14 @@ const ResetPassword: React.FC = () => {
       });
 
       if (response?.data) {
-        showToast('Password reset successfully!', 'success');
-        navigate('/login');
+        showToast("Password reset successfully!", "success");
+        navigate("/login");
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Failed to reset password. Please try again.';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Failed to reset password. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +72,7 @@ const ResetPassword: React.FC = () => {
             Reset Your Password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Enter your new password for{' '}
+            Enter your new password for{" "}
             <span className="font-medium text-[#EDB726]">{phoneNumber}</span>
           </p>
         </div>
@@ -117,12 +119,15 @@ const ResetPassword: React.FC = () => {
                   <Info className="h-5 w-5 text-[#EDB726]" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-[#EDB726]">Password Requirements</h3>
+                  <h3 className="text-sm font-medium text-[#EDB726]">
+                    Password Requirements
+                  </h3>
                   <div className="mt-2 text-sm text-gray-300">
                     <ul className="list-disc list-inside space-y-1">
-                      <li>At least 6 characters long</li>
+                      <li>At least 8 characters long</li>
                       <li>Contains uppercase and lowercase letters</li>
                       <li>Contains at least one number</li>
+                      <li>Contains at least one special character</li>
                     </ul>
                   </div>
                 </div>
@@ -136,7 +141,7 @@ const ResetPassword: React.FC = () => {
                 isLoading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Resetting Password...' : 'Reset Password'}
+                {isLoading ? "Resetting Password..." : "Reset Password"}
               </Button>
             </div>
           </form>

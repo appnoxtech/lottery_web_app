@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Link, useNavigate } from 'react-router-dom';
-import { forgotPasswordSchema } from '../utils/validationSchemas';
-import { userForgotPassword } from '../utils/services/Registration.services';
-import { showToast } from '../utils/toast.util';
-import { Button, PhoneInput } from '../components/common';
-import { KeyRound } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Link, useNavigate } from "react-router-dom";
+import { forgotPasswordSchema } from "../utils/validationSchemas";
+import { userForgotPassword } from "../utils/services/Registration.services";
+import { showToast } from "../utils/toast.util";
+import { Button, PhoneInput } from "../components/common";
+import { KeyRound } from "lucide-react";
 
 interface ForgotPasswordFormData {
   phoneNumber: string;
@@ -19,13 +19,16 @@ const ForgotPassword: React.FC = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<ForgotPasswordFormData>({
     resolver: yupResolver(forgotPasswordSchema),
     defaultValues: {
-      phoneNumber: '',
+      phoneNumber: "",
     },
+    mode: "onChange",
   });
+
+  const phoneNumber = useWatch({ control, name: "phoneNumber" });
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
@@ -35,17 +38,21 @@ const ForgotPassword: React.FC = () => {
       });
 
       if (response?.data) {
-        showToast('OTP sent to your phone number!', 'success');
-        navigate('/otp-verification', { 
-          state: { 
+        const otp = response.data.result.otp; // Extract OTP from response
+        showToast("OTP sent to your phone number!", "success");
+        navigate("/otp-verification", {
+          state: {
             phoneNumber: data.phoneNumber,
-            fromForgotPassword: true 
-          } 
+            fromForgotPassword: true,
+            otp, // Pass OTP to OTPVerification
+          },
         });
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Failed to send OTP. Please try again.';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Failed to send OTP. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +69,8 @@ const ForgotPassword: React.FC = () => {
             Reset Password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300 max-w-sm mx-auto">
-            Enter your phone number and we'll send you a verification code to reset your password
+            Enter your phone number and we'll send you a verification code to
+            reset your password
           </p>
         </div>
 
@@ -89,9 +97,9 @@ const ForgotPassword: React.FC = () => {
                 type="submit"
                 className="w-full py-3 text-base font-semibold shadow-lg hover:shadow-xl"
                 isLoading={isLoading}
-                disabled={isLoading}
+                disabled={isLoading || !isValid || !phoneNumber}
               >
-                {isLoading ? 'Sending OTP...' : 'Send Verification Code'}
+                {isLoading ? "Sending OTP..." : "Send Verification Code"}
               </Button>
             </div>
           </form>
