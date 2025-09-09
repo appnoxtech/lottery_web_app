@@ -14,29 +14,64 @@ interface Transaction {
 const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const userID = useSelector((state: any) => state.user.userData?.id); // Fetch user ID from Redux
+  const [info, setInfo] = useState<string | null>(null);
+  const userID = useSelector((state: any) => state.user.userData?.id);
 
   useEffect(() => {
     const fetchTransactions = async () => {
       if (!userID) {
         setError("User ID not found. Please log in.");
+        setTransactions([]);
         return;
       }
+
       try {
         const response = await getTransactions(userID);
-        console.log("API Response:", response); // Debug the response
+        console.log("API Response:", response);
+
         if (response?.status === 200 || response?.status === 202) {
-          // Handle nested result.data structure, set transactions even if success is false
-          setTransactions(response.data.result?.data || []);
-          setError(null);
+          if (response.data.success) {
+            const transactionsData = response.data.result || [];
+
+            const mappedTransactions = transactionsData.map((tx: any) => ({
+              id: tx.order_id,
+              mode: "Online",
+              date: new Date(tx.created_at).toLocaleString(),
+              amount: `₹${tx.amount}`,
+              status: tx.status,
+              isToday: tx.todays_transaction,
+            }));
+
+            const sortedTransactions = mappedTransactions.sort(
+              (a: Transaction, b: Transaction) => {
+                if (a.status === "pending" && b.status !== "pending") {
+                  return -1;
+                } else if (a.status !== "pending" && b.status === "pending") {
+                  return 1;
+                }
+                return 0;
+              }
+            );
+
+            setTransactions(sortedTransactions);
+            setError(null);
+            setInfo(null);
+          } else {
+            setTransactions([]);
+            setError(null);
+            setInfo(response.data.message || "No transactions found.");
+          }
         } else {
           setError("Failed to fetch transactions. Please try again later.");
+          setInfo(null);
         }
-      } catch (error: any) {
-        console.error("Error fetching transactions:", error);
+      } catch (err: any) {
+        console.error("Error fetching transactions:", err);
         setError("Failed to fetch transactions. Please try again later.");
+        setInfo(null);
       }
     };
+
     fetchTransactions();
   }, [userID]);
 
@@ -45,9 +80,17 @@ const Transactions: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6 text-[#EDB726]">
         Transaction History
       </h2>
+
+      {/* Show error message */}
       {error && <p className="text-center text-red-400 mb-4">{error}</p>}
+
+      {/* Show informational message */}
+      {!error && info && (
+        <p className="text-center text-gray-400 mb-4">{info}</p>
+      )}
+
       <div className="space-y-4">
-        {transactions.length === 0 && !error ? (
+        {transactions.length === 0 && !error && !info ? (
           <div className="flex flex-col items-center justify-center h-48">
             <p className="text-center text-gray-400 text-lg">
               No Transactions Found

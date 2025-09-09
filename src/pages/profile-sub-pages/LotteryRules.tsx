@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const LotteryRules: React.FC = () => {
+  const location = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0); // Scroll to top when this page is loaded
-  }, []);
+    window.scrollTo(0, 0); // Scroll to top on every route change
+  }, [location]);
   return (
     <div className="min-h-screen bg-[#1D1F27] text-white p-6 rounded-lg shadow-lg">
       <div className="max-w-4xl mx-auto">

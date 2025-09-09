@@ -28,6 +28,11 @@ const NewLottery: React.FC = () => {
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [showStripe, setShowStripe] = useState(false);
 
+  // ✅ Added state to store processed numbers
+  const [processedNumbers, setProcessedNumbers] = useState<{
+    [key: number]: string[];
+  }>({});
+
   useEffect(() => {
     const fetchLotteries = async () => {
       try {
@@ -62,6 +67,12 @@ const NewLottery: React.FC = () => {
 
     fetchLotteries();
   }, [dispatch]);
+
+  // ✅ Process numbers whenever inputNumbers or selectedDigits change
+  useEffect(() => {
+    const newProcessed = processNumbers(inputNumbers, selectedDigits);
+    setProcessedNumbers(newProcessed);
+  }, [inputNumbers, selectedDigits]);
 
   const handleDigitChange = (digit: number) => {
     setSelectedDigits((prev) =>
@@ -98,14 +109,24 @@ const NewLottery: React.FC = () => {
     return processedResults;
   };
 
+  // ✅ Added function to remove a number from the processed list
+  const handleRemoveNumber = (digit: number, index: number) => {
+    setProcessedNumbers((prev) => {
+      const updatedList = [...prev[digit]];
+      updatedList.splice(index, 1); // remove the item at the given index
+      return {
+        ...prev,
+        [digit]: updatedList,
+      };
+    });
+  };
+
   const handleCreateLottery = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate form fields
     if (!selectedLottery || !betAmount || selectedDigits.length === 0) {
       alert("Please fill all required fields");
       return;
     }
-    // Show payment method modal
     setShowPaymentModal(true);
   };
 
@@ -122,22 +143,14 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  const processedNumbers = processNumbers(inputNumbers, selectedDigits);
-
   return (
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
-        {/* Header */}
         <Header
           isMenuOpen={isMenuOpen}
           onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
         />
-
-        {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
@@ -148,15 +161,11 @@ const NewLottery: React.FC = () => {
                 Set up a new lottery draw with custom parameters
               </p>
             </div>
-
-            {/* Create New Lottery Form */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Form Section */}
               <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
                 <h2 className="text-xl font-semibold text-white mb-6">
                   Lottery Details
                 </h2>
-
                 <form className="space-y-6" onSubmit={handleCreateLottery}>
                   <div>
                     <label
@@ -174,7 +183,6 @@ const NewLottery: React.FC = () => {
                       placeholder="e.g., 12, 345, 1234, 56, 8"
                     />
                   </div>
-
                   <div>
                     <label
                       htmlFor="lotterySelect"
@@ -239,7 +247,6 @@ const NewLottery: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
                   <div>
                     <label
                       htmlFor="betAmount"
@@ -265,7 +272,6 @@ const NewLottery: React.FC = () => {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Select Digit Type(s)
@@ -287,16 +293,14 @@ const NewLottery: React.FC = () => {
                       ))}
                     </div>
                   </div>
-
                   <div className="flex space-x-4">
                     <button
                       type="submit"
-                      className="   flex-1 bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
+                      className="flex-1 bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <Plus className="w-5 h-5" />
                       <span>Create Lottery</span>
                     </button>
-
                     <button
                       type="button"
                       className="px-6 py-3 bg-[#374151] text-gray-300 font-semibold rounded-lg hover:bg-[#4B5563] transition-colors cursor-pointer"
@@ -306,13 +310,10 @@ const NewLottery: React.FC = () => {
                   </div>
                 </form>
               </div>
-
-              {/* Preview Section */}
               <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700">
                 <h2 className="text-xl font-semibold text-white mb-6">
                   Lottery Preview
                 </h2>
-
                 <div className="space-y-4">
                   <div className="bg-[#1D1F27] rounded-lg p-4 border border-gray-600">
                     <div className="flex items-center justify-between mb-3">
@@ -325,11 +326,9 @@ const NewLottery: React.FC = () => {
                         Active
                       </span>
                     </div>
-
                     <p className="text-gray-400 text-sm mb-4">
                       This is how your lottery will appear to users
                     </p>
-
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="flex items-center space-x-2">
                         <svg
@@ -349,7 +348,6 @@ const NewLottery: React.FC = () => {
                           ₹{betAmount || "0.00"} per bet
                         </span>
                       </div>
-
                       <div className="flex items-center space-x-2">
                         <svg
                           className="w-4 h-4 text-[#EDB726]"
@@ -372,25 +370,33 @@ const NewLottery: React.FC = () => {
                         </span>
                       </div>
                     </div>
-
-                    {Object.keys(processedNumbers).length > 0 && (
-                      <div className="bg-[#2A2D36] rounded-lg p-3 mt-4">
-                        <p className="text-sm font-semibold text-white mb-2">
-                          Processed Numbers:
-                        </p>
-                        {Object.entries(processedNumbers).map(
-                          ([digit, numbers]) => (
-                            <div key={digit} className="mb-2">
-                              <span className="text-sm text-gray-400">
-                                {digit} Digit Numbers:{" "}
-                              </span>
-                              <span className="text-[#EDB726] font-medium">
-                                {numbers.join(", ")}
-                              </span>
+                    {Object.entries(processedNumbers).map(
+                      ([digit, numbers]) =>
+                        numbers.length > 0 && (
+                          <div key={digit} className="mb-2">
+                            <span className="text-sm text-gray-400">
+                              {digit} Digit Numbers:{" "}
+                            </span>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {numbers.map((number, index) => (
+                                <span
+                                  key={`${number}-${index}`} // Use index in key for uniqueness
+                                  className="flex items-center bg-[#EDB726] text-[#1D1F27] px-2 py-1 rounded-full text-xs"
+                                >
+                                  {number}
+                                  <button
+                                    onClick={() =>
+                                      handleRemoveNumber(parseInt(digit), index)
+                                    }
+                                    className="ml-1 text-red-600 hover:text-red-800"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
                             </div>
-                          )
-                        )}
-                      </div>
+                          </div>
+                        )
                     )}
                   </div>
                 </div>
@@ -400,7 +406,6 @@ const NewLottery: React.FC = () => {
         </main>
       </div>
 
-      {/* Payment Method Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
@@ -490,7 +495,6 @@ const NewLottery: React.FC = () => {
                 </svg>
               </button>
             </div>
-
             <p className="text-gray-400 text-sm mt-4 text-center">
               Select your preferred payment method to complete the lottery
               creation
@@ -501,7 +505,7 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={betAmount || 0}
-          lotteryId={selectedLottery} // Pass selectedLottery as lotteryId
+          lotteryId={selectedLottery}
           onClose={() => setShowStripe(false)}
         />
       )}
