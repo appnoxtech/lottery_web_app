@@ -42,14 +42,16 @@ const Transactions: React.FC = () => {
               isToday: tx.todays_transaction,
             }));
 
-            const sortedTransactions = mappedTransactions.sort((a, b) => {
-              if (a.status === "pending" && b.status !== "pending") {
-                return -1;
-              } else if (a.status !== "pending" && b.status === "pending") {
-                return 1;
+            const sortedTransactions = mappedTransactions.sort(
+              (a: Transaction, b: Transaction) => {
+                if (a.status === "pending" && b.status !== "pending") {
+                  return -1;
+                } else if (a.status !== "pending" && b.status === "pending") {
+                  return 1;
+                }
+                return 0;
               }
-              return 0;
-            });
+            );
 
             setTransactions(sortedTransactions);
             setError(null);

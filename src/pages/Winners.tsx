@@ -2,19 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import {
-  Trophy,
-  Calendar,
-  DollarSign,
-  Phone,
-  Award,
-  Eye,
-  Download,
-} from "lucide-react";
-import {
-  getWinnerHistory,
-  getTodayWinningNumber,
-} from "../utils/services/Winners.services";
+import { Trophy, Calendar, DollarSign, Phone } from "lucide-react";
+import { getWinnerHistory } from "../utils/services/Winners.services";
 import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
 import { showToast } from "../utils/toast.util";
 import { formatDate } from "../hooks/dateFormatter";
@@ -72,9 +61,7 @@ const Winners: React.FC = () => {
     setError(null);
     setInfo(null);
     try {
-      let response;
-      // Fetch all winners since filtering will be done client-side
-      response = await getWinnerHistory(
+      let response = await getWinnerHistory(
         selectedLottery?.id || "",
         selectedLotteryType.digitType
       );
@@ -83,7 +70,6 @@ const Winners: React.FC = () => {
         response?.data?.result?.winners &&
         response.data.result.winners.length > 0
       ) {
-        // Filter by selected period
         let winners = response.data.result.winners;
 
         if (selectedPeriod !== "all") {
@@ -118,7 +104,28 @@ const Winners: React.FC = () => {
           }
         });
 
-        const formattedWinners = Object.values(grouped);
+        const formattedWinners = Object.values(grouped).map((item) => ({
+          id: `${item.date}-${item.lotteryId}`, // Unique ID required by the slice
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount:
+            (item.firstPrize ? parseInt(item.firstPrize) : 0) +
+            (item.secondPrize ? parseInt(item.secondPrize) : 0) +
+            (item.thirdPrize ? parseInt(item.thirdPrize) : 0),
+          drawDate: item.date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: item.lotteryId,
+          date: item.date, // You might not need this depending on usage
+          firstPrize: item.firstPrize,
+          secondPrize: item.secondPrize,
+          thirdPrize: item.thirdPrize,
+        }));
+
         dispatch(addToWinnerList(formattedWinners));
         setError(null);
         setInfo(null);
