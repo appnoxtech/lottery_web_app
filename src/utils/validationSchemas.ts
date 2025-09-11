@@ -32,6 +32,7 @@ export const signupSchema = yup.object({
     .string()
     .required('Password is required')
     .min(8, 'Password must be at least 8 characters')
+    .max(20, 'Password must not exceed 20 characters')
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
       'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
@@ -68,6 +69,7 @@ export const resetPasswordSchema = yup.object().shape({
     .string()
     .required("Password is required")
     .min(8, "Password must be at least 8 characters")
+     .max(20, "Password must not exceed 20 characters")
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
       "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
@@ -86,7 +88,12 @@ export const changePasswordSchema = yup.object().shape({
   password: yup
     .string()
     .required("New password is required")
-    .min(8, "Password must be at least 8 characters"),
+    .min(8, "Password must be at least 8 characters")
+    .max(20, "Password must not exceed 20 characters")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
+      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+    ),
   confirmPassword: yup
     .string()
     .oneOf([yup.ref("password")], "Passwords must match")

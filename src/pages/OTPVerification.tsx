@@ -5,7 +5,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { otpSchema } from "../utils/validationSchemas";
 import {
   userOTPVerfication,
-  userSendOTP,
 } from "../utils/services/Registration.services";
 import { showToast } from "../utils/toast.util";
 import { Button } from "../components/common";
@@ -17,9 +16,6 @@ interface OTPFormData {
 
 const OTPVerification: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [countdown, setCountdown] = useState(60);
-  const [canResend, setCanResend] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [generatedOtp, setGeneratedOtp] = useState<number | null>(null); // New state for generated OTP
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -53,19 +49,6 @@ const OTPVerification: React.FC = () => {
       setGeneratedOtp(initialOtp);
     }
 
-    // Start countdown
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
   }, [phoneNumber, navigate, initialOtp]);
 
   // Update form value when OTP changes
@@ -134,44 +117,6 @@ const OTPVerification: React.FC = () => {
       showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleResendOTP = async () => {
-    setIsResending(true);
-    try {
-      console.log("Resending OTP for phone number:", `+${phoneNumber}`);
-      const response = await userSendOTP({ phone_number: `+${phoneNumber}` });
-      if (response?.data) {
-        const newOtp = response.data.result.otp;
-        setGeneratedOtp(newOtp); // Store the new OTP
-        showToast("OTP sent successfully!", "success");
-        setCountdown(60);
-        setCanResend(false);
-    
-
-        // Restart countdown
-        const timer = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              setCanResend(true);
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      }
-    } catch (error: any) {
-      console.error("Resend OTP Error:", error.response?.data || error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        (error?.response?.data?.errors?.phone_number
-          ? error.response.data.errors.phone_number[0]
-          : "Failed to resend OTP. Please try again.");
-      showToast(errorMessage, "error");
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -250,23 +195,6 @@ const OTPVerification: React.FC = () => {
           </form>
 
           <div className="mt-6 text-center space-y-4">
-            <p className="text-sm text-gray-400">
-              Didn't receive the code?{" "}
-              {canResend ? (
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  disabled={isResending}
-                  className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50 cursor-pointer"
-                >
-                  {isResending ? "Resending..." : "Resend OTP"}
-                </button>
-              ) : (
-                <span className="font-medium text-[#EDB726]">
-                  Resend in {countdown}s
-                </span>
-              )}
-            </p>
 
             <div className="pt-2 border-t border-gray-200">
               <button

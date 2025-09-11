@@ -282,11 +282,10 @@ const NewLottery: React.FC = () => {
                           key={digit}
                           type="button"
                           onClick={() => handleDigitChange(digit)}
-                          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                            selectedDigits.includes(digit)
+                          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${selectedDigits.includes(digit)
                               ? "bg-[#EDB726] text-[#1D1F27]"
                               : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
-                          } text-xs md:text-sm`}
+                            } text-xs md:text-sm`}
                         >
                           {digit} Digit
                         </button>
@@ -304,8 +303,15 @@ const NewLottery: React.FC = () => {
                     <button
                       type="button"
                       className="px-6 py-3 bg-[#374151] text-gray-300 font-semibold rounded-lg hover:bg-[#4B5563] transition-colors cursor-pointer"
+                      onClick={() => {
+                        setInputNumbers("");
+                        setSelectedLottery("");
+                        setBetAmount("");
+                        setSelectedDigits([]);
+                        setProcessedNumbers({});
+                      }}
                     >
-                      Cancel
+                      Clear
                     </button>
                   </div>
                 </form>
@@ -388,7 +394,7 @@ const NewLottery: React.FC = () => {
                                     onClick={() =>
                                       handleRemoveNumber(parseInt(digit), index)
                                     }
-                                    className="ml-1 text-red-600 hover:text-red-800"
+                                    className="ml-1 text-red-600 hover:text-red-800 cursor-pointer"
                                   >
                                     ×
                                   </button>
@@ -415,7 +421,7 @@ const NewLottery: React.FC = () => {
               </h3>
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white cursor-pointer"
               >
                 <X className="w-6 h-6" />
               </button>

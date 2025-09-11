@@ -137,6 +137,7 @@ const Signup: React.FC = () => {
                     placeholder="Create a strong password"
                     error={errors.password?.message}
                     icon={<Lock className="h-5 w-5" />}
+                    maxLength={20} 
                   />
                 )}
               />
@@ -154,6 +155,7 @@ const Signup: React.FC = () => {
                     placeholder="Confirm your password"
                     error={errors.confirmPassword?.message}
                     icon={<CheckCircle className="h-5 w-5" />}
+                    maxLength={20} 
                   />
                 )}
               />
