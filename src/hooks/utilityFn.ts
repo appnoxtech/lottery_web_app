@@ -1,12 +1,14 @@
-const checkAlreadySelected = (items: any[], key: string, value: string) => {
-  console.log("line 2", items);
-  if(items==null || items?.length === 0){
+const checkAlreadySelected = (
+  items: Record<string, string>[],
+  key: string,
+  value: string
+) => {
+  if (items == null || items?.length === 0) {
     return false;
   }
 
-  return items?.some((item: any) => item[key] === value);
+  return items?.some((item) => item[key] === value);
 };
-
 
 const euroConversion = (amount: number) => {
   const euro = amount * 0.6;

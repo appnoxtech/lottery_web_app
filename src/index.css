@@ -1,1 +1,80 @@
 @import "tailwindcss";
+
+@theme {
+  --font-family-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  /* Custom Color Palette */
+  --color-primary: #EDB726;
+  --color-primary-dark: #d4a422;
+  --color-background: #1D1F27;
+  --color-surface: #2A2D36;
+  --color-surface-light: #3A3D46;
+  --color-text: #FFFFFF;
+  --color-text-muted: #9CA3AF;
+  --color-border: #374151;
+}
+
+/* Inter font optimizations */
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-variation-settings: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background-color: #1D1F27;
+  color: #FFFFFF;
+}
+/* react-phone-number-input custom styles */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+  background: #1D1F27;
+  border: 1px solid #4B5563; /* gray-600 */
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  color: white;
+  width: 100%;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  padding-left: 0.5rem;
+}
+
+.PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.PhoneInputCountrySelect {
+  background: #2A2D36;
+  color: white;
+  border: 1px solid #4B5563;
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+
+.PhoneInputCountrySelect option {
+  background: #1D1F27;
+  color: white;
+}
+.PhoneInputCountrySelect option {
+  position: absolute;
+  top: 100% !important;   /* Force below */
+  bottom: auto !important;
+}
+.PhoneInputCountrySelect {
+  position: relative;
+  z-index: 9999; /* ensures it stays on top */
+}
+
+.modal-content {
+  padding-bottom: 200px; /* extra space at bottom so dropdown prefers downward */
+  overflow-y: auto;
+}

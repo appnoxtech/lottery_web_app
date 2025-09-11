@@ -88,7 +88,6 @@ const userUpdateProfile = async (
 ): Promise<AxiosResponse | void> => {
   try {
     const response = await post("update-profile", payload, {
-      "Content-Type": "multipart/form-data",
       Accept: "application/json",
     });
     return response;
@@ -97,6 +96,7 @@ const userUpdateProfile = async (
     throw error;
   }
 };
+
 
 const userSignOut = async (): Promise<AxiosResponse | void> => {
   try {

@@ -46,6 +46,6 @@ export const initializeToast = (
   ) => void
 ) => {
   // Override the default showToast function
-const originalShowToast = showToast;
+// const originalShowToast = showToast;
   (globalThis as any).showToast = showToastFunc;
 };

@@ -14,7 +14,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   cart: cartReducer,
   winner: winnerReducer,
-  initalData: initialDataReducer,
+  initialData: initialDataReducer,
   location: locationReducer,
 });
 

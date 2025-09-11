@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import storage from "redux-persist/lib/storage";
-import { persistor } from "..";
 import { persistReducer } from "redux-persist";
 
 interface UserState {
@@ -37,7 +36,7 @@ const userSlice = createSlice({
       state.userData = null;
       state.authStatus = false;
       state.tokenID = null;
-      persistor.purge();
+      // persistor.purge();
     },
     updateUser: (
       state,
