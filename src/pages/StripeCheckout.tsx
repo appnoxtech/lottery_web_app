@@ -90,7 +90,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
       <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-semibold text-white">Pay with Stripe</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-white cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -108,7 +108,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           <button
             type="submit"
             disabled={!stripe || loading}
-            className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors"
+            className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
             {loading ? "Processing..." : `Pay ₹${amount}`}
           </button>
