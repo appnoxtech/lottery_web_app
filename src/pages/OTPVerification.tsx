@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { otpSchema } from "../utils/validationSchemas";
 import {
   userOTPVerfication,
+  userSendOTP,
 } from "../utils/services/Registration.services";
 import { showToast } from "../utils/toast.util";
 import { Button } from "../components/common";
@@ -22,6 +23,8 @@ const OTPVerification: React.FC = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const [isResending, setIsResending] = useState(false);
+  const [canResend, setCanResend] = useState(false);
 
   const phoneNumber = location.state?.phoneNumber || "";
   const fromSignup = location.state?.fromSignup || false;
@@ -120,6 +123,34 @@ const OTPVerification: React.FC = () => {
     }
   };
 
+  const handleResendOTP = async () => {
+    setIsResending(true);
+    try {
+      console.log("Resending OTP for phone number:", `+${phoneNumber}`);
+      const response = await userSendOTP({ phone_number: `+${phoneNumber}` });
+      if (response?.data) {
+        const newOtp = response.data.result.otp;
+        setGeneratedOtp(newOtp); // Store the new OTP
+        showToast("OTP sent successfully!", "success");
+        setCanResend(false);
+
+
+        // Restart countdown
+
+      }
+    } catch (error: any) {
+      console.error("Resend OTP Error:", error.response?.data || error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        (error?.response?.data?.errors?.phone_number
+          ? error.response.data.errors.phone_number[0]
+          : "Failed to resend OTP. Please try again.");
+      showToast(errorMessage, "error");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -195,6 +226,18 @@ const OTPVerification: React.FC = () => {
           </form>
 
           <div className="mt-6 text-center space-y-4">
+            <p className="text-sm text-gray-400">
+              Didn't receive the code?{" "}
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                className="font-semibold text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline disabled:opacity-50 cursor-pointer"
+                disabled={isResending}
+              >
+                {isResending ? "Resending..." : "Resend OTP"}
+              </button>
+
+            </p>
 
             <div className="pt-2 border-t border-gray-200">
               <button

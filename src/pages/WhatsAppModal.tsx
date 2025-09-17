@@ -43,7 +43,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           <h3 className="text-xl font-semibold text-white">
             Pay with WhatsApp
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-white cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -68,7 +68,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-green-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors"
+            className="w-full bg-green-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors cursor-pointer"
           >
             Continue to WhatsApp
           </button>
