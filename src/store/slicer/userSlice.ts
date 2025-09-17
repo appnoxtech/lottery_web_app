@@ -30,7 +30,7 @@ const userSlice = createSlice({
       state.authStatus = !!action.payload.token;
       state.tokenID = action.payload.token;
       storage.setItem("userData", JSON.stringify(action.payload.userData));
-      storage.setItem("authToken", action.payload.token);
+      storage.setItem("userToken", action.payload.token);
     },
     clearUser: (state) => {
       state.userData = null;
@@ -47,7 +47,7 @@ const userSlice = createSlice({
     updateToken: (state, action: PayloadAction<string>) => {
       state.tokenID = action.payload;
       state.authStatus = !!action.payload;
-      storage.setItem("authToken", action.payload);
+      storage.setItem("userToken", action.payload);
     },
     rehydrateUser: (
       state,
