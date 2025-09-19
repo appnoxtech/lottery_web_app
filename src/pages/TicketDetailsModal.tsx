@@ -55,9 +55,9 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
   const [items, setItems] = useState<Array<any>>([]);
 
   const parsed = useMemo(() => parseCreatedAt(ticket?.created_at), [ticket?.created_at]);
-  const totalBetAmount = useMemo(() => {
-    return items.reduce((sum, item) => sum + (parseFloat(item.bet_amount) || 0), 0);
-  }, [items]);
+  // const totalBetAmount = useMemo(() => {
+  //   return items.reduce((sum, item) => sum + (parseFloat(item.bet_amount) || 0), 0);
+  // }, [items]);
 
   useEffect(() => {
     const load = async () => {

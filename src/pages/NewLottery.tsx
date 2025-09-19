@@ -15,22 +15,37 @@ import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
 
+// Define interfaces
 interface FormValues {
   lotteryNumber: string;
-  selectedLotteries: any[];
+  selectedLotteries: Lottery[];
   betAmount: string;
   selectedDigitType: number[];
   selectedNumbers: number[];
 }
 
-type Order = {
+interface Order {
   order_id: number;
   payment_intent_id: string;
   client_secret: string;
   total_price: string;
   ticket_numbers: number[];
   selected_lotteries: string[];
-};
+}
+
+interface OrderDetailItem {
+  lottery_number: string | number;
+  bet_amount: string;
+  abbreviation: string;
+}
+
+interface OrderDetailsResponse {
+  data: {
+    result: {
+      details: OrderDetailItem[];
+    };
+  };
+}
 
 const paymentLink = `https://buy.stripe.com/fZeeUU05C8XueWIeUU`;
 const paymentLink2 = `https://buy.stripe.com/fZe4gg8C8gpWdSEbIJ`;
@@ -45,7 +60,7 @@ const NewLottery: React.FC = () => {
 
   const [inputNumbers, setInputNumbers] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedLotteries, setSelectedLotteries] = useState<any[]>([]);
+  const [selectedLotteries, setSelectedLotteries] = useState<Lottery[]>([]);
   const [betAmount, setBetAmount] = useState<string>("");
   const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
   const [loadingLotteries, setLoadingLotteries] = useState<boolean>(true);
@@ -97,11 +112,11 @@ const NewLottery: React.FC = () => {
       const prefillForm = async () => {
         setLoading(true);
         try {
-          const resp = await getOrderDetails(parseInt(orderId, 10));
-          const items = (resp as any)?.data?.result?.details || [];
+          const resp = await getOrderDetails(parseInt(orderId, 10)) as OrderDetailsResponse;
+          const items: OrderDetailItem[] = resp?.data?.result?.details || [];
           if (items.length > 0) {
             const uniqueNumbers = items
-              .map((item: any) => item.lottery_number.toString())
+              .map((item) => item.lottery_number.toString())
               .filter((num: string, index: number, self: string[]) => {
                 const numLength = num.length;
                 return !self.some((otherNum, otherIdx) => 
@@ -111,12 +126,15 @@ const NewLottery: React.FC = () => {
               .join(", ");
             setInputNumbers(uniqueNumbers);
             setBetAmount(items[0]?.bet_amount || "");
-            const digits = [...new Set(items.map((item: any) => String(item.lottery_number).length))];
+            const digits = [...new Set(items.map((item) => {
+              const num = String(item.lottery_number || "").length;
+              return num > 0 && num <= 4 ? num : 0; // Ensure valid digit lengths
+            }))].filter((d) => d > 0); // Filter out invalid lengths
             setSelectedDigits(digits);
-            const uniqueAbvs = [...new Set(items.map((item: any) => item.abbreviation))];
+            const uniqueAbvs = [...new Set(items.map((item) => item.abbreviation))];
             const selected = uniqueAbvs
               .map((abv: string) => lotteries.find((l: Lottery) => l.abbreviation === abv))
-              .filter(Boolean);
+              .filter((l): l is Lottery => l !== null); // Type guard to filter out undefined
             setSelectedLotteries(selected);
           }
         } catch (error) {
@@ -253,12 +271,12 @@ const NewLottery: React.FC = () => {
         userorder: [
           {
             bet_amount: formData.betAmount,
-            lottery_id: formData.selectedLotteries?.map((item: any) => item.id),
+            lottery_id: formData.selectedLotteries.map((item) => item.id),
             lottery_number: formData.selectedNumbers,
           },
         ],
         total_price: dollarConversion(
-          formData.selectedNumbers?.length * +formData.betAmount
+          formData.selectedNumbers.length * +formData.betAmount
         ),
         user_id: userData?.id,
       };
@@ -269,8 +287,8 @@ const NewLottery: React.FC = () => {
           ...data,
           total_price: orderParams.total_price as string,
           ticket_numbers: orderParams.userorder[0].lottery_number as number[],
-          selected_lotteries: formData?.selectedLotteries?.map(
-            (item: any) => item.abbreviation
+          selected_lotteries: formData.selectedLotteries.map(
+            (item) => item.abbreviation
           ),
         });
         setShowPaymentModal(true);
@@ -706,7 +724,7 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={parseFloat(newOrderInfo?.total_price || "0")}
-          lotteryId={selectedLotteries.map((l: any) => l.id).join(",")}
+          lotteryId={selectedLotteries.map((l) => l.id).join(",")}
           onClose={() => {
             setShowStripe(false);
             handleStripePayment();
@@ -716,7 +734,7 @@ const NewLottery: React.FC = () => {
       {showWhatsappModal && (
         <WhatsAppModal
           betAmount={parseFloat(betAmount || "0")}
-          lottery={selectedLotteries.map((l: any) => l.abbreviation).join(", ")}
+          lottery={selectedLotteries.map((l) => l.abbreviation).join(", ")}
           onClose={() => {
             setShowWhatsappModal(false);
             handleWhatsappPayment();
