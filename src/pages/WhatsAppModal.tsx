@@ -26,7 +26,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       return;
     }
 
-    const message = `Hello, I want to pay ₹${betAmount} for lottery ${lottery}.`;
+    const message = `Hello, I want to pay ${betAmount} for lottery ${lottery}.`;
     const url = `https://wa.me/${phone.replace(
       "+",
       ""

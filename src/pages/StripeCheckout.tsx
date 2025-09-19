@@ -110,7 +110,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay ₹${amount}`}
+            {loading ? "Processing..." : `Pay ${amount}`}
           </button>
         </form>
       </div>

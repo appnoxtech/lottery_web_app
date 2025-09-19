@@ -78,3 +78,69 @@ body {
   padding-bottom: 200px; /* extra space at bottom so dropdown prefers downward */
   overflow-y: auto;
 }
+
+.terms-content ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+}
+
+.terms-content li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.terms-content h2 {
+  color: #EDB726;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.terms-content p {
+  margin-bottom: 15px;
+  text-align: justify;
+}
+.lottery-rules-content ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+}
+
+.lottery-rules-content li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.lottery-rules-content h2 {
+  color: #EDB726;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.lottery-rules-content p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  text-align: justify;
+}
+.privacy-policy-content ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+}
+
+.privacy-policy-content li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.privacy-policy-content h2 {
+  color: #EDB726;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.privacy-policy-content p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  text-align: justify;
+}

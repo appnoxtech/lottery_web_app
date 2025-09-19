@@ -321,7 +321,7 @@ const Winners: React.FC = () => {
                     <h3 className="text-sm text-gray-400">Total Prizes</h3>
                   </div>
                   <p className="text-lg font-bold">
-                    ₹
+                    
                     {winnersList.reduce((sum: number, winner: Winner) => {
                       return (
                         sum +

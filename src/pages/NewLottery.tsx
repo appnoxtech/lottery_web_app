@@ -12,8 +12,9 @@ import { orderComplete, placeOrder } from "../utils/services/Order.services";
 import { dollarConversion, euroConversion } from "../hooks/utilityFn";
 import { formatDate } from "../hooks/dateFormatter";
 import { showToast } from "../utils/toast.util";
+import { getOrderDetails } from "../utils/services/Order.services";
+import { useSearchParams } from "react-router-dom";
 
-// Interface definitions
 interface FormValues {
   lotteryNumber: string;
   selectedLotteries: any[];
@@ -40,34 +41,22 @@ const NewLottery: React.FC = () => {
   const lotteries = useSelector(
     (state: any) => state.initialData.initData
   ) as Lottery[];
-
   const userData = useSelector((state: any) => state.user.userData) || [];
 
-  // Form state
   const [inputNumbers, setInputNumbers] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedLotteries, setSelectedLotteries] = useState<any[]>([]);
   const [betAmount, setBetAmount] = useState<string>("");
   const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
   const [loadingLotteries, setLoadingLotteries] = useState<boolean>(true);
-  const [errorFetchingLotteries, setErrorFetchingLotteries] = useState<
-    string | null
-  >(null);
-  
-  // Payment modal states
+  const [errorFetchingLotteries, setErrorFetchingLotteries] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [showStripe, setShowStripe] = useState(false);
-  
-  // Loading and order states
   const [loading, setLoading] = useState(false);
   const [newOrderInfo, setNewOrderInfo] = useState<Order | null>(null);
-  
-
-  // Processed numbers state
-  const [processedNumbers, setProcessedNumbers] = useState<{
-    [key: number]: string[];
-  }>({});
+  const [processedNumbers, setProcessedNumbers] = useState<{ [key: number]: string[] }>({});
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchLotteries = async () => {
@@ -92,23 +81,64 @@ const NewLottery: React.FC = () => {
           error.response.data !== null &&
           "message" in error.response.data
         ) {
-          apiErrorMessage = (error.response.data as { message: string })
-            .message;
+          apiErrorMessage = (error.response.data as { message: string }).message;
         }
         handleApiError(error, apiErrorMessage);
       } finally {
         setLoadingLotteries(false);
       }
     };
-
     fetchLotteries();
   }, [dispatch]);
 
-  // Process numbers whenever inputNumbers or selectedDigits change
+  useEffect(() => {
+    const orderId = searchParams.get("orderId");
+    if (orderId) {
+      const prefillForm = async () => {
+        setLoading(true);
+        try {
+          const resp = await getOrderDetails(parseInt(orderId, 10));
+          const items = (resp as any)?.data?.result?.details || [];
+          if (items.length > 0) {
+            const uniqueNumbers = items
+              .map((item: any) => item.lottery_number.toString())
+              .filter((num: string, index: number, self: string[]) => {
+                const numLength = num.length;
+                return !self.some((otherNum, otherIdx) => 
+                  otherIdx < index && otherNum.length > numLength && otherNum.endsWith(num)
+                );
+              })
+              .join(", ");
+            setInputNumbers(uniqueNumbers);
+            setBetAmount(items[0]?.bet_amount || "");
+            const digits = [...new Set(items.map((item: any) => String(item.lottery_number).length))];
+            setSelectedDigits(digits);
+            const uniqueAbvs = [...new Set(items.map((item: any) => item.abbreviation))];
+            const selected = uniqueAbvs
+              .map((abv: string) => lotteries.find((l: Lottery) => l.abbreviation === abv))
+              .filter(Boolean);
+            setSelectedLotteries(selected);
+          }
+        } catch (error) {
+          handleApiError(error, "Failed to pre-fill lottery details.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      prefillForm();
+    }
+  }, [searchParams, lotteries]);
+
   useEffect(() => {
     const newProcessed = processNumbers(inputNumbers, selectedDigits);
     setProcessedNumbers(newProcessed);
   }, [inputNumbers, selectedDigits]);
+
+  useEffect(() => {
+    if (newOrderInfo) {
+      setNewOrderInfo(null);
+    }
+  }, [inputNumbers, betAmount, selectedDigits, selectedLotteries]);
 
   const handleDigitChange = (digit: number) => {
     setSelectedDigits((prev) =>
@@ -116,7 +146,6 @@ const NewLottery: React.FC = () => {
     );
   };
 
-  // Enhanced lottery selection handler
   const handleLotterySelect = (lotteryId: string) => {
     const lottery = lotteries.find((l) => l.id.toString() === lotteryId);
     if (lottery) {
@@ -132,34 +161,36 @@ const NewLottery: React.FC = () => {
 
   const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
     const processedResults: { [key: number]: string[] } = {};
-
     if (!numbersString || digitsToProcess.length === 0) {
       return processedResults;
     }
-
     const numbers = numbersString
       .split(",")
       .map((n) => n.trim())
-      .filter((n) => /^\d+$/.test(n)); // Only digits
-
+      .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+    const sortedNumbers = numbers.sort((a, b) => b.length - a.length);
     digitsToProcess.forEach((digit) => {
       const resultForDigit: string[] = [];
-      numbers.forEach((num) => {
-        if (num.length === digit) {
-          resultForDigit.push(num);
-        } else if (num.length > digit) {
-          resultForDigit.push(num.slice(-digit));
+      sortedNumbers.forEach((num) => {
+        const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
+        if (cleanNum.length === digit) {
+          if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
+            resultForDigit.push(cleanNum);
+          }
+        } else if (cleanNum.length > digit) {
+          const truncated = cleanNum.slice(-digit);
+          if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
+            resultForDigit.push(truncated);
+          }
         }
       });
       if (resultForDigit.length > 0) {
         processedResults[digit] = resultForDigit;
       }
     });
-
     return processedResults;
   };
 
-  // Get all processed numbers as array for order creation
   const getAllProcessedNumbers = (): number[] => {
     const allNumbers: number[] = [];
     Object.values(processedNumbers).forEach((numberArray) => {
@@ -170,13 +201,12 @@ const NewLottery: React.FC = () => {
     return allNumbers;
   };
 
-  // Validation logic
   const isOrderValid = (data: FormValues) => {
     if (data.selectedLotteries.length === 0) {
       showToast("Please select at least one lottery", "error");
       return false;
     } else if (data.selectedNumbers.length === 0) {
-      showToast("Please select at least one number", "error");
+      showToast("Please select valid number", "error");
       return false;
     } else if (data.selectedDigitType.length === 0) {
       showToast("Please select at least one digit type", "error");
@@ -188,11 +218,10 @@ const NewLottery: React.FC = () => {
     return true;
   };
 
-  // ✅ Added function to remove a number from the processed list
   const handleRemoveNumber = (digit: number, index: number) => {
     setProcessedNumbers((prev) => {
       const updatedList = [...prev[digit]];
-      updatedList.splice(index, 1); // remove the item at the given index
+      updatedList.splice(index, 1);
       return {
         ...prev,
         [digit]: updatedList,
@@ -200,7 +229,6 @@ const NewLottery: React.FC = () => {
     });
   };
 
-  // Enhanced submit handler with order creation logic
   const handleCreateLottery = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -208,9 +236,7 @@ const NewLottery: React.FC = () => {
         setShowPaymentModal(true);
         return;
       }
-
       setLoading(true);
-
       const formData: FormValues = {
         lotteryNumber: inputNumbers,
         selectedLotteries: selectedLotteries,
@@ -218,13 +244,11 @@ const NewLottery: React.FC = () => {
         selectedDigitType: selectedDigits,
         selectedNumbers: getAllProcessedNumbers(),
       };
-
       const isValid = isOrderValid(formData);
       if (!isValid) {
         setLoading(false);
         return;
       }
-
       const orderParams = {
         userorder: [
           {
@@ -238,7 +262,6 @@ const NewLottery: React.FC = () => {
         ),
         user_id: userData?.id,
       };
-
       const response = await placeOrder(orderParams);
       if ((response as any)?.data?.success) {
         const { data } = (response as any)?.data;
@@ -259,7 +282,6 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  // Stripe payment handler (placeholder to mark order complete in backend if needed)
   const handleStripePayment = async () => {
     try {
       if (newOrderInfo?.order_id) {
@@ -273,18 +295,17 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  // WhatsApp payment handler (opens WhatsApp with prefilled message)
   const handleWhatsappPayment = () => {
     const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
     const message = `
       Esaki ta e numbernan ku bo a pidi:
       ----------------------------------------
-      🎟️ Numbernan:  ${newOrderInfo?.ticket_numbers}
+      🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
       💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
       📅 Fecha: ${formatDate(new Date().toISOString())}
-      💵 Total:  XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+      💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
         Number(grandTotal)
-      )} / € ${euroConversion(Number(grandTotal))} 
+      )} / € ${euroConversion(Number(grandTotal))}
       💳 Modo di Pago: Whatsapp
       
       Por fabor usa link pa paga sea na €, $ of XCG :
@@ -295,8 +316,6 @@ const NewLottery: React.FC = () => {
       Kòrda paga pa bo ta den wega i kontrolá bo bòn.
       Suerte,
       Wega Di Number`;
-
-    // Open WhatsApp in new tab with just the text; user will choose contact
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     try {
       window.open(url, "_blank");
@@ -307,7 +326,6 @@ const NewLottery: React.FC = () => {
     setShowPaymentModal(false);
   };
 
-  // Reset form function
   const resetForm = () => {
     setInputNumbers("");
     setSelectedLotteries([]);
@@ -428,11 +446,16 @@ const NewLottery: React.FC = () => {
                     </label>
                     <input
                       id="betAmount"
-                      type="number"
+                      type="text"
                       value={betAmount}
-                      onChange={(e) => setBetAmount(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^-?\d*\.?\d*$/.test(value) && value !== "-") {
+                          setBetAmount(value);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
-                      placeholder="0.00"
+                      placeholder="e.g., 10.50"
                       required
                     />
                   </div>
@@ -530,10 +553,7 @@ const NewLottery: React.FC = () => {
                           />
                         </svg>
                         <span className="text-sm text-gray-300">
-                          Digits:{" "}
-                          {selectedDigits.length > 0
-                            ? selectedDigits.sort().join(", ")
-                            : "N/A"}
+                          Digits: {selectedDigits.length > 0 ? selectedDigits.sort().join(", ") : "N/A"}
                         </span>
                       </div>
                     </div>
@@ -542,7 +562,7 @@ const NewLottery: React.FC = () => {
                         numbers.length > 0 && (
                           <div key={digit} className="mb-2">
                             <span className="text-sm text-gray-400">
-                              {digit} Digit Numbers:{" "}
+                              {digit} Digit Numbers: 
                             </span>
                             <div className="flex flex-wrap gap-2 mt-1">
                               {numbers.map((number, index) => (
@@ -552,9 +572,7 @@ const NewLottery: React.FC = () => {
                                 >
                                   {number}
                                   <button
-                                    onClick={() =>
-                                      handleRemoveNumber(parseInt(digit), index)
-                                    }
+                                    onClick={() => handleRemoveNumber(parseInt(digit), index)}
                                     className="ml-1 text-red-600 hover:text-red-800 cursor-pointer"
                                   >
                                     ×
@@ -565,7 +583,6 @@ const NewLottery: React.FC = () => {
                           </div>
                         )
                     )}
-
                     {newOrderInfo && (
                       <div className="mt-4 p-3 bg-[#2A2D36] rounded border border-[#EDB726]">
                         <h4 className="text-sm font-semibold text-[#EDB726] mb-2">Order Created</h4>
@@ -583,7 +600,6 @@ const NewLottery: React.FC = () => {
           </div>
         </main>
       </div>
-
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
@@ -598,7 +614,6 @@ const NewLottery: React.FC = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-
             {newOrderInfo && (
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
@@ -609,7 +624,6 @@ const NewLottery: React.FC = () => {
                 </div>
               </div>
             )}
-
             <div className="space-y-4">
               <button
                 onClick={() => handlePaymentMethodSelect("stripe")}
@@ -650,7 +664,6 @@ const NewLottery: React.FC = () => {
                   />
                 </svg>
               </button>
-
               <button
                 onClick={() => handlePaymentMethodSelect("whatsapp")}
                 className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-[#EDB726] transition-colors cursor-pointer"
@@ -685,8 +698,7 @@ const NewLottery: React.FC = () => {
               </button>
             </div>
             <p className="text-gray-400 text-sm mt-4 text-center">
-              Select your preferred payment method to complete the lottery
-              creation
+              Select your preferred payment method to complete the lottery creation
             </p>
           </div>
         </div>
@@ -697,7 +709,6 @@ const NewLottery: React.FC = () => {
           lotteryId={selectedLotteries.map((l: any) => l.id).join(",")}
           onClose={() => {
             setShowStripe(false);
-            // Optionally mark order complete
             handleStripePayment();
           }}
         />

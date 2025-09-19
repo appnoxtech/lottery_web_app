@@ -37,7 +37,7 @@ const Transactions: React.FC = () => {
               id: tx.order_id,
               mode: "Online",
               date: new Date(tx.created_at).toLocaleString(),
-              amount: `₹${tx.amount}`,
+              amount: `${tx.amount}`,
               status: tx.status,
               isToday: tx.todays_transaction,
             }));
