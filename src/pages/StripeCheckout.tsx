@@ -7,6 +7,7 @@ import { handleApiError } from "../hooks/handleApiError"; // Import for consiste
 
 interface StripeCheckoutProps {
   amount: number;
+  localAmount: number;
   lotteryId?: string; // Add lotteryId to associate with a lottery
   onClose: () => void;
 }
@@ -14,6 +15,7 @@ interface StripeCheckoutProps {
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   amount,
   lotteryId,
+   localAmount,
   onClose,
 }) => {
   const stripe = useStripe();
@@ -110,7 +112,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay ${amount}`}
+            {loading ? "Processing..." : `Pay XCG ${localAmount} ($${amount})`}
           </button>
         </form>
       </div>

@@ -29,6 +29,7 @@ interface Order {
   payment_intent_id: string;
   client_secret: string;
   total_price: string;
+  local_total: string;
   ticket_numbers: number[];
   selected_lotteries: string[];
 }
@@ -119,7 +120,7 @@ const NewLottery: React.FC = () => {
               .map((item) => item.lottery_number.toString())
               .filter((num: string, index: number, self: string[]) => {
                 const numLength = num.length;
-                return !self.some((otherNum, otherIdx) => 
+                return !self.some((otherNum, otherIdx) =>
                   otherIdx < index && otherNum.length > numLength && otherNum.endsWith(num)
                 );
               })
@@ -134,7 +135,8 @@ const NewLottery: React.FC = () => {
             const uniqueAbvs = [...new Set(items.map((item) => item.abbreviation))];
             const selected = uniqueAbvs
               .map((abv: string) => lotteries.find((l: Lottery) => l.abbreviation === abv))
-              .filter((l): l is Lottery => l !== null); // Type guard to filter out undefined
+              .filter((l): l is Lottery => l != null); // filters out both null and undefined
+            // Type guard to filter out undefined
             setSelectedLotteries(selected);
           }
         } catch (error) {
@@ -267,6 +269,7 @@ const NewLottery: React.FC = () => {
         setLoading(false);
         return;
       }
+      const localTotal = formData.selectedNumbers.length * +formData.betAmount;
       const orderParams = {
         userorder: [
           {
@@ -275,9 +278,7 @@ const NewLottery: React.FC = () => {
             lottery_number: formData.selectedNumbers,
           },
         ],
-        total_price: dollarConversion(
-          formData.selectedNumbers.length * +formData.betAmount
-        ),
+        total_price: dollarConversion(localTotal),
         user_id: userData?.id,
       };
       const response = await placeOrder(orderParams);
@@ -286,6 +287,7 @@ const NewLottery: React.FC = () => {
         setNewOrderInfo({
           ...data,
           total_price: orderParams.total_price as string,
+          local_total: localTotal.toString(),
           ticket_numbers: orderParams.userorder[0].lottery_number as number[],
           selected_lotteries: formData.selectedLotteries.map(
             (item) => item.abbreviation
@@ -322,8 +324,8 @@ const NewLottery: React.FC = () => {
       💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
       📅 Fecha: ${formatDate(new Date().toISOString())}
       💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
-        Number(grandTotal)
-      )} / € ${euroConversion(Number(grandTotal))}
+      Number(grandTotal)
+    )} / € ${euroConversion(Number(grandTotal))}
       💳 Modo di Pago: Whatsapp
       
       Por fabor usa link pa paga sea na €, $ of XCG :
@@ -431,11 +433,12 @@ const NewLottery: React.FC = () => {
                           >
                             <input
                               type="checkbox"
-                              checked={selectedLotteries.some((l) => l.id === lottery.id)}
+                              checked={selectedLotteries.some(l => l.id === lottery.id)}
                               onChange={() => handleLotterySelect(lottery.id.toString())}
                               className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
                             />
-                            <span className="text-white">{lottery.abbreviation}</span>
+                            <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
+
                           </label>
                         ))}
                     </div>
@@ -488,8 +491,8 @@ const NewLottery: React.FC = () => {
                           type="button"
                           onClick={() => handleDigitChange(digit)}
                           className={`px-4 py-2 rounded-lg font-semibold transition-colors ${selectedDigits.includes(digit)
-                              ? "bg-[#EDB726] text-[#1D1F27]"
-                              : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
+                            ? "bg-[#EDB726] text-[#1D1F27]"
+                            : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
                             } text-xs md:text-sm`}
                         >
                           {digit} Digit
@@ -528,7 +531,7 @@ const NewLottery: React.FC = () => {
                   <div className="bg-[#1D1F27] rounded-lg p-4 border border-gray-600">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-white">
-                        {selectedLotteries.length > 0 
+                        {selectedLotteries.length > 0
                           ? selectedLotteries.map((l) => l.abbreviation).join(", ")
                           : "Select Lotteries"}
                       </h3>
@@ -580,7 +583,7 @@ const NewLottery: React.FC = () => {
                         numbers.length > 0 && (
                           <div key={digit} className="mb-2">
                             <span className="text-sm text-gray-400">
-                              {digit} Digit Numbers: 
+                              {digit} Digit Numbers:
                             </span>
                             <div className="flex flex-wrap gap-2 mt-1">
                               {numbers.map((number, index) => (
@@ -606,7 +609,7 @@ const NewLottery: React.FC = () => {
                         <h4 className="text-sm font-semibold text-[#EDB726] mb-2">Order Created</h4>
                         <div className="text-xs text-gray-300 space-y-1">
                           <div>Order ID: {newOrderInfo.order_id}</div>
-                          <div>Total: {newOrderInfo.total_price}</div>
+                          <div>Total: {newOrderInfo.local_total}</div>
                           <div>Numbers: {newOrderInfo.ticket_numbers.join(", ")}</div>
                         </div>
                       </div>
@@ -636,7 +639,7 @@ const NewLottery: React.FC = () => {
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
-                  <div>Total Amount: {newOrderInfo.total_price}</div>
+                  <div>Total Amount: XCG {newOrderInfo.local_total} (${newOrderInfo.total_price})</div>
                   <div>Numbers: {newOrderInfo.ticket_numbers.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
@@ -724,6 +727,7 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={parseFloat(newOrderInfo?.total_price || "0")}
+          localAmount={parseFloat(newOrderInfo?.local_total || "0")}
           lotteryId={selectedLotteries.map((l) => l.id).join(",")}
           onClose={() => {
             setShowStripe(false);
@@ -733,8 +737,7 @@ const NewLottery: React.FC = () => {
       )}
       {showWhatsappModal && (
         <WhatsAppModal
-          betAmount={parseFloat(betAmount || "0")}
-          lottery={selectedLotteries.map((l) => l.abbreviation).join(", ")}
+          newOrderInfo={newOrderInfo}
           onClose={() => {
             setShowWhatsappModal(false);
             handleWhatsappPayment();

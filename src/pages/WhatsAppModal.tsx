@@ -2,39 +2,55 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { dollarConversion, euroConversion } from "../hooks/utilityFn";
+import { formatDate } from "../hooks/dateFormatter";
+import { showToast } from "../utils/toast.util";
 
 interface WhatsAppModalProps {
-  betAmount: number | "";
-  lottery: string;
+
+  newOrderInfo: any;
   onClose: () => void;
 }
 
 const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
-  betAmount,
-  lottery,
+  newOrderInfo,
   onClose,
 }) => {
   const [phone, setPhone] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!phone || !isValidPhoneNumber(phone)) {
-      setError("Please enter a valid phone number.");
-      return;
-    }
-
-    const message = `Hello, I want to pay ${betAmount} for lottery ${lottery}.`;
-    const url = `https://wa.me/${phone.replace(
-      "+",
-      ""
-    )}?text=${encodeURIComponent(message)}`;
-
+ const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  if (!phone || !isValidPhoneNumber(phone)) {
+    setError("Please enter a valid phone number.");
+    return;
+  }
+  const grandTotal = parseFloat(newOrderInfo?.local_total || "0");
+  const message = `
+    Esaki ta e numbernan ku bo a pidi:
+    ----------------------------------------
+    🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
+    💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
+    📅 Fecha: ${formatDate(new Date().toISOString())}
+    💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+      Number(grandTotal)
+    )} / € ${euroConversion(Number(grandTotal))}
+   
+    Kòrda paga pa bo ta den wega i kontrolá bo bòn.
+    Suerte,
+    Wega Di Number`;
+  const url = `https://wa.me/${phone.replace(
+    "+",
+    ""
+  )}?text=${encodeURIComponent(message)}`;
+  try {
     window.open(url, "_blank");
-    onClose();
-  };
+  } catch (err) {
+    showToast("Failed to open WhatsApp", "error");
+  }
+  onClose();
+};
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
