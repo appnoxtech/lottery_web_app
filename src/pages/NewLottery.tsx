@@ -9,8 +9,8 @@ import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
 import { placeOrder } from "../utils/services/Order.services";
-import { dollarConversion, euroConversion } from "../hooks/utilityFn";
-import { formatDate } from "../hooks/dateFormatter";
+import { dollarConversion} from "../hooks/utilityFn";
+// import { formatDate } from "../hooks/dateFormatter";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
@@ -48,9 +48,9 @@ interface OrderDetailsResponse {
   };
 }
 
-const paymentLink = `https://buy.stripe.com/fZeeUU05C8XueWIeUU`;
-const paymentLink2 = `https://buy.stripe.com/fZe4gg8C8gpWdSEbIJ`;
-const paymentLink3 = `https://buy.stripe.com/eVa000cSo5Li29W5km`;
+// const paymentLink = `https://buy.stripe.com/fZeeUU05C8XueWIeUU`;
+// const paymentLink2 = `https://buy.stripe.com/fZe4gg8C8gpWdSEbIJ`;
+// const paymentLink3 = `https://buy.stripe.com/eVa000cSo5Li29W5km`;
 
 const NewLottery: React.FC = () => {
   const dispatch = useDispatch();
