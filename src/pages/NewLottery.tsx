@@ -8,7 +8,7 @@ import { lotteriesData } from "../utils/services/Lotteries.services";
 import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
-import { orderComplete, placeOrder } from "../utils/services/Order.services";
+import { placeOrder } from "../utils/services/Order.services";
 import { dollarConversion, euroConversion } from "../hooks/utilityFn";
 import { formatDate } from "../hooks/dateFormatter";
 import { showToast } from "../utils/toast.util";
@@ -311,36 +311,36 @@ const NewLottery: React.FC = () => {
   }
 };
 
- const handleWhatsappPayment = () => {
-  const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
-  const message = `
-    Esaki ta e numbernan ku bo a pidi:
-    ----------------------------------------
-    🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
-    💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
-    📅 Fecha: ${formatDate(new Date().toISOString())}
-    💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
-    Number(grandTotal)
-  )} / € ${euroConversion(Number(grandTotal))}
-    💳 Modo di Pago: Whatsapp
+//  const handleWhatsappPayment = () => {
+//   const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
+//   const message = `
+//     Esaki ta e numbernan ku bo a pidi:
+//     ----------------------------------------
+//     🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
+//     💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
+//     📅 Fecha: ${formatDate(new Date().toISOString())}
+//     💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+//     Number(grandTotal)
+//   )} / € ${euroConversion(Number(grandTotal))}
+//     💳 Modo di Pago: Whatsapp
     
-    Por fabor usa link pa paga sea na €, $ of XCG :
-    Hulanda Ideal Euro €: ${paymentLink}
-    Bonaire Dollar $: ${paymentLink2}
-    Korsou Florin Karibense XCG: ${paymentLink3}
+//     Por fabor usa link pa paga sea na €, $ of XCG :
+//     Hulanda Ideal Euro €: ${paymentLink}
+//     Bonaire Dollar $: ${paymentLink2}
+//     Korsou Florin Karibense XCG: ${paymentLink3}
     
-    Kòrda paga pa bo ta den wega i kontrolá bo bòn.
-    Suerte,
-    Wega Di Number`;
-  const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-  try {
-    window.open(url, "_blank");
-    setShowPaymentModal(false); // Close modal after opening WhatsApp
-    showToast("Please complete payment via WhatsApp.", "info");
-  } catch (err) {
-    showToast("Failed to open WhatsApp", "error");
-  }
-};
+//     Kòrda paga pa bo ta den wega i kontrolá bo bòn.
+//     Suerte,
+//     Wega Di Number`;
+//   const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+//   try {
+//     window.open(url, "_blank");
+//     setShowPaymentModal(false); // Close modal after opening WhatsApp
+//     showToast("Please complete payment via WhatsApp.", "info");
+//   } catch (err) {
+//     showToast("Failed to open WhatsApp", "error");
+//   }
+// };
 
   const resetForm = () => {
     setInputNumbers("");
