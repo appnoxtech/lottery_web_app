@@ -8,9 +8,9 @@ import { lotteriesData } from "../utils/services/Lotteries.services";
 import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
-import { orderComplete, placeOrder } from "../utils/services/Order.services";
-import { dollarConversion, euroConversion } from "../hooks/utilityFn";
-import { formatDate } from "../hooks/dateFormatter";
+import { placeOrder } from "../utils/services/Order.services";
+import { dollarConversion } from "../hooks/utilityFn";
+// import { formatDate } from "../hooks/dateFormatter";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
@@ -29,6 +29,7 @@ interface Order {
   payment_intent_id: string;
   client_secret: string;
   total_price: string;
+  local_total: string;
   ticket_numbers: number[];
   selected_lotteries: string[];
 }
@@ -47,9 +48,9 @@ interface OrderDetailsResponse {
   };
 }
 
-const paymentLink = `https://buy.stripe.com/fZeeUU05C8XueWIeUU`;
-const paymentLink2 = `https://buy.stripe.com/fZe4gg8C8gpWdSEbIJ`;
-const paymentLink3 = `https://buy.stripe.com/eVa000cSo5Li29W5km`;
+// const paymentLink = `https://buy.stripe.com/fZeeUU05C8XueWIeUU`;
+// const paymentLink2 = `https://buy.stripe.com/fZe4gg8C8gpWdSEbIJ`;
+// const paymentLink3 = `https://buy.stripe.com/eVa000cSo5Li29W5km`;
 
 const NewLottery: React.FC = () => {
   const dispatch = useDispatch();
@@ -119,7 +120,7 @@ const NewLottery: React.FC = () => {
               .map((item) => item.lottery_number.toString())
               .filter((num: string, index: number, self: string[]) => {
                 const numLength = num.length;
-                return !self.some((otherNum, otherIdx) => 
+                return !self.some((otherNum, otherIdx) =>
                   otherIdx < index && otherNum.length > numLength && otherNum.endsWith(num)
                 );
               })
@@ -134,7 +135,8 @@ const NewLottery: React.FC = () => {
             const uniqueAbvs = [...new Set(items.map((item) => item.abbreviation))];
             const selected = uniqueAbvs
               .map((abv: string) => lotteries.find((l: Lottery) => l.abbreviation === abv))
-              .filter((l): l is Lottery => l !== null); // Type guard to filter out undefined
+              .filter((l): l is Lottery => l != null); // filters out both null and undefined
+            // Type guard to filter out undefined
             setSelectedLotteries(selected);
           }
         } catch (error) {
@@ -177,38 +179,43 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
-    const processedResults: { [key: number]: string[] } = {};
-    if (!numbersString || digitsToProcess.length === 0) {
-      return processedResults;
-    }
-    const numbers = numbersString
-      .split(",")
-      .map((n) => n.trim())
-      .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
-    const sortedNumbers = numbers.sort((a, b) => b.length - a.length);
-    digitsToProcess.forEach((digit) => {
-      const resultForDigit: string[] = [];
-      sortedNumbers.forEach((num) => {
-        const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
-        if (cleanNum.length === digit) {
+ const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
+  const processedResults: { [key: number]: string[] } = {};
+  if (!numbersString || digitsToProcess.length === 0) {
+    return processedResults;
+  }
+  const numbers = numbersString
+    .split(",")
+    .map((n) => n.trim())
+    .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+
+  digitsToProcess.forEach((digit) => {
+    const resultForDigit: string[] = [];
+    numbers.forEach((num) => {
+      const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
+      if (cleanNum.length === digit) {
+        // Check if the number starts with zero (e.g., "08", "002")
+        if (!cleanNum.startsWith("0") || cleanNum === "0") {
           if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
             resultForDigit.push(cleanNum);
           }
-        } else if (cleanNum.length > digit) {
-          const truncated = cleanNum.slice(-digit);
+        }
+      } else if (cleanNum.length > digit) {
+        const truncated = cleanNum.slice(-digit);
+        // Check if the truncated number starts with zero (e.g., "002" from "90002" for 3 digits)
+        if (!truncated.startsWith("0") || truncated === "0") {
           if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
             resultForDigit.push(truncated);
           }
         }
-      });
-      if (resultForDigit.length > 0) {
-        processedResults[digit] = resultForDigit;
       }
     });
-    return processedResults;
-  };
-
+    if (resultForDigit.length > 0) {
+      processedResults[digit] = resultForDigit;
+    }
+  });
+  return processedResults;
+};
   const getAllProcessedNumbers = (): number[] => {
     const allNumbers: number[] = [];
     Object.values(processedNumbers).forEach((numberArray) => {
@@ -248,101 +255,99 @@ const NewLottery: React.FC = () => {
   };
 
   const handleCreateLottery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (newOrderInfo) {
-        setShowPaymentModal(true);
-        return;
-      }
-      setLoading(true);
-      const formData: FormValues = {
-        lotteryNumber: inputNumbers,
-        selectedLotteries: selectedLotteries,
-        betAmount: betAmount,
-        selectedDigitType: selectedDigits,
-        selectedNumbers: getAllProcessedNumbers(),
-      };
-      const isValid = isOrderValid(formData);
-      if (!isValid) {
-        setLoading(false);
-        return;
-      }
-      const orderParams = {
-        userorder: [
-          {
-            bet_amount: formData.betAmount,
-            lottery_id: formData.selectedLotteries.map((item) => item.id),
-            lottery_number: formData.selectedNumbers,
-          },
-        ],
-        total_price: dollarConversion(
-          formData.selectedNumbers.length * +formData.betAmount
-        ),
-        user_id: userData?.id,
-      };
-      const response = await placeOrder(orderParams);
-      if ((response as any)?.data?.success) {
-        const { data } = (response as any)?.data;
-        setNewOrderInfo({
-          ...data,
-          total_price: orderParams.total_price as string,
-          ticket_numbers: orderParams.userorder[0].lottery_number as number[],
-          selected_lotteries: formData.selectedLotteries.map(
-            (item) => item.abbreviation
-          ),
-        });
-        setShowPaymentModal(true);
-      }
-    } catch (error) {
-      handleApiError(error, "Failed to place order");
-    } finally {
-      setLoading(false);
+  e.preventDefault();
+  try {
+    if (newOrderInfo) {
+      setShowPaymentModal(true);
+      return;
     }
-  };
+    setLoading(true);
+    const formData: FormValues = {
+      lotteryNumber: inputNumbers,
+      selectedLotteries: selectedLotteries,
+      betAmount: betAmount,
+      selectedDigitType: selectedDigits,
+      selectedNumbers: getAllProcessedNumbers(),
+    };
+    const isValid = isOrderValid(formData);
+    if (!isValid) {
+      setLoading(false);
+      return;
+    }
+    const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+    const orderParams = {
+      userorder: [
+        {
+          bet_amount: formData.betAmount,
+          lottery_id: formData.selectedLotteries.map((item) => item.id),
+          lottery_number: formData.selectedNumbers,
+        },
+      ],
+      total_price: dollarConversion(localTotal),
+      user_id: userData?.id,
+    };
+    const response = await placeOrder(orderParams);
+    if ((response as any)?.data?.success) {
+      const { data } = (response as any)?.data;
+      setNewOrderInfo({
+        ...data,
+        total_price: orderParams.total_price as string,
+        local_total: localTotal.toString(),
+        ticket_numbers: orderParams.userorder[0].lottery_number as number[],
+        selected_lotteries: formData.selectedLotteries.map(
+          (item) => item.abbreviation
+        ),
+      });
+      setShowPaymentModal(true);
+    }
+  } catch (error) {
+    handleApiError(error, "Failed to place order");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleStripePayment = async () => {
-    try {
-      if (newOrderInfo?.order_id) {
-        await orderComplete(newOrderInfo.order_id);
-      }
+  const handleStripePayment = (success: boolean) => {
+    if (success) {
       resetForm();
       setShowPaymentModal(false);
-      showToast("Payment successful!", "success");
-    } catch (error) {
-      handleApiError(error, "Some error occurred, please try again later!");
+      // showToast("Payment successful!", "success");
+    } else {
+      setShowPaymentModal(false); // Close on failure or cancel
+      showToast("Payment was not completed.", "error");
     }
   };
 
-  const handleWhatsappPayment = () => {
-    const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
-    const message = `
-      Esaki ta e numbernan ku bo a pidi:
-      ----------------------------------------
-      🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
-      💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
-      📅 Fecha: ${formatDate(new Date().toISOString())}
-      💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
-        Number(grandTotal)
-      )} / € ${euroConversion(Number(grandTotal))}
-      💳 Modo di Pago: Whatsapp
-      
-      Por fabor usa link pa paga sea na €, $ of XCG :
-      Hulanda Ideal Euro €: ${paymentLink}
-      Bonaire Dollar $: ${paymentLink2}
-      Korsou Florin Karibense XCG: ${paymentLink3}
-      
-      Kòrda paga pa bo ta den wega i kontrolá bo bòn.
-      Suerte,
-      Wega Di Number`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    try {
-      window.open(url, "_blank");
-    } catch (err) {
-      showToast("Failed to open WhatsApp", "error");
-    }
-    resetForm();
-    setShowPaymentModal(false);
-  };
+  //  const handleWhatsappPayment = () => {
+  //   const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
+  //   const message = `
+  //     Esaki ta e numbernan ku bo a pidi:
+  //     ----------------------------------------
+  //     🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
+  //     💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
+  //     📅 Fecha: ${formatDate(new Date().toISOString())}
+  //     💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+  //     Number(grandTotal)
+  //   )} / € ${euroConversion(Number(grandTotal))}
+  //     💳 Modo di Pago: Whatsapp
+
+  //     Por fabor usa link pa paga sea na €, $ of XCG :
+  //     Hulanda Ideal Euro €: ${paymentLink}
+  //     Bonaire Dollar $: ${paymentLink2}
+  //     Korsou Florin Karibense XCG: ${paymentLink3}
+
+  //     Kòrda paga pa bo ta den wega i kontrolá bo bòn.
+  //     Suerte,
+  //     Wega Di Number`;
+  //   const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  //   try {
+  //     window.open(url, "_blank");
+  //     setShowPaymentModal(false); // Close modal after opening WhatsApp
+  //     showToast("Please complete payment via WhatsApp.", "info");
+  //   } catch (err) {
+  //     showToast("Failed to open WhatsApp", "error");
+  //   }
+  // };
 
   const resetForm = () => {
     setInputNumbers("");
@@ -400,10 +405,22 @@ const NewLottery: React.FC = () => {
                       id="inputNumbers"
                       rows={3}
                       value={inputNumbers}
-                      onChange={(e) => setInputNumbers(e.target.value)}
+                      onChange={(e) => {
+                        // Keep only digits, comma, and spaces
+                        const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
+                        setInputNumbers(sanitized);
+                      }}
+                      onPaste={(e) => {
+                        const paste = e.clipboardData.getData("text");
+                        // Allow only digits, comma, and spaces in pasted content
+                        const sanitized = paste.replace(/[^0-9, ]/g, "");
+                        e.preventDefault();
+                        setInputNumbers((prev) => prev + sanitized);
+                      }}
                       className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
                       placeholder="e.g., 12, 345, 1234, 56, 8"
                     />
+
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -431,11 +448,12 @@ const NewLottery: React.FC = () => {
                           >
                             <input
                               type="checkbox"
-                              checked={selectedLotteries.some((l) => l.id === lottery.id)}
+                              checked={selectedLotteries.some(l => l.id === lottery.id)}
                               onChange={() => handleLotterySelect(lottery.id.toString())}
                               className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
                             />
-                            <span className="text-white">{lottery.abbreviation}</span>
+                            <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
+
                           </label>
                         ))}
                     </div>
@@ -488,8 +506,8 @@ const NewLottery: React.FC = () => {
                           type="button"
                           onClick={() => handleDigitChange(digit)}
                           className={`px-4 py-2 rounded-lg font-semibold transition-colors ${selectedDigits.includes(digit)
-                              ? "bg-[#EDB726] text-[#1D1F27]"
-                              : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
+                            ? "bg-[#EDB726] text-[#1D1F27]"
+                            : "bg-[#374151] text-gray-300 hover:bg-[#4B5563] cursor-pointer"
                             } text-xs md:text-sm`}
                         >
                           {digit} Digit
@@ -528,7 +546,7 @@ const NewLottery: React.FC = () => {
                   <div className="bg-[#1D1F27] rounded-lg p-4 border border-gray-600">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-white">
-                        {selectedLotteries.length > 0 
+                        {selectedLotteries.length > 0
                           ? selectedLotteries.map((l) => l.abbreviation).join(", ")
                           : "Select Lotteries"}
                       </h3>
@@ -580,7 +598,7 @@ const NewLottery: React.FC = () => {
                         numbers.length > 0 && (
                           <div key={digit} className="mb-2">
                             <span className="text-sm text-gray-400">
-                              {digit} Digit Numbers: 
+                              {digit} Digit Numbers:
                             </span>
                             <div className="flex flex-wrap gap-2 mt-1">
                               {numbers.map((number, index) => (
@@ -606,7 +624,7 @@ const NewLottery: React.FC = () => {
                         <h4 className="text-sm font-semibold text-[#EDB726] mb-2">Order Created</h4>
                         <div className="text-xs text-gray-300 space-y-1">
                           <div>Order ID: {newOrderInfo.order_id}</div>
-                          <div>Total: {newOrderInfo.total_price}</div>
+                          <div>Total: {newOrderInfo.local_total}</div>
                           <div>Numbers: {newOrderInfo.ticket_numbers.join(", ")}</div>
                         </div>
                       </div>
@@ -636,7 +654,7 @@ const NewLottery: React.FC = () => {
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
-                  <div>Total Amount: {newOrderInfo.total_price}</div>
+                  <div>Total Amount: XCG {newOrderInfo.local_total}</div>
                   <div>Numbers: {newOrderInfo.ticket_numbers.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
@@ -724,23 +742,22 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={parseFloat(newOrderInfo?.total_price || "0")}
+          localAmount={parseFloat(newOrderInfo?.local_total || "0")}
           lotteryId={selectedLotteries.map((l) => l.id).join(",")}
-          onClose={() => {
+          newOrderInfo={newOrderInfo} // Pass the prop
+          onClose={(success: boolean) => {
             setShowStripe(false);
-            handleStripePayment();
+            handleStripePayment(success);
           }}
         />
       )}
       {showWhatsappModal && (
         <WhatsAppModal
-          betAmount={parseFloat(betAmount || "0")}
-          lottery={selectedLotteries.map((l) => l.abbreviation).join(", ")}
-          onClose={() => {
-            setShowWhatsappModal(false);
-            handleWhatsappPayment();
-          }}
+          newOrderInfo={newOrderInfo}
+          onClose={() => setShowWhatsappModal(false)} // just close modal
         />
       )}
+
     </div>
   );
 };
