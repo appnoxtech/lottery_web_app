@@ -24,7 +24,6 @@ const OTPVerification: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isResending, setIsResending] = useState(false);
-  const [canResend, setCanResend] = useState(false);
 
   const phoneNumber = location.state?.phoneNumber || "";
   const fromSignup = location.state?.fromSignup || false;
@@ -132,7 +131,6 @@ const OTPVerification: React.FC = () => {
         const newOtp = response.data.result.otp;
         setGeneratedOtp(newOtp); // Store the new OTP
         showToast("OTP sent successfully!", "success");
-        setCanResend(false);
 
 
         // Restart countdown

@@ -148,7 +148,7 @@ const Home: React.FC = () => {
                   </div>
                 </div>
                 <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                  <div className="text-2xl font-bold text-[#EDB726]">₹2.5L</div>
+                  <div className="text-2xl font-bold text-[#EDB726]">2.5L</div>
                   <div className="text-sm text-gray-400">Total Prizes</div>
                 </div>
               </div>

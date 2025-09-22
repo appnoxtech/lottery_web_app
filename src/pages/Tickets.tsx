@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { Search, Eye, Download } from "lucide-react";
+import { Search, Eye, Download, Repeat } from "lucide-react";
 import { useSelector } from "react-redux";
 import { getDailyLotteryTickets } from "../utils/services/Order.services";
 import { handleApiError } from "../hooks/handleApiError";
 import { formatDate } from "../hooks/dateFormatter";
 import TicketDetailsModal from "./TicketDetailsModal";
+import { useNavigate } from "react-router-dom";
 
 const Tickets: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,10 +16,10 @@ const Tickets: React.FC = () => {
   const [, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-
   const userData = useSelector((state: any) => state.user.userData);
   const todaysDate = new Date();
   const formattedTodaysDate = formatDate(todaysDate.toISOString());
+  const navigate = useNavigate();
 
   const fetchLotteryRecords = useCallback(async () => {
     if (!userData?.id) return;
@@ -50,10 +51,15 @@ const Tickets: React.FC = () => {
     switch (status) {
       case "active":
         return "bg-green-500/20 text-green-400 border-green-500/30";
+      case "completed":
+        return "bg-green-500/20 text-green-400 border-green-500/30"
+      case "failed":
+        return "bg-red-500/20 text-red-400 border-red-500/30";
       case "winner":
         return "bg-[#EDB726]/20 text-[#EDB726] border-[#EDB726]/30";
       case "expired":
       case "pending":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
       case "cancelled":
         return "bg-red-500/20 text-red-400 border-red-500/30";
       default:
@@ -104,11 +110,7 @@ const Tickets: React.FC = () => {
 
   const downloadTicketPdf = async (ticket: any) => {
     try {
-      // Optional: fetch order details for items (skip if not needed)
-      // const resp = await getOrderDetails(ticket.order_id);
-      // const items = (resp as any)?.data?.result?.items || [];
       const items: any[] = [];
-
       const rows = items
         .map((row: any) => {
           const abv = row?.abbreviation || row?.lottery_abv || '-';
@@ -119,8 +121,8 @@ const Tickets: React.FC = () => {
           return `<tr>
             <td>${abv}</td>
             <td style=\"text-align:center\">${digits}</td>
-            <td style=\"text-align:right\">₹${bet.toFixed(2)}</td>
-            <td style=\"text-align:right\">₹${total.toFixed(2)}</td>
+            <td style=\"text-align:right\">${bet.toFixed(2)}</td>
+            <td style=\"text-align:right\">${total.toFixed(2)}</td>
           </tr>`;
         })
         .join("");
@@ -159,7 +161,7 @@ const Tickets: React.FC = () => {
             <tfoot>
               <tr>
                 <td colspan='3' style='padding-top:6px;border-top:1px solid #000;font-weight:700;'>GRAND TOTAL</td>
-                <td style='padding-top:6px;border-top:1px solid #000;text-align:right;font-weight:700;'>₹${ticket.grand_total}</td>
+                <td style='padding-top:6px;border-top:1px solid #000;text-align:right;font-weight:700;'>${ticket.grand_total}</td>
               </tr>
             </tfoot>
           </table>
@@ -191,6 +193,10 @@ const Tickets: React.FC = () => {
     }
   };
 
+  const reuseTicketNumbers = (ticket: any) => {
+    navigate(`/new-lottery?orderId=${ticket.order_id}`);
+  };
+
   return (
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       <Sidebar />
@@ -199,7 +205,6 @@ const Tickets: React.FC = () => {
           isMenuOpen={isMenuOpen}
           onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
         />
-
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-4 sm:mb-8">
@@ -210,7 +215,6 @@ const Tickets: React.FC = () => {
                 View and manage all lottery tickets
               </p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
                 <p className="text-sm text-gray-400">Total Tickets</p>
@@ -233,12 +237,10 @@ const Tickets: React.FC = () => {
               <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
                 <p className="text-sm text-gray-400">Revenue</p>
                 <p className="text-lg sm:text-2xl font-bold text-white">
-                  ₹{totalRevenue.toFixed(2)}
+                  {totalRevenue.toFixed(2)}
                 </p>
               </div>
             </div>
-
-            {/* Tabs and Search */}
             <div className="bg-[#2A2D36] rounded-lg p-4 sm:p-6 border border-gray-700 mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="flex space-x-1 flex-wrap sm:flex-nowrap">
@@ -272,8 +274,6 @@ const Tickets: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Tickets Section */}
             {loading ? (
               <div className="flex justify-center items-center h-48">
                 <p className="text-gray-400">Loading tickets...</p>
@@ -300,10 +300,8 @@ const Tickets: React.FC = () => {
                     <tbody className="divide-y divide-gray-700">
                       {filteredTickets.map((ticket) => {
                         const createdAt: string | undefined = ticket?.created_at;
-
                         const parseCreatedAt = (value?: string): Date | null => {
                           if (!value || typeof value !== "string") return null;
-                          // Expected: "16 Sep 2025 - 05:47 AM"
                           const parts = value.split(" - ");
                           if (parts.length !== 2) return null;
                           const [datePart, timePart] = parts;
@@ -318,7 +316,6 @@ const Tickets: React.FC = () => {
                           if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
                             return null;
                           }
-                          // timePart: "05:47 AM"
                           const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
                           if (!timeMatch) return null;
                           let hours = parseInt(timeMatch[1], 10);
@@ -329,7 +326,6 @@ const Tickets: React.FC = () => {
                           const d = new Date(year, month, day, hours, minutes, 0, 0);
                           return Number.isNaN(d.getTime()) ? null : d;
                         };
-
                         const dateObj = parseCreatedAt(createdAt);
                         const isValidDate = !!dateObj;
                         const dateStr = isValidDate ? formatDate((dateObj as Date).toISOString()) : "-";
@@ -355,7 +351,7 @@ const Tickets: React.FC = () => {
                               <div className="text-white">{dateStr}</div>
                               <div className="text-gray-400 text-xs">{timeStr}</div>
                               <div className="text-[#EDB726] font-medium">
-                                ₹{ticket.grand_total}
+                                {ticket.grand_total}
                               </div>
                             </td>
                             <td className="px-3 py-2">
@@ -370,19 +366,27 @@ const Tickets: React.FC = () => {
                             <td className="px-3 py-2 text-right">
                               <div className="inline-flex items-center gap-3">
                                 <button
+                                  onClick={() => reuseTicketNumbers(ticket)}
+                                  className="text-[#EDB726] hover:text-[#d4a422]"
+                                  title="Reuse Numbers"
+                                >
+                                  <Repeat className="w-4 h-4 cursor-pointer" />
+                                </button>
+                                <button
                                   onClick={() => openDetails(ticket)}
                                   className="text-[#EDB726] hover:text-[#d4a422]"
                                   title="View details"
                                 >
-                                  <Eye className="w-4 h-4" />
+                                  <Eye className="w-4 h-4 cursor-pointer" />
                                 </button>
                                 <button
                                   onClick={() => downloadTicketPdf(ticket)}
                                   className="text-[#EDB726] hover:text-[#d4a422]"
                                   title="Download PDF"
                                 >
-                                  <Download className="w-4 h-4" />
+                                  <Download className="w-4 h-4 cursor-pointer" />
                                 </button>
+                                
                               </div>
                             </td>
                           </tr>
@@ -402,11 +406,3 @@ const Tickets: React.FC = () => {
 };
 
 export default Tickets;
-
-// Mount modal at end so it's not clipped by table container
-// eslint-disable-next-line
-// @ts-ignore
-// Render modal using selectedTicket state
-// Note: Keeping here to avoid altering main layout structure
-// The modal is conditionally rendered above via component import
-
