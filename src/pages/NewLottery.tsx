@@ -179,38 +179,36 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
-    const processedResults: { [key: number]: string[] } = {};
-    if (!numbersString || digitsToProcess.length === 0) {
-      return processedResults;
-    }
-    const numbers = numbersString
-      .split(",")
-      .map((n) => n.trim())
-      .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
-    const sortedNumbers = numbers.sort((a, b) => b.length - a.length);
-    digitsToProcess.forEach((digit) => {
-      const resultForDigit: string[] = [];
-      sortedNumbers.forEach((num) => {
-        const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
-        if (cleanNum.length === digit) {
-          if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
-            resultForDigit.push(cleanNum);
-          }
-        } else if (cleanNum.length > digit) {
-          const truncated = cleanNum.slice(-digit);
-          if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
-            resultForDigit.push(truncated);
-          }
+ const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
+  const processedResults: { [key: number]: string[] } = {};
+  if (!numbersString || digitsToProcess.length === 0) {
+    return processedResults;
+  }
+  const numbers = numbersString
+    .split(",")
+    .map((n) => n.trim())
+    .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+  digitsToProcess.forEach((digit) => {
+    const resultForDigit: string[] = [];
+    numbers.forEach((num) => {
+      const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
+      if (cleanNum.length === digit) {
+        if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
+          resultForDigit.push(cleanNum);
         }
-      });
-      if (resultForDigit.length > 0) {
-        processedResults[digit] = resultForDigit;
+      } else if (cleanNum.length > digit) {
+        const truncated = cleanNum.slice(-digit);
+        if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
+          resultForDigit.push(truncated);
+        }
       }
     });
-    return processedResults;
-  };
-
+    if (resultForDigit.length > 0) {
+      processedResults[digit] = resultForDigit;
+    }
+  });
+  return processedResults;
+};
   const getAllProcessedNumbers = (): number[] => {
     const allNumbers: number[] = [];
     Object.values(processedNumbers).forEach((numberArray) => {
@@ -302,49 +300,47 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  const handleStripePayment = async () => {
-    try {
-      if (newOrderInfo?.order_id) {
-        await orderComplete(newOrderInfo.order_id);
-      }
-      resetForm();
-      setShowPaymentModal(false);
-      showToast("Payment successful!", "success");
-    } catch (error) {
-      handleApiError(error, "Some error occurred, please try again later!");
-    }
-  };
-
-  const handleWhatsappPayment = () => {
-    const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
-    const message = `
-      Esaki ta e numbernan ku bo a pidi:
-      ----------------------------------------
-      🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
-      💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
-      📅 Fecha: ${formatDate(new Date().toISOString())}
-      💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
-      Number(grandTotal)
-    )} / € ${euroConversion(Number(grandTotal))}
-      💳 Modo di Pago: Whatsapp
-      
-      Por fabor usa link pa paga sea na €, $ of XCG :
-      Hulanda Ideal Euro €: ${paymentLink}
-      Bonaire Dollar $: ${paymentLink2}
-      Korsou Florin Karibense XCG: ${paymentLink3}
-      
-      Kòrda paga pa bo ta den wega i kontrolá bo bòn.
-      Suerte,
-      Wega Di Number`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    try {
-      window.open(url, "_blank");
-    } catch (err) {
-      showToast("Failed to open WhatsApp", "error");
-    }
+  const handleStripePayment = (success: boolean) => {
+  if (success) {
     resetForm();
     setShowPaymentModal(false);
-  };
+    // showToast("Payment successful!", "success");
+  } else {
+    setShowPaymentModal(false); // Close on failure or cancel
+    showToast("Payment was not completed.", "error");
+  }
+};
+
+ const handleWhatsappPayment = () => {
+  const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
+  const message = `
+    Esaki ta e numbernan ku bo a pidi:
+    ----------------------------------------
+    🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
+    💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
+    📅 Fecha: ${formatDate(new Date().toISOString())}
+    💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+    Number(grandTotal)
+  )} / € ${euroConversion(Number(grandTotal))}
+    💳 Modo di Pago: Whatsapp
+    
+    Por fabor usa link pa paga sea na €, $ of XCG :
+    Hulanda Ideal Euro €: ${paymentLink}
+    Bonaire Dollar $: ${paymentLink2}
+    Korsou Florin Karibense XCG: ${paymentLink3}
+    
+    Kòrda paga pa bo ta den wega i kontrolá bo bòn.
+    Suerte,
+    Wega Di Number`;
+  const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  try {
+    window.open(url, "_blank");
+    setShowPaymentModal(false); // Close modal after opening WhatsApp
+    showToast("Please complete payment via WhatsApp.", "info");
+  } catch (err) {
+    showToast("Failed to open WhatsApp", "error");
+  }
+};
 
   const resetForm = () => {
     setInputNumbers("");
@@ -692,7 +688,7 @@ const NewLottery: React.FC = () => {
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
                     <svg
-                      className="w-6 h-6 text-white"
+                      className="w-6 h-6 text-white"  
                       viewBox="0 0 24 24"
                       fill="currentColor"
                     >
@@ -725,25 +721,24 @@ const NewLottery: React.FC = () => {
         </div>
       )}
       {showStripe && (
-        <StripeCheckout
-          amount={parseFloat(newOrderInfo?.total_price || "0")}
-          localAmount={parseFloat(newOrderInfo?.local_total || "0")}
-          lotteryId={selectedLotteries.map((l) => l.id).join(",")}
-          onClose={() => {
-            setShowStripe(false);
-            handleStripePayment();
-          }}
-        />
-      )}
-      {showWhatsappModal && (
-        <WhatsAppModal
-          newOrderInfo={newOrderInfo}
-          onClose={() => {
-            setShowWhatsappModal(false);
-            handleWhatsappPayment();
-          }}
-        />
-      )}
+  <StripeCheckout
+    amount={parseFloat(newOrderInfo?.total_price || "0")}
+    localAmount={parseFloat(newOrderInfo?.local_total || "0")}
+    lotteryId={selectedLotteries.map((l) => l.id).join(",")}
+    newOrderInfo={newOrderInfo} // Pass the prop
+    onClose={(success: boolean) => {
+      setShowStripe(false);
+      handleStripePayment(success);
+    }}
+  />
+)}
+{showWhatsappModal && (
+  <WhatsAppModal
+    newOrderInfo={newOrderInfo}
+    onClose={() => setShowWhatsappModal(false)} // just close modal
+  />
+)}
+
     </div>
   );
 };

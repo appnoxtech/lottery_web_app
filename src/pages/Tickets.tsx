@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { Search, Eye, Download, Repeat } from "lucide-react";
+import { Search, Eye, Download, Repeat, CreditCard } from "lucide-react";
 import { useSelector } from "react-redux";
 import { getDailyLotteryTickets, getOrderDetails } from "../utils/services/Order.services";
 import { handleApiError } from "../hooks/handleApiError";
@@ -9,6 +9,10 @@ import { formatDate } from "../hooks/dateFormatter";
 import { dollarConversion, euroConversion } from "../hooks/utilityFn";
 import TicketDetailsModal from "./TicketDetailsModal";
 import { useNavigate } from "react-router-dom";
+import StripeCheckout from "./StripeCheckout";
+import PaymentMethodModal from "./PaymentMethodModal";
+import WhatsAppModal from "./WhatsAppModal";
+
 
 const Tickets: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,10 +21,63 @@ const Tickets: React.FC = () => {
   const [, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+
+  const [selectedPaymentTicket, setSelectedPaymentTicket] = useState<any | null>(null);
+
   const userData = useSelector((state: any) => state.user.userData);
   const todaysDate = new Date();
   const formattedTodaysDate = formatDate(todaysDate.toISOString());
   const navigate = useNavigate();
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentTicket, setPaymentTicket] = useState<any | null>(null);
+
+  // Open payment method selection
+const openPayment = async (ticket: any) => {
+  const resp = await getOrderDetails(ticket.order_id);
+  const items = resp?.data?.result?.details ?? [];
+
+  const orderInfo = {
+    order_id: ticket.order_id,
+    total_price: ticket.grand_total,
+    local_total: ticket.grand_total,
+    ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
+    selected_lotteries: items.map((i: any) => i.abbreviation[0] ?? "-"),
+  };
+
+  setSelectedPaymentTicket(orderInfo);
+  setPaymentMethodOpen(true);
+};
+
+
+// Handle payment method selection
+const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
+  if (!selectedPaymentTicket) return;
+  setPaymentMethodOpen(false);
+
+  if (method === "stripe") {
+    setPaymentTicket(selectedPaymentTicket);
+    setPaymentOpen(true);
+  } else if (method === "whatsapp") {
+    setWhatsAppOpen(true); // keep selectedPaymentTicket
+  }
+};
+
+// Close WhatsApp modal
+const closeWhatsApp = () => {
+  setWhatsAppOpen(false);
+  setSelectedPaymentTicket(null); // clear after closing
+};
+
+// Close Stripe checkout
+const closePayment = (success: boolean) => {
+  setPaymentOpen(false);
+  setPaymentTicket(null);
+  if (success) fetchLotteryRecords();
+};
+
+
 
   const fetchLotteryRecords = useCallback(async () => {
     if (!userData?.id) return;
@@ -86,7 +143,7 @@ const Tickets: React.FC = () => {
     (ticket) => ticket.status === "winner"
   ).length;
   const totalRevenue = lotteryTickets.reduce(
-    (sum, ticket) => sum + (parseFloat(ticket.grand_total) || 0),
+    (sum, ticket) => sum + (ticket.status === "completed" ? parseFloat(ticket.grand_total) || 0 : 0),
     0
   );
 
@@ -177,10 +234,10 @@ const Tickets: React.FC = () => {
       container.innerHTML = `
         <div style="font-family: Arial, sans-serif; color: #000; width: 148mm; padding: 5mm; border: 2px solid #D1D5DB">
           <!-- Header -->
-          <div style="text-align: center; ">
+          <div style="text-align: center; margin-bottom:4px;padding-bottom:10px">
             <p style="color: #6B7280; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 4px 0;">Lottery Numbers</p>
           </div>
-          <div style="border-top: 1px solid #D1D5DB; margin: 6px 0;"></div>
+          <div style="border-top: 1px solid #D1D5DB; margin: 6px 2px;"></div>
           <!-- Ticket Details -->
           <div style="padding: 0 16px; margin-bottom: 10px">
             <div style="display: grid; grid-template-columns: 1fr; gap: 8px; text-align: center; font-size: 14px;">
@@ -390,11 +447,10 @@ const Tickets: React.FC = () => {
                       <button
                         key={tab}
                         onClick={() => setSelectedTab(tab)}
-                        className={`px-2 sm:px-4 py-1 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                          selectedTab === tab
-                            ? "bg-[#EDB726] text-[#1D1F27]"
-                            : "text-gray-400 hover:text-white cursor-pointer"
-                        }`}
+                        className={`px-2 sm:px-4 py-1 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${selectedTab === tab
+                          ? "bg-[#EDB726] text-[#1D1F27]"
+                          : "text-gray-400 hover:text-white cursor-pointer"
+                          }`}
                       >
                         {tab.charAt(0).toUpperCase() + tab.slice(1)}
                       </button>
@@ -506,13 +562,23 @@ const Tickets: React.FC = () => {
                             </td>
                             <td className="px-3 py-2 text-right">
                               <div className="inline-flex items-center gap-3">
-                                <button
-                                  onClick={() => reuseTicketNumbers(ticket)}
-                                  className="text-[#EDB726] hover:text-[#d4a422]"
-                                  title="Reuse Numbers"
-                                >
-                                  <Repeat className="w-4 h-4 cursor-pointer" />
-                                </button>
+                                {ticket.status === "pending" ? (
+                                  <button
+                                    onClick={() => openPayment(ticket)}
+                                    className="text-[#EDB726] hover:text-[#d4a422]"
+                                    title="Complete Payment"
+                                  >
+                                    <CreditCard className="w-4 h-4 cursor-pointer" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => reuseTicketNumbers(ticket)}
+                                    className="text-[#EDB726] hover:text-[#d4a422]"
+                                    title="Reuse Numbers"
+                                  >
+                                    <Repeat className="w-4 h-4 cursor-pointer" />
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => openDetails(ticket)}
                                   className="text-[#EDB726] hover:text-[#d4a422]"
@@ -529,6 +595,7 @@ const Tickets: React.FC = () => {
                                 </button>
                               </div>
                             </td>
+
                           </tr>
                         );
                       })}
@@ -541,6 +608,31 @@ const Tickets: React.FC = () => {
         </main>
       </div>
       <TicketDetailsModal isOpen={detailsOpen} onClose={closeDetails} ticket={selectedTicket} />
+      {paymentOpen && paymentTicket && (
+        <StripeCheckout
+          amount={Number(paymentTicket.grand_total) || 0}
+          localAmount={Number(paymentTicket.grand_total) || 0}
+          lotteryId={paymentTicket.lottery_id}
+          newOrderInfo={{ order_id: paymentTicket.order_id }}
+          onClose={closePayment}
+        />
+      )}
+      <PaymentMethodModal
+  isOpen={paymentMethodOpen}
+  newOrderInfo={selectedPaymentTicket}
+  onClose={() => setPaymentMethodOpen(false)}
+  onSelect={handlePaymentMethodSelect}
+/>
+
+{whatsAppOpen && selectedPaymentTicket && (
+  <WhatsAppModal
+    newOrderInfo={selectedPaymentTicket}
+    onClose={closeWhatsApp}
+  />
+)}
+
+
+
     </div>
   );
 };

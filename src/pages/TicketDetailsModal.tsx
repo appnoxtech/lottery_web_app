@@ -103,7 +103,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
           <div className="px-6 py-4">
             <div className="grid grid-cols-1 gap-4 text-md text-center">
               <div>
-                <p className="text-black-300">Receipt #CW - <span className="text-black font-semibold">{ticket.receipt}</span></p>
+                <p className="text-black-300">Receipt# CW - <span className="text-black font-semibold">{ticket.receipt}</span></p>
               </div>
               <div>
                 <p className="text-black-300">Date: <span className="font-bold">{parsed.date} - {parsed.time}</span></p>
@@ -132,8 +132,8 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="px-3 py-2 text-center text-gray-500">{ticket.payment_mode}</td>
-                    <td className="px-3 py-2 text-center text-gray-500">{ticket.grand_total}</td>
+                    <td className="px-3 py-2 text-center">{ticket.payment_mode}</td>
+                    <td className="px-3 py-2 text-center">XCG {ticket.grand_total}</td>
                   </tr>
                 </tbody>
               </table>
@@ -170,9 +170,9 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                             <p className=" text-red-600">{abbreviation}</p>
                             <p className="text-lg font-semibold">{number}</p>
                           </td>
-                          <td className="px-3 py-2 text-center text-gray-500">{String(number).length} digit</td>
-                          <td className="px-3 py-2 text-right text-gray-500 font-semibold">
-                            {bet.toFixed(2)}
+                          <td className="px-3 py-2 text-center">{String(number).length} digits</td>
+                          <td className="px-3 py-2 text-right">
+                            XCG {bet.toFixed(2)}
                           </td>
                         </tr>
                       );
@@ -180,26 +180,26 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                   </tbody>
                   <tfoot>
 
-                    <tr className="border-t border-gray-400 font-semibold">
-                      <td colSpan={2} className="px-3 py-2 text-gray-500 text-right">
+                    <tr className="border-t border-gray-400">
+                      <td colSpan={2} className="px-3 py-2">
                         Total Numbers:
                       </td>
-                      <td className="px-3 py-2 text-gray-500 text-right">{ticket.total_no}</td>
+                      <td className="px-3 py-2 text-right">{ticket.total_no}</td>
                     </tr>
-                    <tr className="border-t border-gray-400 font-semibold">
-                      <td colSpan={2} className="px-3 py-2 text-gray-500 text-right">
+                    <tr className="border-t border-gray-400">
+                      <td colSpan={2} className="px-3 py-2">
                         Sub Total: 
                       </td>
-                      <td className="px-3 py-2 text-gray-500 text-right">{ticket.grand_total}</td>
+                      <td className="px-3 py-2 text-right">XCG {ticket.grand_total}</td>
                     </tr>
                     <tr className="border-t border-gray-400 font-bold">
-                      <td colSpan={2} className="px-3 py-2 text-right">
-                        Grand Total
+                      <td colSpan={2} className="px-3 py-2">
+                        Grand Total:
                       </td>
                       <td className="px-3 py-2 text-right">
                         XCG {ticket.grand_total}
-                        <div className="text-gray-500 text-sm">
-                           ${dollarConversion(Number(ticket.grand_total))} / €{euroConversion(Number(ticket.grand_total))} 
+                        <div className=" text-sm">
+                           (${dollarConversion(Number(ticket.grand_total))} / €{euroConversion(Number(ticket.grand_total))})
                         </div>
                         <div className="text-gray-500 text-sm">
                           

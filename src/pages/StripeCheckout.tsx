@@ -1,21 +1,24 @@
 import React, { useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { X } from "lucide-react";
-import { createPaymentIntent } from "../utils/services/Payment.services"; // Import new service
-import { showToast } from "../utils/toast.util"; // Import for consistent error handling
-import { handleApiError } from "../hooks/handleApiError"; // Import for consistent error handling
+import { createPaymentIntent } from "../utils/services/Payment.services";
+import { showToast } from "../utils/toast.util";
+import { handleApiError } from "../hooks/handleApiError";
+import { orderComplete } from "../utils/services/Order.services";
 
 interface StripeCheckoutProps {
   amount: number;
   localAmount: number;
-  lotteryId?: string; // Add lotteryId to associate with a lottery
-  onClose: () => void;
+  lotteryId?: string;
+  newOrderInfo: { order_id?: number } | null; // Match the Order interface structure
+  onClose: (success: boolean) => void;
 }
 
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   amount,
   lotteryId,
-   localAmount,
+  localAmount,
+  newOrderInfo,
   onClose,
 }) => {
   const stripe = useStripe();
@@ -26,15 +29,15 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const CARD_ELEMENT_OPTIONS = {
     style: {
       base: {
-        color: "#ffffff", // Set text color to white
+        color: "#ffffff",
         fontSize: "16px",
         fontFamily: "'Helvetica Neue', Helvetica, sans-serif",
         "::placeholder": {
-          color: "#cccccc", // Light gray for placeholder text
+          color: "#cccccc",
         },
       },
       invalid: {
-        color: "#fa755a", // Red for invalid state
+        color: "#fa755a",
         iconColor: "#fa755a",
       },
     },
@@ -48,19 +51,17 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
     setError(null);
 
     try {
-      // Call backend to create PaymentIntent using the service
       const response = await createPaymentIntent({
-        amount: amount * 100, // Convert to paise
-        lotteryId, // Include lotteryId if provided
+        amount: amount * 100,
+        lotteryId,
       });
 
-      const { clientSecret } = response?.data?.result || {}; // Adjust based on API response structure
+      const { clientSecret } = response?.data?.result || {};
 
       if (!clientSecret) {
         throw new Error("Failed to retrieve client secret from server.");
       }
 
-      // Confirm card payment
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement)!,
@@ -71,17 +72,22 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         const errorMessage = result.error.message || "Payment failed.";
         setError(errorMessage);
         showToast(errorMessage, "error");
+        onClose(false);
       } else if (result.paymentIntent?.status === "succeeded") {
-        showToast("✅ Payment Successful!", "success");
-        onClose();
+        if (newOrderInfo?.order_id) {
+          await orderComplete(newOrderInfo.order_id);
+        }
+        showToast("Payment Successful!", "success");
+        onClose(true);
       }
     } catch (err: any) {
       console.error("Payment error:", err);
       const errorMessage =
         err.response?.data?.message || "Failed to process payment.";
       setError(errorMessage);
-      handleApiError(err, errorMessage); // Use handleApiError for consistency
+      handleApiError(err, errorMessage);
       showToast(errorMessage, "error");
+      onClose(false);
     } finally {
       setLoading(false);
     }
@@ -92,17 +98,14 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
       <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-semibold text-white">Pay with Stripe</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white cursor-pointer">
+          <button onClick={() => onClose(false)} className="text-gray-400 hover:text-white cursor-pointer">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-[#1D1F27] p-3 rounded-lg border border-gray-600">
-            <CardElement
-              options={CARD_ELEMENT_OPTIONS}
-              className="text-white"
-            />
+            <CardElement options={CARD_ELEMENT_OPTIONS} className="text-white" />
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -112,7 +115,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay XCG ${localAmount} ($${amount})`}
+            {loading ? "Processing..." : `Pay XCG ${localAmount}`}
           </button>
         </form>
       </div>
