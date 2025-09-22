@@ -55,9 +55,6 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
   const [items, setItems] = useState<Array<any>>([]);
 
   const parsed = useMemo(() => parseCreatedAt(ticket?.created_at), [ticket?.created_at]);
-  // const totalBetAmount = useMemo(() => {
-  //   return items.reduce((sum, item) => sum + (parseFloat(item.bet_amount) || 0), 0);
-  // }, [items]);
 
   useEffect(() => {
     const load = async () => {
@@ -140,11 +137,8 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
             </div>
           </div>
 
-
-
           {/* Items Table */}
           <div className="px-6 mb-6">
-            {/* <p className="text-gray-700 font-semibold mb-2 text-lg">Ticket Items</p> */}
             <div className="border border-gray-300 rounded overflow-hidden">
               {loading ? (
                 <div className="p-4 text-gray-500 text-center text-lg">Loading...</div>
@@ -162,12 +156,12 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                   <tbody className="divide-y divide-gray-200">
                     {items.map((item, idx) => {
                       const number = item.lottery_number ?? "-";
-                      const abbreviation = item.abbreviation[0] || "-";
+                      const abbreviations = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
                       const bet = parseFloat(item.bet_amount) || 0;
                       return (
                         <tr key={idx}>
                           <td className="px-3 py-2">
-                            <p className=" text-red-600">{abbreviation}</p>
+                            <p className="text-red-600">{abbreviations}</p>
                             <p className="text-lg font-semibold">{number}</p>
                           </td>
                           <td className="px-3 py-2 text-center">{String(number).length} digits</td>
@@ -179,7 +173,6 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                     })}
                   </tbody>
                   <tfoot>
-
                     <tr className="border-t border-gray-400">
                       <td colSpan={2} className="px-3 py-2">
                         Total Numbers:
@@ -188,7 +181,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                     </tr>
                     <tr className="border-t border-gray-400">
                       <td colSpan={2} className="px-3 py-2">
-                        Sub Total: 
+                        Sub Total:
                       </td>
                       <td className="px-3 py-2 text-right">XCG {ticket.grand_total}</td>
                     </tr>
@@ -198,15 +191,11 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                       </td>
                       <td className="px-3 py-2 text-right">
                         XCG {ticket.grand_total}
-                        <div className=" text-sm">
-                           (${dollarConversion(Number(ticket.grand_total))} / €{euroConversion(Number(ticket.grand_total))})
-                        </div>
-                        <div className="text-gray-500 text-sm">
-                          
+                        <div className="text-sm">
+                          (${dollarConversion(Number(ticket.grand_total))} / €{euroConversion(Number(ticket.grand_total))})
                         </div>
                       </td>
                     </tr>
-
                   </tfoot>
                 </table>
               )}

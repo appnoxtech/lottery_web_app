@@ -9,7 +9,7 @@ import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
 import { placeOrder } from "../utils/services/Order.services";
-import { dollarConversion} from "../hooks/utilityFn";
+import { dollarConversion } from "../hooks/utilityFn";
 // import { formatDate } from "../hooks/dateFormatter";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
@@ -188,18 +188,25 @@ const NewLottery: React.FC = () => {
     .split(",")
     .map((n) => n.trim())
     .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+
   digitsToProcess.forEach((digit) => {
     const resultForDigit: string[] = [];
     numbers.forEach((num) => {
       const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
       if (cleanNum.length === digit) {
-        if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
-          resultForDigit.push(cleanNum);
+        // Check if the number starts with zero (e.g., "08", "002")
+        if (!cleanNum.startsWith("0") || cleanNum === "0") {
+          if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
+            resultForDigit.push(cleanNum);
+          }
         }
       } else if (cleanNum.length > digit) {
         const truncated = cleanNum.slice(-digit);
-        if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
-          resultForDigit.push(truncated);
+        // Check if the truncated number starts with zero (e.g., "002" from "90002" for 3 digits)
+        if (!truncated.startsWith("0") || truncated === "0") {
+          if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
+            resultForDigit.push(truncated);
+          }
         }
       }
     });
@@ -248,99 +255,99 @@ const NewLottery: React.FC = () => {
   };
 
   const handleCreateLottery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (newOrderInfo) {
-        setShowPaymentModal(true);
-        return;
-      }
-      setLoading(true);
-      const formData: FormValues = {
-        lotteryNumber: inputNumbers,
-        selectedLotteries: selectedLotteries,
-        betAmount: betAmount,
-        selectedDigitType: selectedDigits,
-        selectedNumbers: getAllProcessedNumbers(),
-      };
-      const isValid = isOrderValid(formData);
-      if (!isValid) {
-        setLoading(false);
-        return;
-      }
-      const localTotal = formData.selectedNumbers.length * +formData.betAmount;
-      const orderParams = {
-        userorder: [
-          {
-            bet_amount: formData.betAmount,
-            lottery_id: formData.selectedLotteries.map((item) => item.id),
-            lottery_number: formData.selectedNumbers,
-          },
-        ],
-        total_price: dollarConversion(localTotal),
-        user_id: userData?.id,
-      };
-      const response = await placeOrder(orderParams);
-      if ((response as any)?.data?.success) {
-        const { data } = (response as any)?.data;
-        setNewOrderInfo({
-          ...data,
-          total_price: orderParams.total_price as string,
-          local_total: localTotal.toString(),
-          ticket_numbers: orderParams.userorder[0].lottery_number as number[],
-          selected_lotteries: formData.selectedLotteries.map(
-            (item) => item.abbreviation
-          ),
-        });
-        setShowPaymentModal(true);
-      }
-    } catch (error) {
-      handleApiError(error, "Failed to place order");
-    } finally {
-      setLoading(false);
+  e.preventDefault();
+  try {
+    if (newOrderInfo) {
+      setShowPaymentModal(true);
+      return;
     }
-  };
-
-  const handleStripePayment = (success: boolean) => {
-  if (success) {
-    resetForm();
-    setShowPaymentModal(false);
-    // showToast("Payment successful!", "success");
-  } else {
-    setShowPaymentModal(false); // Close on failure or cancel
-    showToast("Payment was not completed.", "error");
+    setLoading(true);
+    const formData: FormValues = {
+      lotteryNumber: inputNumbers,
+      selectedLotteries: selectedLotteries,
+      betAmount: betAmount,
+      selectedDigitType: selectedDigits,
+      selectedNumbers: getAllProcessedNumbers(),
+    };
+    const isValid = isOrderValid(formData);
+    if (!isValid) {
+      setLoading(false);
+      return;
+    }
+    const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+    const orderParams = {
+      userorder: [
+        {
+          bet_amount: formData.betAmount,
+          lottery_id: formData.selectedLotteries.map((item) => item.id),
+          lottery_number: formData.selectedNumbers,
+        },
+      ],
+      total_price: dollarConversion(localTotal),
+      user_id: userData?.id,
+    };
+    const response = await placeOrder(orderParams);
+    if ((response as any)?.data?.success) {
+      const { data } = (response as any)?.data;
+      setNewOrderInfo({
+        ...data,
+        total_price: orderParams.total_price as string,
+        local_total: localTotal.toString(),
+        ticket_numbers: orderParams.userorder[0].lottery_number as number[],
+        selected_lotteries: formData.selectedLotteries.map(
+          (item) => item.abbreviation
+        ),
+      });
+      setShowPaymentModal(true);
+    }
+  } catch (error) {
+    handleApiError(error, "Failed to place order");
+  } finally {
+    setLoading(false);
   }
 };
 
-//  const handleWhatsappPayment = () => {
-//   const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
-//   const message = `
-//     Esaki ta e numbernan ku bo a pidi:
-//     ----------------------------------------
-//     🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
-//     💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
-//     📅 Fecha: ${formatDate(new Date().toISOString())}
-//     💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
-//     Number(grandTotal)
-//   )} / € ${euroConversion(Number(grandTotal))}
-//     💳 Modo di Pago: Whatsapp
-    
-//     Por fabor usa link pa paga sea na €, $ of XCG :
-//     Hulanda Ideal Euro €: ${paymentLink}
-//     Bonaire Dollar $: ${paymentLink2}
-//     Korsou Florin Karibense XCG: ${paymentLink3}
-    
-//     Kòrda paga pa bo ta den wega i kontrolá bo bòn.
-//     Suerte,
-//     Wega Di Number`;
-//   const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-//   try {
-//     window.open(url, "_blank");
-//     setShowPaymentModal(false); // Close modal after opening WhatsApp
-//     showToast("Please complete payment via WhatsApp.", "info");
-//   } catch (err) {
-//     showToast("Failed to open WhatsApp", "error");
-//   }
-// };
+  const handleStripePayment = (success: boolean) => {
+    if (success) {
+      resetForm();
+      setShowPaymentModal(false);
+      // showToast("Payment successful!", "success");
+    } else {
+      setShowPaymentModal(false); // Close on failure or cancel
+      showToast("Payment was not completed.", "error");
+    }
+  };
+
+  //  const handleWhatsappPayment = () => {
+  //   const grandTotal = parseFloat(newOrderInfo?.total_price || "0");
+  //   const message = `
+  //     Esaki ta e numbernan ku bo a pidi:
+  //     ----------------------------------------
+  //     🎟️ Numbernan: ${newOrderInfo?.ticket_numbers}
+  //     💰 Loteria: ${newOrderInfo?.selected_lotteries?.join(", ")}
+  //     📅 Fecha: ${formatDate(new Date().toISOString())}
+  //     💵 Total: XCG ${grandTotal.toFixed(2)} / $ ${dollarConversion(
+  //     Number(grandTotal)
+  //   )} / € ${euroConversion(Number(grandTotal))}
+  //     💳 Modo di Pago: Whatsapp
+
+  //     Por fabor usa link pa paga sea na €, $ of XCG :
+  //     Hulanda Ideal Euro €: ${paymentLink}
+  //     Bonaire Dollar $: ${paymentLink2}
+  //     Korsou Florin Karibense XCG: ${paymentLink3}
+
+  //     Kòrda paga pa bo ta den wega i kontrolá bo bòn.
+  //     Suerte,
+  //     Wega Di Number`;
+  //   const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  //   try {
+  //     window.open(url, "_blank");
+  //     setShowPaymentModal(false); // Close modal after opening WhatsApp
+  //     showToast("Please complete payment via WhatsApp.", "info");
+  //   } catch (err) {
+  //     showToast("Failed to open WhatsApp", "error");
+  //   }
+  // };
 
   const resetForm = () => {
     setInputNumbers("");
@@ -398,10 +405,22 @@ const NewLottery: React.FC = () => {
                       id="inputNumbers"
                       rows={3}
                       value={inputNumbers}
-                      onChange={(e) => setInputNumbers(e.target.value)}
+                      onChange={(e) => {
+                        // Keep only digits, comma, and spaces
+                        const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
+                        setInputNumbers(sanitized);
+                      }}
+                      onPaste={(e) => {
+                        const paste = e.clipboardData.getData("text");
+                        // Allow only digits, comma, and spaces in pasted content
+                        const sanitized = paste.replace(/[^0-9, ]/g, "");
+                        e.preventDefault();
+                        setInputNumbers((prev) => prev + sanitized);
+                      }}
                       className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
                       placeholder="e.g., 12, 345, 1234, 56, 8"
                     />
+
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -635,7 +654,7 @@ const NewLottery: React.FC = () => {
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
-                  <div>Total Amount: XCG {newOrderInfo.local_total} (${newOrderInfo.total_price})</div>
+                  <div>Total Amount: XCG {newOrderInfo.local_total}</div>
                   <div>Numbers: {newOrderInfo.ticket_numbers.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
@@ -688,7 +707,7 @@ const NewLottery: React.FC = () => {
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
                     <svg
-                      className="w-6 h-6 text-white"  
+                      className="w-6 h-6 text-white"
                       viewBox="0 0 24 24"
                       fill="currentColor"
                     >
@@ -721,23 +740,23 @@ const NewLottery: React.FC = () => {
         </div>
       )}
       {showStripe && (
-  <StripeCheckout
-    amount={parseFloat(newOrderInfo?.total_price || "0")}
-    localAmount={parseFloat(newOrderInfo?.local_total || "0")}
-    lotteryId={selectedLotteries.map((l) => l.id).join(",")}
-    newOrderInfo={newOrderInfo} // Pass the prop
-    onClose={(success: boolean) => {
-      setShowStripe(false);
-      handleStripePayment(success);
-    }}
-  />
-)}
-{showWhatsappModal && (
-  <WhatsAppModal
-    newOrderInfo={newOrderInfo}
-    onClose={() => setShowWhatsappModal(false)} // just close modal
-  />
-)}
+        <StripeCheckout
+          amount={parseFloat(newOrderInfo?.total_price || "0")}
+          localAmount={parseFloat(newOrderInfo?.local_total || "0")}
+          lotteryId={selectedLotteries.map((l) => l.id).join(",")}
+          newOrderInfo={newOrderInfo} // Pass the prop
+          onClose={(success: boolean) => {
+            setShowStripe(false);
+            handleStripePayment(success);
+          }}
+        />
+      )}
+      {showWhatsappModal && (
+        <WhatsAppModal
+          newOrderInfo={newOrderInfo}
+          onClose={() => setShowWhatsappModal(false)} // just close modal
+        />
+      )}
 
     </div>
   );

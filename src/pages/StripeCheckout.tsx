@@ -16,8 +16,8 @@ interface StripeCheckoutProps {
 
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   amount,
-  lotteryId,
   localAmount,
+  lotteryId,
   newOrderInfo,
   onClose,
 }) => {
@@ -25,6 +25,9 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Debug log to verify props
+  console.log("StripeCheckout props:", { amount, localAmount, lotteryId, newOrderInfo });
 
   const CARD_ELEMENT_OPTIONS = {
     style: {
@@ -52,7 +55,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
     try {
       const response = await createPaymentIntent({
-        amount: amount * 100,
+        amount: amount * 100, // Ensure amount is in cents
         lotteryId,
       });
 
@@ -115,7 +118,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay XCG ${localAmount}`}
+            {loading ? "Processing..." : `Pay XCG ${localAmount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
           </button>
         </form>
       </div>
