@@ -51,38 +51,12 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
     }
   };
 
-  // const notifications = [
-  //   {
-  //     id: 1,
-  //     title: "New Winner Announced",
-  //     message: "Lottery #123 has a new winner!",
-  //     time: "2 min ago",
-  //     unread: true,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "Ticket Sales Update",
-  //     message: "500 new tickets sold today",
-  //     time: "1 hour ago",
-  //     unread: true,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "System Maintenance",
-  //     message: "Scheduled maintenance tonight",
-  //     time: "3 hours ago",
-  //     unread: false,
-  //   },
-  // ];
-
-  // const unreadCount = notifications.filter((n) => n.unread).length;
-
   return (
     <header
       className={`bg-[#2A2D36] border-b border-gray-700 flex-shrink-0 ${className}`}
     >
       <div className="px-4 lg:px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-end">
           {/* Mobile menu button */}
           <div className="lg:hidden mr-12">
             {/* <button
@@ -97,85 +71,32 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
             </button> */}
           </div>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search lotteries, tickets, winners..."
-                className="w-full pl-10 pr-4 py-3 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
-              />
-            </div>
-          </div>
-
-          {/* Right Side - Notifications and User Menu */}
+          {/* Right Side - Transactions and User Menu */}
           <div className="flex items-center space-x-4 ml-3">
-            {/* Notifications */}
-            {/* <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-3 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
-              >
-                <Bell className="w-5 h-5 text-gray-300 " />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#EDB726] text-[#1D1F27] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              Notifications Dropdown
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-[#2A2D36] border border-gray-600 rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-gray-600">
-                    <h3 className="text-lg font-semibold text-white">
-                      Notifications
-                    </h3>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border-b border-gray-700 hover:bg-[#3A3D46] cursor-pointer ${
-                          notification.unread ? "bg-[#1D1F27]" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="text-sm font-medium text-white">
-                              {notification.title}
-                            </h4>
-                            <p className="text-sm text-gray-400 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              {notification.time}
-                            </p>
-                          </div>
-                          {notification.unread && (
-                            <div className="w-2 h-2 bg-[#EDB726] rounded-full mt-1"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-4 border-t border-gray-600">
-                    <button className="w-full text-center text-[#EDB726] hover:text-[#d4a422] text-sm font-medium cursor-pointer">
-                      View All Notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div> */}
+            {/* Transactions Section */}
+            <div
+              onClick={() => navigate("/transactions")}
+              className="flex items-center space-x-1 sm:space-x-2 p-2 bg-[#EDB726] rounded-3xl border border-gray-600 hover:border-[#D4A422] transition-colors cursor-pointer"
+            >
+              <img
+                src="/image.png"
+                alt="Transaction Icon"
+                className="w-6 h-6 sm:w-8 sm:h-8"
+              />
+              <span className="text-[10px] sm:text-xs  text-[#1D1F27]">
+                Your 
+                <p className="text-white">Transactions</p> 
+              </span>
+            </div>
 
             {/* User Menu - Hidden on small screens, visible on medium and up */}
-            <div className="relative  md:block">
+            <div className="relative md:block">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
                 {/* Profile Image or Avatar */}
-                <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center border border-2 border-[#EDB726]">
                   {user.avatar ? (
                     <img
                       src={user.avatar}
@@ -195,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                 {/* User Info */}
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-gray-400">{user.phone}</p>
+                  {/* <p className="text-xs text-gray-400">{user.phone}</p> */}
                 </div>
 
                 <ChevronDown className="w-4 h-4 text-gray-400" />

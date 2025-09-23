@@ -6,7 +6,6 @@ import { signupSchema } from "../utils/validationSchemas";
 import { userSignup } from "../utils/services/Registration.services";
 import { showToast } from "../utils/toast.util";
 import { Input, Button, PhoneInput } from "../components/common";
-import { UserPlus, User, Lock, CheckCircle } from "lucide-react";
 
 interface SignupFormData {
   name: string;
@@ -46,17 +45,16 @@ const Signup: React.FC = () => {
       const response = await userSignup(signupData);
 
       if (response?.data) {
-        const otp = response.data.result.otp; // Extract OTP from response
+        const otp = response.data.result.otp;
         showToast(
           "Registration successful! Please verify your OTP.",
           "success"
         );
-        // Navigate to OTP verification page with phone number and OTP
         navigate("/otp-verification", {
           state: {
             phoneNumber: data.phoneNumber,
             fromSignup: true,
-            otp, // Pass OTP to OTPVerification
+            otp,
           },
         });
       }
@@ -73,25 +71,31 @@ const Signup: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        
+        {/* Title Section */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
-            <UserPlus className="h-8 w-8 text-[#1D1F27]" />
+          
+
+          {/* Logo Image Instead of UserPlus */}
+          <div className="mx-auto mt-6 h-16 w-16 flex items-center justify-center rounded-full  shadow-lg overflow-hidden">
+            <img
+              src="/image.png" // ✅ public folder image
+              alt="Logo"
+              className="h-14 w-14 object-contain"
+            />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
-            Join Us Today
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
-            >
-              Sign in here
-            </Link>
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Wega di Number <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
+          </h1>
+
+          {/* Subtitle */}
+          <h3 className="mt-6 text-center text-xl font-medium text-white sm:text-2xl">
+            Sign Up For An <span className="text-[#EDB726]">Account</span>
+          </h3>
         </div>
 
-        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
+        {/* Form Section */}
+        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-white">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <Controller
@@ -100,10 +104,8 @@ const Signup: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    label="Full Name"
-                    placeholder="Enter your full name"
+                    placeholder="User Name"
                     error={errors.name?.message}
-                    icon={<User className="h-5 w-5" />}
                   />
                 )}
               />
@@ -115,11 +117,10 @@ const Signup: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <PhoneInput
-                    label="Phone Number"
                     value={field.value}
                     onChange={field.onChange}
                     error={errors.phoneNumber?.message}
-                    placeholder="Enter your phone number"
+                    placeholder="Phone Number"
                   />
                 )}
               />
@@ -132,12 +133,10 @@ const Signup: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    label="Password"
                     isPassword={true}
-                    placeholder="Create a strong password"
+                    placeholder="Password"
                     error={errors.password?.message}
-                    icon={<Lock className="h-5 w-5" />}
-                    maxLength={20} 
+                    maxLength={20}
                   />
                 )}
               />
@@ -150,12 +149,10 @@ const Signup: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    label="Confirm Password"
                     isPassword={true}
-                    placeholder="Confirm your password"
+                    placeholder="Confirm Password"
                     error={errors.confirmPassword?.message}
-                    icon={<CheckCircle className="h-5 w-5" />}
-                    maxLength={20} 
+                    maxLength={20}
                   />
                 )}
               />
@@ -172,30 +169,28 @@ const Signup: React.FC = () => {
               </Button>
             </div>
 
-            <div className="text-xs text-gray-500 text-center">
-              By creating an account, you agree to our{" "}
+            <div className="text-md text-white text-center">
+              <p>By signing up you accept our{" "}</p>
               <Link
                 to="/terms"
                 className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200"
               >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                to="/privacy"
-                className="text-[#EDB726] hover:text-[#d4a422] hover:underline transition-colors duration-200"
-              >
-                Privacy Policy
+                terms and conditions
               </Link>
             </div>
           </form>
         </div>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-400">
-            Join thousands of satisfied users
-          </p>
-        </div>
+        {/* Already Have Account */}
+        <p className="mt-2 text-center text-md text-gray-300">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 underline"
+          >
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );

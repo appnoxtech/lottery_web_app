@@ -93,7 +93,9 @@ body {
 .terms-content h2 {
   color: #EDB726;
   margin-top: 20px;
+  font-weight: 600;
   margin-bottom: 10px;
+  font-size: larger
 }
 
 .terms-content p {
@@ -114,6 +116,8 @@ body {
 .lottery-rules-content h2 {
   color: #EDB726;
   margin-top: 20px;
+  font-size: larger;
+  font-weight: 600;
   margin-bottom: 10px;
 }
 
@@ -136,7 +140,9 @@ body {
 .privacy-policy-content h2 {
   color: #EDB726;
   margin-top: 20px;
+  font-weight: 600;
   margin-bottom: 10px;
+  font-size: larger
 }
 
 .privacy-policy-content p {

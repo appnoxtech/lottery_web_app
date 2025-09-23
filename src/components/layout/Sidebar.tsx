@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, Ticket, Trophy, Menu, X, Home } from "lucide-react";
+import { Plus, Ticket, Trophy, Menu, X } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -13,14 +13,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
 
   const menuItems = [
     {
-      id: "home",
-      label: "Dashboard",
-      icon: Home,
-      path: "/home",
-    },
-    {
       id: "new-lottery",
-      label: "New Lottery",
+      label: "Buy Lottery",
       icon: Plus,
       path: "/new-lottery",
     },
@@ -86,13 +80,14 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
               </button>
             )}
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-5">
               <div className="w-10 h-10 bg-[#EDB726] rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-[#1D1F27]" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Lottery</h1>
-                <p className="text-xs text-gray-400">Dashboard</p>
+              <div className="text-center">
+                <h1 className="text-sm font-bold text-white">
+                  Wega di Number <span className="block text-[#EDB726] tracking-[0.3em] text-semibold text-lg">online</span>
+                </h1>
               </div>
             </div>
           </div>
@@ -111,10 +106,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
                       className={`
                         w-full flex items-center space-x-3 px-4 py-3 rounded-lg
                         transition-all duration-200 text-left
-                        ${
-                          isActive
-                            ? "bg-[#EDB726] text-[#1D1F27] font-semibold"
-                            : "text-gray-300 hover:bg-[#3A3D46] hover:text-white cursor-pointer"
+                        ${isActive
+                          ? "bg-[#EDB726] text-[#1D1F27] font-semibold"
+                          : "text-gray-300 hover:bg-[#3A3D46] hover:text-white cursor-pointer"
                         }
                       `}
                     >

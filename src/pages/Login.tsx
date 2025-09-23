@@ -64,7 +64,7 @@ const Login: React.FC = () => {
         
         // Small delay to ensure data is stored before navigation
         setTimeout(() => {
-          navigate('/home', { replace: true });
+          navigate('/new-lottery', { replace: true });
         }, 100);
       } else {
         showToast('Login response invalid. Please try again.', 'error');
@@ -85,21 +85,24 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-[#EDB726] shadow-lg">
-            <User className="h-8 w-8 text-[#1D1F27]" />
+          
+
+          {/* Logo Image Instead of UserPlus */}
+          <div className="mx-auto mt-6  h-16 w-16 flex items-center justify-center rounded-full  shadow-lg overflow-hidden">
+            <img
+              src="/image.png" // ✅ public folder image
+              alt="Logo"
+              className="h-14 w-14 object-contain"
+            />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-white sm:text-4xl">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
-            >
-              Sign up here
-            </Link>
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-8">
+            Wega di Number <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
+          </h1>
+
+          {/* Subtitle */}
+          <h3 className="mt-6 text-center text-2xl font-medium text-white sm:text-3xl">
+            Welcome back! <span className="text-[#EDB726]">login</span>
+          </h3>
         </div>
 
         <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
@@ -110,11 +113,11 @@ const Login: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <PhoneInput
-                    label="Phone Number"
+                    // label="Phone Number"
                     value={field.value}
                     onChange={field.onChange}
                     error={errors.phoneNumber?.message}
-                    placeholder="Enter your phone number"
+                    placeholder="Phone Number"
                   />
                 )}
               />
@@ -127,17 +130,17 @@ const Login: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    label="Password"
+                    // label="Password"
                     isPassword={true}
-                    placeholder="Enter your password"
+                    placeholder="Password"
                     error={errors.password?.message}
-                    icon={<Lock className="h-5 w-5" />}
+                    // icon={<Lock className="h-5 w-5" />}
                   />
                 )}
               />
             </div>
 
-            <div className="flex items-center justify-center">
+            <div className="flex float-right">
               <Link
                 to="/forgot-password"
                 className="text-sm font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
@@ -149,21 +152,25 @@ const Login: React.FC = () => {
             <div>
               <Button
                 type="submit"
-                className="w-full py-3 text-base font-semibold shadow-lg hover:shadow-xl"
+                className="w-full py-3 text-base font-bold shadow-lg hover:shadow-xl"
                 isLoading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? 'Signing in...' :'Login'}
               </Button>
             </div>
           </form>
         </div>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-400">
-            Protected by industry-standard encryption
+        <p className="mt-2 text-center text-sm text-gray-300">
+            Don't have an account?{' '}
+            <Link
+              to="/signup"
+              className="underline font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
+            >
+              Signup
+            </Link>
           </p>
-        </div>
+        
       </div>
     </div>
   );

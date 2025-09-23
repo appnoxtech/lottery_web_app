@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { Trophy, Calendar, DollarSign, Phone } from "lucide-react";
 import { getWinnerHistory } from "../utils/services/Winners.services";
 import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
 import { showToast } from "../utils/toast.util";
@@ -16,15 +15,32 @@ interface Winner {
   thirdPrize?: string;
 }
 
+interface LotteryTiming {
+  id: number;
+  lottery_id: number;
+  day: string;
+  starting_time: string;
+  cut_off_time: string;
+}
+
+interface Lottery {
+  id: number;
+  name: string;
+  abbreviation: string;
+  status: string;
+  timings: LotteryTiming[];
+}
+
 const Winners: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dispatch = useDispatch();
-  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [selectedPeriod, setSelectedPeriod] = useState("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [countdown, setCountdown] = useState("");
 
   const winnersList = useSelector((state: any) => state.winner.winnersList);
   const selectedLottery = useSelector(
@@ -56,6 +72,56 @@ const Winners: React.FC = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const getCurrentLotteryTiming = useCallback(() => {
+    if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
+      return null;
+    }
+    return selectedLottery.timings[0];
+  }, [selectedLottery]);
+
+  useEffect(() => {
+    if (selectedPeriod === "today" && selectedLottery) {
+      const timing = getCurrentLotteryTiming();
+
+      if (!timing) {
+        setCountdown("No timing available");
+        return;
+      }
+
+      const updateCountdown = () => {
+        const now = new Date();
+        const cutOffTime = new Date(timing.cut_off_time);
+
+        if (cutOffTime <= now) {
+          setCountdown("Closed");
+          return;
+        }
+
+        const diff = cutOffTime.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          setCountdown("Closed");
+          return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        setCountdown(
+          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        );
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setCountdown("");
+    }
+  }, [selectedPeriod, selectedLottery, getCurrentLotteryTiming]);
+
   const fetchWinnerHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -72,21 +138,13 @@ const Winners: React.FC = () => {
       ) {
         let winners = response.data.result.winners;
 
-        if (selectedPeriod !== "all") {
-          const now = new Date();
-          let thresholdDate = new Date();
-
-          if (selectedPeriod === "today") {
-            thresholdDate.setHours(0, 0, 0, 0);
-          } else if (selectedPeriod === "week") {
-            thresholdDate.setDate(now.getDate() - 7);
-          } else if (selectedPeriod === "month") {
-            thresholdDate.setMonth(now.getMonth() - 1);
-          }
+        if (selectedPeriod === "today") {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
 
           winners = winners.filter((item: any) => {
             const winnerDate = new Date(item.date);
-            return winnerDate >= thresholdDate;
+            return winnerDate >= today;
           });
         }
 
@@ -105,7 +163,7 @@ const Winners: React.FC = () => {
         });
 
         const formattedWinners = Object.values(grouped).map((item) => ({
-          id: `${item.date}-${item.lotteryId}`, // Unique ID required by the slice
+          id: `${item.date}-${item.lotteryId}`,
           lotteryName: selectedLottery?.name || "Unknown Lottery",
           ticketNumber: "-",
           winnerName: "-",
@@ -120,7 +178,7 @@ const Winners: React.FC = () => {
           claimDate: null,
           prizeType: "unknown",
           lotteryId: item.lotteryId,
-          date: item.date, // You might not need this depending on usage
+          date: item.date,
           firstPrize: item.firstPrize,
           secondPrize: item.secondPrize,
           thirdPrize: item.thirdPrize,
@@ -168,7 +226,8 @@ const Winners: React.FC = () => {
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const lotteryId = event.target.value;
-    const selected = (lotteries.length > 0 ? lotteries : defaultLotteries).find(
+    const availableLotteries = lotteries.length > 0 ? lotteries : defaultLotteries;
+    const selected = availableLotteries.find(
       (lottery: any) => lottery.id.toString() === lotteryId
     );
     if (selected) {
@@ -196,6 +255,13 @@ const Winners: React.FC = () => {
     }
   };
 
+  const getDisplayLotteryName = () => {
+    if (selectedLottery) {
+      return selectedLottery.abbreviation || "LOTTERY";
+    }
+    return "LOTTERY";
+  };
+
   return (
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden w-full">
       <Sidebar />
@@ -204,38 +270,35 @@ const Winners: React.FC = () => {
           isMenuOpen={isMenuOpen}
           onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
         />
-        <main className="flex-1 p-6 overflow-y-auto w-full">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto w-full">
           <div className="w-full mx-auto max-w-full px-2 sm:px-4 lg:px-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">
+            <div className="mb-2 sm:mb-4 md:mb-8">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
                 Winners Management
               </h1>
-              <p className="text-gray-300">
-                View and manage lottery winners and prize distributions
-              </p>
             </div>
-            <div className="bg-[#2A2D36] rounded-lg p-4 md:p-6 border border-gray-700 mb-6 w-full max-w-full overflow-x-auto">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+
+            <div className="bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-gray-700 mb-4 sm:mb-6 md:mb-8 w-full max-w-full overflow-x-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
-                  {["all", "today", "week", "month"].map((period) => (
+                  {["today", "all"].map((period) => (
                     <button
                       key={period}
                       onClick={() => setSelectedPeriod(period)}
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedPeriod === period
-                          ? "bg-[#EDB726] text-[#1D1F27]"
-                          : "text-gray-400 hover:text-white cursor-pointer"
-                      }`}
+                      className={`px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base font-medium transition-colors ${selectedPeriod === period
+                        ? "bg-[#EDB726] text-[#1D1F27]"
+                        : "text-gray-400 hover:text-white cursor-pointer"
+                        }`}
                     >
                       {period.charAt(0).toUpperCase() + period.slice(1)}
                     </button>
                   ))}
                 </div>
-                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                   <select
                     value={selectedLottery?.id || ""}
                     onChange={handleLotterySelection}
-                    className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726] cursor-pointer"
+                    className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
                   >
                     <option value="">All Lotteries</option>
                     {(lotteries.length > 0 ? lotteries : defaultLotteries).map(
@@ -250,7 +313,7 @@ const Winners: React.FC = () => {
                     <select
                       value={selectedLotteryType.id}
                       onChange={handleTicketTypeSelection}
-                      className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726] cursor-pointer"
+                      className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
                     >
                       <option value="" disabled>
                         Select Ticket Type
@@ -263,16 +326,15 @@ const Winners: React.FC = () => {
                     </select>
                   )}
                   {isMobile && selectedLottery && (
-                    <div className="flex space-x-2 w-full">
+                    <div className="flex space-x-1 w-full">
                       {ticketTypes.map((type) => (
                         <button
                           key={type.id}
                           onClick={() => setSelectedLotteryType(type)}
-                          className={`flex-1 px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            selectedLotteryType.id === type.id
-                              ? "bg-[#EDB726] text-[#1D1F27]"
-                              : "bg-[#1D1F27] text-gray-300 border border-gray-600 hover:text-white"
-                          }`}
+                          className={`flex-1 px-1 sm:px-2 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${selectedLotteryType.id === type.id
+                            ? "bg-[#EDB726] text-[#1D1F27]"
+                            : "bg-[#1D1F27] text-gray-300 border border-gray-600 hover:text-white"
+                            }`}
                         >
                           {type.name}
                         </button>
@@ -285,118 +347,118 @@ const Winners: React.FC = () => {
                       placeholder="Search by date or prize"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 focus:outline-none focus:border-[#EDB726]"
+                      className="w-full sm:w-48 md:w-64 px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726]"
                     />
                   )}
                 </div>
               </div>
             </div>
+            {selectedPeriod === "today" && (
+              <div className="p-2 sm:p-4 md:p-6 mb-4 sm:mb-6 md:mb-8">
+                <div className="text-center">
+                  <div className="bg-[#1D1F27] rounded-lg p-2 sm:p-4 inline-block">
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-300 mb-1 sm:mb-2">
+                      Today's Countdown
+                    </h3>
+                    <div className="text-2xl sm:text-3xl md:text-5xl font-bold text-[#EDB726]">
+                      {countdown}
+                    </div>
+                    <div className="mt-2 sm:mt-4 border border-black p-1 px-2 sm:px-4 bg-black rounded-lg flex justify-center">
+                      <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#EDB726] whitespace-nowrap">
+                        {getDisplayLotteryName()}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                {info ? (
+                  <div className="text-center text-gray-400 p-2 sm:p-4 mt-4 sm:mt-6">{info}</div>
+                ) : filteredWinners.length > 0 ? (
+                  <div className="bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-gray-700 mt-4 sm:mt-6 text-center">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-2 sm:mb-4">Previous Winning Numbers</h3>
+                    <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+                      <div className="text-center">
+                        <div className="bg-[#EDB726] rounded-full p-1 sm:p-2 md:p-4 inline-block mb-1 sm:mb-2">
+                          <span className="text-base sm:text-lg md:text-2xl font-bold text-[#1D1F27]">1st prize</span>
+                        </div>
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#EDB726]">
+                          {filteredWinners[0]?.firstPrize || "-"}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="bg-[#EDB726] rounded-full p-1 sm:p-2 md:p-4 inline-block mb-1 sm:mb-2">
+                          <span className="text-base sm:text-lg md:text-2xl font-bold text-[#1D1F27]">2nd prize</span>
+                        </div>
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#EDB726]">
+                          {filteredWinners[0]?.secondPrize || "-"}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="bg-[#EDB726] rounded-full p-1 sm:p-2 md:p-4 inline-block mb-1 sm:mb-2">
+                          <span className="text-base sm:text-lg md:text-2xl font-bold text-[#1D1F27]">3rd prize</span>
+                        </div>
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#EDB726]">
+                          {filteredWinners[0]?.thirdPrize || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 w-full max-w-full">
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Trophy className="w-5 h-5 text-[#EDB726]" />
-                    <h3 className="text-sm text-gray-400">Total Winners</h3>
+            {selectedPeriod === "all" && (
+              <div className="bg-[#2A2D36] rounded-lg overflow-x-auto border border-gray-700 w-full max-w-full">
+                {loading ? (
+                  <div className="text-center text-gray-400 p-2 sm:p-4">
+                    Loading winners...
                   </div>
-                  <p className="text-lg font-bold">{winnersList.length}</p>
-                </div>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-5 h-5 text-[#EDB726]" />
-                    <h3 className="text-sm text-gray-400">Date Filter</h3>
+                ) : error ? (
+                  <div className="text-center text-red-400 p-2 sm:p-4">{error}</div>
+                ) : info ? (
+                  <div className="text-center text-gray-400 p-2 sm:p-4">{info}</div>
+                ) : filteredWinners.length === 0 ? (
+                  <div className="text-center text-gray-400 p-2 sm:p-4">
+                    No winners found for selected criteria.
                   </div>
-                  <p className="text-lg font-bold">
-                    {selectedPeriod.charAt(0).toUpperCase() +
-                      selectedPeriod.slice(1)}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="w-5 h-5 text-[#EDB726]" />
-                    <h3 className="text-sm text-gray-400">Total Prizes</h3>
-                  </div>
-                  <p className="text-lg font-bold">
-                    
-                    {winnersList.reduce((sum: number, winner: Winner) => {
-                      return (
-                        sum +
-                        (winner.firstPrize ? parseInt(winner.firstPrize) : 0) +
-                        (winner.secondPrize
-                          ? parseInt(winner.secondPrize)
-                          : 0) +
-                        (winner.thirdPrize ? parseInt(winner.thirdPrize) : 0)
-                      );
-                    }, 0)}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-5 h-5 text-[#EDB726]" />
-                    <h3 className="text-sm text-gray-400">Contact</h3>
-                  </div>
-                  <p className="text-lg font-bold">Support</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-[#2A2D36] rounded-lg overflow-x-auto border border-gray-700 w-full max-w-full">
-              {loading ? (
-                <div className="text-center text-gray-400 p-4">
-                  Loading winners...
-                </div>
-              ) : error ? (
-                <div className="text-center text-red-400 p-4">{error}</div>
-              ) : info ? (
-                <div className="text-center text-gray-400 p-4">{info}</div>
-              ) : filteredWinners.length === 0 ? (
-                <div className="text-center text-gray-400 p-4">
-                  No winners found for selected criteria.
-                </div>
-              ) : (
-                <table className="min-w-full text-sm text-left text-gray-300">
-                  <thead className="bg-[#1D1F27] text-sm text-gray-500">
-                    <tr>
-                      <th className="px-4 py-2">Date</th>
-                      <th className="px-4 py-2">
-                        1<sup>st</sup> Prize
-                      </th>
-                      <th className="px-4 py-2">
-                        2<sup>nd</sup> Prize
-                      </th>
-                      <th className="px-4 py-2">
-                        3<sup>rd</sup> Prize
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredWinners.map((winner, index) => (
-                      <tr
-                        key={index}
-                        className="border-t border-gray-700 hover:bg-gray-800"
-                      >
-                        <td className="px-4 py-3">{winner.date}</td>
-                        <td className="px-4 py-3">
-                          {winner.firstPrize || "-"}
-                        </td>
-                        <td className="px-4 py-3">
-                          {winner.secondPrize || "-"}
-                        </td>
-                        <td className="px-4 py-3">
-                          {winner.thirdPrize || "-"}
-                        </td>
+                ) : (
+                  <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
+                    <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-gray-500">
+                      <tr>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">Date</th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                          1<sup>st</sup> Prize
+                        </th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                          2<sup>nd</sup> Prize
+                        </th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                          3<sup>rd</sup> Prize
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                    </thead>
+                    <tbody>
+                      {filteredWinners.map((winner, index) => (
+                        <tr
+                          key={index}
+                          className="border-t border-gray-700 hover:bg-gray-800"
+                        >
+                          <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">{winner.date}</td>
+                          <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                            {winner.firstPrize || "-"}
+                          </td>
+                          <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                            {winner.secondPrize || "-"}
+                          </td>
+                          <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                            {winner.thirdPrize || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>

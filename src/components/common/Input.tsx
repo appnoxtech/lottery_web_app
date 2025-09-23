@@ -1,5 +1,5 @@
 import React, { forwardRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -22,7 +22,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-white mb-2">
             {label}
           </label>
         )}
@@ -37,8 +37,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             type={isPassword && !showPassword ? "password" : "text"}
             className={`
               w-full px-3 py-3 border rounded-lg shadow-sm 
-              focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]
-              bg-[#1D1F27] text-white placeholder-gray-400
+              focus:outline-none 
+              bg-[#1D1F27] text-white placeholder-white border-white
               ${icon ? "pl-10" : ""}
               ${isPassword ? "pr-10" : ""}
               ${
@@ -57,9 +57,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               onClick={togglePasswordVisibility}
             >
               {showPassword ? (
-                <Eye className="h-5 w-5 text-gray-400" />
+                <EyeSlashIcon className="h-5 w-5 text-[#EDB726] " />
               ) : (
-                <EyeOff className="h-5 w-5 text-gray-400" />
+                
+                <EyeIcon className="h-5 w-5 text-[#EDB726]" />
               )}
             </button>
           )}

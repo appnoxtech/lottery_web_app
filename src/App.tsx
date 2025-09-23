@@ -13,7 +13,6 @@ import {
   ForgotPassword,
   OTPVerification,
   ResetPassword,
-  Home,
   NewLottery,
   Tickets,
   Winners,
@@ -89,14 +88,7 @@ function App() {
           <Route path="/terms" element={<TermsConditions />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* Protected routes */}
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+          
           <Route
             path="/new-lottery"
             element={
@@ -121,6 +113,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route 
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+                <Transactions />
+            </ProtectedRoute>
+          
+          } />
           {/* Profile Nested Routes */}
           <Route
             path="/profile"
@@ -134,16 +134,16 @@ function App() {
             {/* Default child route */}
             <Route path="edit" element={<EditProfile />} />
             <Route path="password" element={<ChangePassword />} />
-            <Route path="transactions" element={<Transactions />} />
+            
             <Route path="terms" element={<TermsConditions />} />
             <Route path="privacy" element={<PrivacyPolicy />} />
             <Route path="rules" element={<LotteryRules />} />
             <Route path="delete" element={<DeleteAccount />} />
           </Route>
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/home" replace />} />{" "}
+          <Route path="/" element={<Navigate to="/new-lottery" replace />} />{" "}
           {/* Change default to home for logged-in users */}
-          <Route path="*" element={<Navigate to="/home" replace />} />{" "}
+          <Route path="*" element={<Navigate to="/new-lottery" replace />} />{" "}
           {/* Catch all for protected */}
         </Routes>
       </div>

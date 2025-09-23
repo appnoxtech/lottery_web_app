@@ -17,6 +17,17 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   label,
   placeholder = "Enter phone number",
 }) => {
+  // Prevent deleting the dial code
+  const handleInputChange = (val: string, country: any) => {
+    const dialCode = country.dialCode; // e.g. "91"
+    if (!val.startsWith(dialCode)) {
+      // If user tries to delete the code, force it back
+      onChange(dialCode);
+    } else {
+      onChange(val);
+    }
+  };
+
   return (
     <div className="w-full">
       {label && (
@@ -28,12 +39,11 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         <PhoneInputComponent
           country={"in"}
           value={value}
-          onChange={onChange}
+          onChange={handleInputChange}
           inputProps={{
             name: "phone",
             required: true,
             autoFocus: false,
-            className: error ? "error" : "",
           }}
           containerClass="w-full"
           placeholder={placeholder}
@@ -45,56 +55,33 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
             width: "100%",
             height: "3rem",
             fontSize: "1rem",
-            border: `1px solid ${error ? "#ef4444" : "#374151"}`,
+            border: `1px solid ${error ? "#ef4444" : "white"}`,
             borderRadius: "0.5rem",
-            padding: "0.75rem 0.75rem 0.75rem 3.8rem",
+            paddingLeft: "4rem", // leave space for flag button
             outline: "none",
-            transition: "all 0.2s ease-in-out",
-            boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+            boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
             backgroundColor: "#1D1F27",
             color: "white",
           }}
           buttonStyle={{
-            border: `1px solid ${error ? "#ef4444" : "#374151"}`,
-            backgroundColor: "#2A2D36",
+            border: "none",
+            backgroundColor: "transparent",
             borderRadius: "0.5rem 0 0 0.5rem",
-            borderRight: "none",
-            transition: "all 0.2s ease-in-out",
             height: "3rem",
             width: "3.5rem",
             padding: "0",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
           }}
-          inputClass={error ? "error" : ""}
-          buttonClass={error ? "error" : ""}
           dropdownStyle={{
             borderRadius: "0.5rem",
             border: "1px solid #374151",
-            boxShadow:
-              "0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)",
             backgroundColor: "#2A2D36",
             zIndex: 1000,
-            maxHeight: "250px",
-            overflowY: "auto",
-            width: "calc(100% - 2px)", // Slightly smaller than full width to avoid overflow
-            left: "0",
-          }}
-          searchStyle={{
-            width: "calc(100% - 1rem)",
-            margin: "0.5rem",
-            padding: "0.5rem 0.75rem",
-            border: "1px solid #374151",
-            borderRadius: "0.375rem",
-            fontSize: "0.875rem",
-            outline: "none",
-            transition: "all 0.2s ease-in-out",
-            backgroundColor: "#1D1F27",
-            color: "white",
           }}
         />
+
       </div>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>

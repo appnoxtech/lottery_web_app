@@ -3,7 +3,7 @@ import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import { Search, Eye, Download, Repeat, CreditCard } from "lucide-react";
 import { useSelector } from "react-redux";
-import { getDailyLotteryTickets, getOrderDetails } from "../utils/services/Order.services";
+import { getDailyLotteryTickets, getOrderDetails, getOrderHistory } from "../utils/services/Order.services";
 import { handleApiError } from "../hooks/handleApiError";
 import { formatDate } from "../hooks/dateFormatter";
 import { dollarConversion, euroConversion } from "../hooks/utilityFn";
@@ -13,13 +13,12 @@ import StripeCheckout from "./StripeCheckout";
 import PaymentMethodModal from "./PaymentMethodModal";
 import WhatsAppModal from "./WhatsAppModal";
 
-
 const Tickets: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lotteryTickets, setLotteryTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setRefreshing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("all");
+  const [selectedTab, setSelectedTab] = useState("today");
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
@@ -33,67 +32,80 @@ const Tickets: React.FC = () => {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentTicket, setPaymentTicket] = useState<any | null>(null);
 
-  // Open payment method selection
-const openPayment = async (ticket: any) => {
-  const resp = await getOrderDetails(ticket.order_id);
-  const items = resp?.data?.result?.details ?? [];
+  const openPayment = async (ticket: any) => {
+    const resp = await getOrderDetails(ticket.order_id);
+    const items = resp?.data?.result?.details ?? [];
 
-  const orderInfo = {
-    order_id: ticket.order_id,
-    total_price: ticket.grand_total,
-    local_total: ticket.grand_total,
-    ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
-    selected_lotteries: items.map((i: any) => i.abbreviation[0] ?? "-"),
+    const orderInfo = {
+      order_id: ticket.order_id,
+      total_price: ticket.grand_total,
+      local_total: ticket.grand_total,
+      ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
+      selected_lotteries: items.map((i: any) => i.abbreviation[0] ?? "-"),
+    };
+
+    setSelectedPaymentTicket(orderInfo);
+    setPaymentMethodOpen(true);
   };
 
-  setSelectedPaymentTicket(orderInfo);
-  setPaymentMethodOpen(true);
-};
+  const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
+    if (!selectedPaymentTicket) return;
+    setPaymentMethodOpen(false);
 
+    if (method === "stripe") {
+      setPaymentTicket({
+        ...selectedPaymentTicket,
+        grand_total: selectedPaymentTicket.local_total,
+      });
+      setPaymentOpen(true);
+    } else if (method === "whatsapp") {
+      setWhatsAppOpen(true);
+    }
+  };
 
-// Handle payment method selection
-const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
-  if (!selectedPaymentTicket) return;
-  setPaymentMethodOpen(false);
+  const closeWhatsApp = () => {
+    setWhatsAppOpen(false);
+    setSelectedPaymentTicket(null);
+  };
 
-  if (method === "stripe") {
-    setPaymentTicket({
-      ...selectedPaymentTicket,
-      grand_total: selectedPaymentTicket.local_total, // Ensure grand_total matches local_total
-    });
-    setPaymentOpen(true);
-  } else if (method === "whatsapp") {
-    setWhatsAppOpen(true); // keep selectedPaymentTicket
-  }
-};
-
-// Close WhatsApp modal
-const closeWhatsApp = () => {
-  setWhatsAppOpen(false);
-  setSelectedPaymentTicket(null); // clear after closing
-};
-
-// Close Stripe checkout
-const closePayment = (success: boolean) => {
-  setPaymentOpen(false);
-  setPaymentTicket(null);
-  if (success) fetchLotteryRecords();
-};
-
-
+  const closePayment = (success: boolean) => {
+    setPaymentOpen(false);
+    setPaymentTicket(null);
+    if (success) fetchLotteryRecords();
+  };
 
   const fetchLotteryRecords = useCallback(async () => {
     if (!userData?.id) return;
     setLoading(true);
     try {
-      const response = await getDailyLotteryTickets(
-        userData.id,
-        formattedTodaysDate
-      );
-      if (response?.data?.result && response?.status === 200) {
-        setLotteryTickets(response.data.result);
+      if (selectedTab === "today") {
+        const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
+        if (response?.data?.result && response?.status === 200) {
+          setLotteryTickets(response.data.result);
+        } else {
+          setLotteryTickets([]);
+        }
       } else {
-        setLotteryTickets([]);
+        const histResponse = await getOrderHistory("");
+        if (histResponse?.data?.success) {
+          const orders = histResponse.data.result;
+          const detailedPromises = orders.map((ord: { order: number }) => getOrderDetails(ord.order));
+          const detailsResponses = await Promise.all(detailedPromises);
+          const tickets = detailsResponses
+            .map((resp, index) => {
+              const result = resp?.data?.result;
+              if (!result) return null;
+              return {
+                ...result,
+                order_id: result.order_id || orders[index].order,
+                receipt: result.receipt || orders[index].receipt,
+              };
+            })
+            .filter(Boolean);
+          setLotteryTickets(tickets);
+        } else {
+          setLotteryTickets([]);
+        }
       }
     } catch (error: unknown) {
       handleApiError(error, "Failed to fetch tickets.");
@@ -102,11 +114,11 @@ const closePayment = (success: boolean) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [userData?.id, formattedTodaysDate]);
+  }, [userData?.id, selectedTab, formattedTodaysDate]);
 
   useEffect(() => {
     fetchLotteryRecords();
-  }, [fetchLotteryRecords]);
+  }, [fetchLotteryRecords, selectedTab]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -128,6 +140,33 @@ const closePayment = (success: boolean) => {
     }
   };
 
+  const parseCreatedAt = (value?: string): Date | null => {
+    if (!value || typeof value !== "string") return null;
+    const parts = value.split(" - ");
+    if (parts.length !== 2) return null;
+    const [datePart, timePart] = parts;
+    const [dayStr, monStr, yearStr] = datePart.split(" ");
+    const monthMap: Record<string, number> = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+    };
+    const day = parseInt(dayStr, 10);
+    const month = monthMap[monStr as keyof typeof monthMap];
+    const year = parseInt(yearStr, 10);
+    if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
+      return null;
+    }
+    const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!timeMatch) return null;
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+    if (ampm === "PM" && hours < 12) hours += 12;
+    if (ampm === "AM" && hours === 12) hours = 0;
+    const d = new Date(year, month, day, hours, minutes, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
   const filteredTickets = useMemo(() => {
     const term = (searchTerm || "").toLowerCase();
     return lotteryTickets
@@ -135,20 +174,18 @@ const closePayment = (success: boolean) => {
         const receiptText = String(ticket?.receipt ?? "").toLowerCase();
         return term === "" ? true : receiptText.includes(term);
       })
-      .filter((ticket) => (selectedTab === "all" ? true : ticket?.status === selectedTab));
+      .filter((ticket) => {
+        if (selectedTab === "all") return true;
+        if (selectedTab === "today") {
+          const createdAt = ticket?.created_at;
+          const dateObj = parseCreatedAt(createdAt);
+          if (!dateObj) return false;
+          const ticketDate = formatDate(dateObj.toISOString());
+          return ticketDate === formattedTodaysDate;
+        }
+        return ticket?.status === selectedTab;
+      });
   }, [lotteryTickets, searchTerm, selectedTab]);
-
-  const totalTicketsCount = lotteryTickets.length;
-  const activeTicketsCount = lotteryTickets.filter(
-    (ticket) => ticket.status === "active"
-  ).length;
-  const winningTicketsCount = lotteryTickets.filter(
-    (ticket) => ticket.status === "winner"
-  ).length;
-  const totalRevenue = lotteryTickets.reduce(
-    (sum, ticket) => sum + (ticket.status === "completed" ? parseFloat(ticket.grand_total) || 0 : 0),
-    0
-  );
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -170,50 +207,47 @@ const closePayment = (success: boolean) => {
   });
 
   const downloadTicketPdf = async (ticket: any) => {
-  try {
-    // Fetch order details to get items
-    const resp = await getOrderDetails(ticket.order_id);
-    const items = (resp as any)?.data?.result?.details || [];
+    try {
+      const resp = await getOrderDetails(ticket.order_id);
+      const items = (resp as any)?.data?.result?.details || [];
 
-    // Parse created_at
-    const parseCreatedAt = (value?: string): { date: string; time: string } => {
-      if (!value || typeof value !== "string") return { date: "-", time: "-"};
-      const parts = value.split(" - ");
-      if (parts.length !== 2) return { date: "-", time: "-"};
-      const [datePart, timePart] = parts;
-      const [dayStr, monStr, yearStr] = datePart.split(" ");
-      const monthMap: Record<string, number> = {
-        Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-        Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+      const parseCreatedAt = (value?: string): { date: string; time: string } => {
+        if (!value || typeof value !== "string") return { date: "-", time: "-" };
+        const parts = value.split(" - ");
+        if (parts.length !== 2) return { date: "-", time: "-" };
+        const [datePart, timePart] = parts;
+        const [dayStr, monStr, yearStr] = datePart.split(" ");
+        const monthMap: Record<string, number> = {
+          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+        };
+        const day = parseInt(dayStr, 10);
+        const month = monthMap[monStr as keyof typeof monthMap];
+        const year = parseInt(yearStr, 10);
+        if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
+          return { date: "-", time: "-" };
+        }
+        const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (!timeMatch) return { date: "-", time: "-" };
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+        if (ampm === "PM" && hours < 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+        const d = new Date(year, month, day, hours, minutes, 0, 0);
+        if (Number.isNaN(d.getTime())) return { date: "-", time: "-" };
+        const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+        return { date, time };
       };
-      const day = parseInt(dayStr, 10);
-      const month = monthMap[monStr as keyof typeof monthMap];
-      const year = parseInt(yearStr, 10);
-      if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
-        return { date: "-", time: "-"};
-      }
-      const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (!timeMatch) return { date: "-", time: "-"};
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = parseInt(timeMatch[2], 10);
-      const ampm = timeMatch[3].toUpperCase();
-      if (ampm === "PM" && hours < 12) hours += 12;
-      if (ampm === "AM" && hours === 12) hours = 0;
-      const d = new Date(year, month, day, hours, minutes, 0, 0);
-      if (Number.isNaN(d.getTime())) return { date: "-", time: "-"};
-      const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-      return { date, time };
-    };
-    const parsed = parseCreatedAt(ticket?.created_at);
+      const parsed = parseCreatedAt(ticket?.created_at);
 
-    // Generate table rows for items
-    const rows = items.length > 0 ? items
-      .map((item: any) => {
-        const number = item.lottery_number ?? "-";
-        const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
-        const bet = parseFloat(item.bet_amount) || 0;
-        return `
+      const rows = items.length > 0 ? items
+        .map((item: any) => {
+          const number = item.lottery_number ?? "-";
+          const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
+          const bet = parseFloat(item.bet_amount) || 0;
+          return `
           <tr style="border-bottom: 1px solid #E5E7EB;">
             <td style="padding: 6px;">
               <p style="color: #DC2626; margin: 0;">${abbreviation}</p>
@@ -222,26 +256,23 @@ const closePayment = (success: boolean) => {
             <td style="padding: 6px; text-align: center; color: #000; font-size: 14px;">${String(number).length} digit</td>
             <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px;">XCG ${bet.toFixed(2)}</td>
           </tr>`;
-      })
-      .join("") : `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6B7280; font-size: 14px;">No items found.</td></tr>`;
+        })
+        .join("") : `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6B7280; font-size: 14px;">No items found.</td></tr>`;
 
-    // Create container for PDF content
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '148mm'; // A5 width
-    container.style.backgroundColor = '#ffffff';
-    container.style.padding = '0';
-    container.style.overflow = 'visible';
-    container.innerHTML = `
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '148mm';
+      container.style.backgroundColor = '#ffffff';
+      container.style.padding = '0';
+      container.style.overflow = 'visible';
+      container.innerHTML = `
       <div style="font-family: Arial, sans-serif; color: #000; width: 148mm; padding: 5mm; border: 2px solid #D1D5DB">
-        <!-- Header -->
         <div style="text-align: center; margin-bottom:4px;padding-bottom:10px">
           <p style="color: #6B7280; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 4px 0;">Lottery Numbers</p>
         </div>
         <div style="border-top: 1px solid #D1D5DB; margin: 6px 2px;"></div>
-        <!-- Ticket Details -->
         <div style="padding: 0 16px; margin-bottom: 10px">
           <div style="display: grid; grid-template-columns: 1fr; gap: 8px; text-align: center; font-size: 14px;">
             <div>
@@ -257,7 +288,6 @@ const closePayment = (success: boolean) => {
             </div>
           </div>
         </div>
-        <!-- Payment Table -->
         <div style="padding: 0 16px; margin-bottom: 12px;">
           <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
@@ -276,7 +306,6 @@ const closePayment = (success: boolean) => {
             </table>
           </div>
         </div>
-        <!-- Items Table -->
         <div style="padding: 0 16px; margin-bottom: 12px;">
           <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
@@ -312,7 +341,6 @@ const closePayment = (success: boolean) => {
             </table>
           </div>
         </div>
-        <!-- Footer -->
         <div style="text-align: center; padding: 0 16px; padding-bottom: 12px; font-size: 12px;">
           <p style="color: #000; margin: 2px 0;">Korda kontrola bo numbernan ‼️</p>
           <p style="color: #000; margin: 2px 0;">Despues di wega NO ta asepta reklamo ‼️</p>
@@ -322,76 +350,69 @@ const closePayment = (success: boolean) => {
         </div>
       </div>
     `;
-    document.body.appendChild(container);
+      document.body.appendChild(container);
 
-    // Load scripts and generate PDF
-    await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-    await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    // @ts-ignore
-    const html2canvas = (window as any).html2canvas;
-    // @ts-ignore
-    const { jsPDF } = (window as any).jspdf;
+      await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      const html2canvas = (window as any).html2canvas;
+      const { jsPDF } = (window as any).jspdf;
 
-    // Capture the entire content
-    const node = container.firstElementChild as HTMLElement;
-    const canvas = await html2canvas(node, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      windowWidth: 148 * 3.78, // Approximate pixel width for 148mm at 96dpi
-      windowHeight: node.scrollHeight * 2, // Ensure enough height
-      scrollX: 0,
-      scrollY: 0,
-    });
+      const node = container.firstElementChild as HTMLElement;
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        windowWidth: 148 * 3.78,
+        windowHeight: node.scrollHeight * 2,
+        scrollX: 0,
+        scrollY: 0,
+      });
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-    const pdfWidth = 148; // A5 width in mm
-    const pdfPageHeight = 210; // A5 height in mm
-    const margin = 10; // Margin for each page
-    const usablePageHeight = pdfPageHeight - 2 * margin;
-    const canvasHeight = canvas.height * (pdfWidth / canvas.width); // Scale canvas height to match PDF width
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+      const pdfWidth = 148;
+      const pdfPageHeight = 210;
+      const margin = 10;
+      const usablePageHeight = pdfPageHeight - 2 * margin;
+      const canvasHeight = canvas.height * (pdfWidth / canvas.width);
 
-    // Fit content on one page if possible, else use multiple pages
-    if (canvasHeight <= usablePageHeight) {
-      // Single page
-      pdf.addImage(
-        imgData,
-        'PNG',
-        margin,
-        margin,
-        pdfWidth - 2 * margin,
-        canvasHeight,
-        undefined,
-        'FAST'
-      );
-    } else {
-      // Multi-page
-      let position = 0;
-      while (position < canvasHeight) {
-        if (position > 0) {
-          pdf.addPage();
-        }
-        const sliceHeight = Math.min(usablePageHeight, canvasHeight - position);
+      if (canvasHeight <= usablePageHeight) {
         pdf.addImage(
           imgData,
           'PNG',
           margin,
-          margin - position,
+          margin,
           pdfWidth - 2 * margin,
-          sliceHeight,
+          canvasHeight,
           undefined,
           'FAST'
         );
-        position += usablePageHeight;
+      } else {
+        let position = 0;
+        while (position < canvasHeight) {
+          if (position > 0) {
+            pdf.addPage();
+          }
+          const sliceHeight = Math.min(usablePageHeight, canvasHeight - position);
+          pdf.addImage(
+            imgData,
+            'PNG',
+            margin,
+            margin - position,
+            pdfWidth - 2 * margin,
+            sliceHeight,
+            undefined,
+            'FAST'
+          );
+          position += usablePageHeight;
+        }
       }
-    }
 
-    pdf.save(`Ticket_${ticket.receipt}.pdf`);
-    document.body.removeChild(container);
-  } catch (e) {
-    handleApiError(e, 'Failed to generate PDF');
-  }
-};
+      pdf.save(`Ticket_${ticket.receipt}.pdf`);
+      document.body.removeChild(container);
+    } catch (e) {
+      handleApiError(e, 'Failed to generate PDF');
+    }
+  };
 
   const reuseTicketNumbers = (ticket: any) => {
     navigate(`/new-lottery?orderId=${ticket.order_id}`);
@@ -405,51 +426,22 @@ const closePayment = (success: boolean) => {
           isMenuOpen={isMenuOpen}
           onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
         />
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-4 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
+            <div className="mb-2 sm:mb-4 md:mb-8">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
                 Ticket Management
               </h1>
-              <p className="text-gray-300 text-sm sm:text-base">
-                View and manage all lottery tickets
-              </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <p className="text-sm text-gray-400">Total Tickets</p>
-                <p className="text-lg sm:text-2xl font-bold text-white">
-                  {totalTicketsCount}
-                </p>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <p className="text-sm text-gray-400">Active Tickets</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-400">
-                  {activeTicketsCount}
-                </p>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <p className="text-sm text-gray-400">Winning Tickets</p>
-                <p className="text-lg sm:text-2xl font-bold text-[#EDB726]">
-                  {winningTicketsCount}
-                </p>
-              </div>
-              <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                <p className="text-sm text-gray-400">Revenue</p>
-                <p className="text-lg sm:text-2xl font-bold text-white">
-                  {totalRevenue.toFixed(2)}
-                </p>
-              </div>
-            </div>
-            <div className="bg-[#2A2D36] rounded-lg p-4 sm:p-6 border border-gray-700 mb-6 sm:mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                <div className="flex space-x-1 flex-wrap sm:flex-nowrap">
-                  {["all", "active", "winner", "pending", "cancelled"].map(
+            <div className="bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {["today", "all"].map(
                     (tab) => (
                       <button
                         key={tab}
                         onClick={() => setSelectedTab(tab)}
-                        className={`px-2 sm:px-4 py-1 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${selectedTab === tab
+                        className={`px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base font-medium transition-colors whitespace-nowrap ${selectedTab === tab
                           ? "bg-[#EDB726] text-[#1D1F27]"
                           : "text-gray-400 hover:text-white cursor-pointer"
                           }`}
@@ -461,70 +453,44 @@ const closePayment = (success: boolean) => {
                 </div>
                 <div className="w-full sm:w-auto">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search tickets..."
-                      className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                      className="w-full sm:w-48 md:w-64 pl-8 sm:pl-10 pr-4 py-1 sm:py-2 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726] text-xs sm:text-sm md:text-base"
                     />
                   </div>
                 </div>
               </div>
             </div>
             {loading ? (
-              <div className="flex justify-center items-center h-48">
-                <p className="text-gray-400">Loading tickets...</p>
+              <div className="flex justify-center items-center h-32 sm:h-48">
+                <p className="text-gray-400 text-xs sm:text-sm md:text-base">Loading tickets...</p>
               </div>
             ) : filteredTickets.length === 0 ? (
-              <div className="flex justify-center items-center h-48">
-                <p className="text-gray-400">
+              <div className="flex justify-center items-center h-32 sm:h-48">
+                <p className="text-gray-400 text-xs sm:text-sm md:text-base">
                   No tickets found for selected criteria.
                 </p>
               </div>
             ) : (
-              <div className="bg-[#2A2D36] rounded-lg border border-gray-700 overflow-hidden">
+              <div className="bg-[#2A2D36] rounded-lg border border-white overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#1D1F27] text-gray-400 uppercase text-xs">
+                  <table className="w-full text-xs sm:text-sm md:text-base">
+                    <thead className="bg-[#1D1F27] text-gray-400 uppercase">
                       <tr>
-                        <th className="px-3 py-2 text-left">Ticket</th>
-                        <th className="px-3 py-2 text-left">Order</th>
-                        <th className="px-3 py-2 text-left">Purchase Details</th>
-                        <th className="px-3 py-2 text-left">Status</th>
-                        <th className="px-3 py-2 text-right">Actions</th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Ticket</th>
+                        {/* <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Order</th> */}
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Purchase Details</th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Status</th>
+                        <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
                       {filteredTickets.map((ticket) => {
                         const createdAt: string | undefined = ticket?.created_at;
-                        const parseCreatedAt = (value?: string): Date | null => {
-                          if (!value || typeof value !== "string") return null;
-                          const parts = value.split(" - ");
-                          if (parts.length !== 2) return null;
-                          const [datePart, timePart] = parts;
-                          const [dayStr, monStr, yearStr] = datePart.split(" ");
-                          const monthMap: Record<string, number> = {
-                            Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-                            Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-                          };
-                          const day = parseInt(dayStr, 10);
-                          const month = monthMap[monStr as keyof typeof monthMap];
-                          const year = parseInt(yearStr, 10);
-                          if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
-                            return null;
-                          }
-                          const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-                          if (!timeMatch) return null;
-                          let hours = parseInt(timeMatch[1], 10);
-                          const minutes = parseInt(timeMatch[2], 10);
-                          const ampm = timeMatch[3].toUpperCase();
-                          if (ampm === "PM" && hours < 12) hours += 12;
-                          if (ampm === "AM" && hours === 12) hours = 0;
-                          const d = new Date(year, month, day, hours, minutes, 0, 0);
-                          return Number.isNaN(d.getTime()) ? null : d;
-                        };
                         const dateObj = parseCreatedAt(createdAt);
                         const isValidDate = !!dateObj;
                         const dateStr = isValidDate ? formatDate((dateObj as Date).toISOString()) : "-";
@@ -537,40 +503,39 @@ const closePayment = (success: boolean) => {
                             key={ticket.receipt}
                             className="hover:bg-[#3A3D46] transition-colors"
                           >
-                            <td className="px-3 py-2">
+                            <td className="px-2 sm:px-3 md:px-4 py-2">
                               <div className="text-white font-medium">Ticket #{ticket.receipt}</div>
-                              <div className="text-gray-400 text-xs">Receipt: {ticket.receipt}</div>
+                              <div className="text-gray-400 text-xs sm:text-sm">Receipt: {ticket.receipt}</div>
                             </td>
-                            <td className="px-3 py-2">
+                            {/* <td className="px-2 sm:px-3 md:px-4 py-2">
                               <div className="text-white">Order ID: {ticket.order_id}</div>
-                              <div className="text-gray-400 text-xs capitalize">Payment: {String(ticket.payment_mode || "-")}</div>
-                              <div className="text-gray-400 text-xs">Total Numbers: {ticket.total_no ?? '-'}</div>
-                            </td>
-                            <td className="px-3 py-2">
+                              <div className="text-gray-400 text-xs sm:text-sm capitalize">Payment: {String(ticket.payment_mode || "-")}</div>
+                            </td> */}
+                            <td className="px-2 sm:px-3 md:px-4 py-2">
                               <div className="text-white">{dateStr}</div>
-                              <div className="text-gray-400 text-xs">{timeStr}</div>
+                              <div className="text-gray-400 text-xs sm:text-sm">{timeStr}</div>
                               <div className="text-[#EDB726] font-medium">
                                 {ticket.grand_total}
                               </div>
                             </td>
-                            <td className="px-3 py-2">
+                            <td className="px-2 sm:px-3 md:px-4 py-2">
                               <span
-                                className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                                className={`inline-flex px-1 sm:px-2 py-1 text-xs sm:text-sm md:text-base font-medium rounded-full border ${getStatusColor(
                                   ticket?.status || ""
                                 )}`}
                               >
                                 {statusText.charAt(0).toUpperCase() + statusText.slice(1)}
                               </span>
                             </td>
-                            <td className="px-3 py-2 text-right">
-                              <div className="inline-flex items-center gap-3">
-                                {ticket.status === "pending" ? (
+                            <td className="px-2 sm:px-3 md:px-4 py-2 text-right">
+                              <div className="inline-flex items-center gap-1 sm:gap-2">
+                                {ticket.status === "pending" && dateStr === formattedTodaysDate ? (
                                   <button
                                     onClick={() => openPayment(ticket)}
                                     className="text-[#EDB726] hover:text-[#d4a422]"
                                     title="Complete Payment"
                                   >
-                                    <CreditCard className="w-4 h-4 cursor-pointer" />
+                                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                   </button>
                                 ) : (
                                   <button
@@ -578,7 +543,7 @@ const closePayment = (success: boolean) => {
                                     className="text-[#EDB726] hover:text-[#d4a422]"
                                     title="Reuse Numbers"
                                   >
-                                    <Repeat className="w-4 h-4 cursor-pointer" />
+                                    <Repeat className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                   </button>
                                 )}
                                 <button
@@ -586,18 +551,17 @@ const closePayment = (success: boolean) => {
                                   className="text-[#EDB726] hover:text-[#d4a422]"
                                   title="View details"
                                 >
-                                  <Eye className="w-4 h-4 cursor-pointer" />
+                                  <Eye className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                 </button>
                                 <button
                                   onClick={() => downloadTicketPdf(ticket)}
                                   className="text-[#EDB726] hover:text-[#d4a422]"
                                   title="Download PDF"
                                 >
-                                  <Download className="w-4 h-4 cursor-pointer" />
+                                  <Download className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                 </button>
                               </div>
                             </td>
-
                           </tr>
                         );
                       })}
@@ -620,21 +584,17 @@ const closePayment = (success: boolean) => {
         />
       )}
       <PaymentMethodModal
-  isOpen={paymentMethodOpen}
-  newOrderInfo={selectedPaymentTicket}
-  onClose={() => setPaymentMethodOpen(false)}
-  onSelect={handlePaymentMethodSelect}
-/>
-
-{whatsAppOpen && selectedPaymentTicket && (
-  <WhatsAppModal
-    newOrderInfo={selectedPaymentTicket}
-    onClose={closeWhatsApp}
-  />
-)}
-
-
-
+        isOpen={paymentMethodOpen}
+        newOrderInfo={selectedPaymentTicket}
+        onClose={() => setPaymentMethodOpen(false)}
+        onSelect={handlePaymentMethodSelect}
+      />
+      {whatsAppOpen && selectedPaymentTicket && (
+        <WhatsAppModal
+          newOrderInfo={selectedPaymentTicket}
+          onClose={closeWhatsApp}
+        />
+      )}
     </div>
   );
 };

@@ -6,7 +6,6 @@ import {
   LogOut,
   ChevronRight,
   Lock,
-  DollarSign,
   FileText,
   Shield,
   Gavel,
@@ -54,12 +53,6 @@ const ProfileLayout: React.FC = () => {
       label: "Change Password",
       icon: Lock,
       path: "/profile/password",
-    },
-    {
-      id: "transactions",
-      label: "Transactions",
-      icon: DollarSign,
-      path: "/profile/transactions",
     },
     {
       id: "terms-conditions",
@@ -145,7 +138,7 @@ const ProfileLayout: React.FC = () => {
           </Link>
         </div>
         <div className="flex flex-col items-center p-6 border-b border-gray-700">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mb-3">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mb-3 border border-2 border-[#EDB726]">
             {userData?.profile_image ? (
               <img
                 src={userData.profile_image}

@@ -76,20 +76,19 @@ const EditProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#1D1F27] text-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-      <div className="mb-6 text-center mt-8 lg:mt-0">
-        <h1 className="text-3xl font-bold text-white mb-1">Wega di Number</h1>
-        <p className="text-lg font-light text-[#EDB726] tracking-widest">
-          online
-        </p>
+      <div className="mb-6 flex flex-col text-center items-center mt-8 lg:mt-0">
+        <img
+          src="/image.png" // Path relative to public folder
+          alt="Transactions Icon"
+          className="w-12 h-12"
+        />
+        <h1 className="text-3xl font-semibold text-white mb-1">Wega di Number</h1>
+        <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
       </div>
 
-      <h1 className="text-4xl mb-8 text-center">
-        <span className="text-white">Edit </span>
-        <span className="text-[#EDB726]">Profile</span>
-      </h1>
 
       <div className="relative w-28 h-28 mb-10">
-        <label className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer">
+        <label className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer border border-2 border-[#EDB726]">
           {previewImage ? (
             <img
               src={previewImage}
@@ -114,16 +113,11 @@ const EditProfile: React.FC = () => {
       {/* ✅ Wrap inputs in a form and handle submission */}
       <form onSubmit={handleSubmit} className="w-full max-w-sm">
         <div className="mb-8">
-          <label
-            htmlFor="username"
-            className="block text-sm font-medium text-[#EDB726] mb-2"
-          >
-            Change Username
-          </label>
+          
           <input
             type="text"
             id="username"
-            className="w-full px-4 py-3 bg-[#1D1F27] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+            className="w-full px-4 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
             value={username}
             onChange={(e) => setUsername(e.target.value.slice(0, 20))}
             maxLength={20}
@@ -136,9 +130,8 @@ const EditProfile: React.FC = () => {
           disabled={loading}
           className={`w-full flex items-center justify-center py-3 px-6 rounded-lg mt-4 cursor-pointer
                    border border-[#EDB726] bg-gradient-to-r from-[#EDB726] to-[#d4a422] 
-                   text-[#1D1F27] font-semibold transition-colors ${
-                     loading ? "opacity-60 cursor-not-allowed" : ""
-                   }`}
+                   text-[#1D1F27] font-bold transition-colors ${loading ? "opacity-60 cursor-not-allowed" : ""
+            }`}
         >
           {loading ? "Updating..." : "Update Profile"}
         </button>

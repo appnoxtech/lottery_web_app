@@ -10,10 +10,7 @@
   color: white !important;
 }
 
-.react-tel-input .form-control:focus {
-  border-color: #EDB726 !important;
-  box-shadow: 0 0 0 2px rgba(237, 183, 38, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-}
+
 
 .react-tel-input .form-control:focus.error {
   border-color: #ef4444 !important;
@@ -21,7 +18,7 @@
 }
 
 .react-tel-input .flag-dropdown {
-  background-color: #2A2D36 !important;
+  /* background-color: #2A2D36 !important; */
   margin-right: 2px !important;
 }
 
@@ -105,6 +102,7 @@
 .react-tel-input .selected-flag:hover {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
+
 
 .react-tel-input .selected-flag .arrow {
   border-top-color: #9CA3AF !important;
