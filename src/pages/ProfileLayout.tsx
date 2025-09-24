@@ -157,7 +157,7 @@ const ProfileLayout: React.FC = () => {
         <nav className="flex-1 p-4 overflow-y-auto min-h-0">
           <ul className="space-y-2">
             {profileMenuItems.map((item) => {
-              const Icon = item.icon;
+              // const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
                 <li key={item.id}>
@@ -169,7 +169,7 @@ const ProfileLayout: React.FC = () => {
                       }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Icon className="w-5 h-5" />
+                      {/* <Icon className="w-5 h-5" /> */}
                       <span>{item.label}</span>
                     </div>
                     <ChevronRight className="w-5 h-5" />
@@ -253,7 +253,7 @@ const ProfileLayout: React.FC = () => {
           <nav className="flex-1 p-4 overflow-y-auto min-h-0">
             <ul className="space-y-2 ">
               {profileMenuItems.map((item) => {
-                const Icon = item.icon;
+                // const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
                   <li key={item.id}>

@@ -7,7 +7,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 

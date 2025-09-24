@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 import { changePasswordSchema } from "../../utils/validationSchemas";
 import { userChangePassword } from "../../utils/services/Registration.services";
 import { showToast } from "../../utils/toast.util";
 import { Input, Button } from "../../components/common";
-import { Lock, CheckCircle } from "lucide-react";
-import { type RootState } from "../../store";
+// import { type RootState } from "../../store";
 
 interface ChangePasswordFormData {
   oldPassword: string;
@@ -17,9 +16,6 @@ interface ChangePasswordFormData {
 
 const ChangePassword: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const userPhoneNumber = useSelector(
-    (state: RootState) => state.user.userData?.phone_number || ""
-  );
 
   const {
     control,

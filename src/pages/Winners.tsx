@@ -16,21 +16,21 @@ interface Winner {
   thirdPrize?: string;
 }
 
-interface LotteryTiming {
-  id: number;
-  lottery_id: number;
-  day: string;
-  starting_time: string;
-  cut_off_time: string;
-}
+// interface LotteryTiming {
+//   id: number;
+//   lottery_id: number;
+//   day: string;
+//   starting_time: string;
+//   cut_off_time: string;
+// }
 
-interface Lottery {
-  id: number;
-  name: string;
-  abbreviation: string;
-  status: string;
-  timings: LotteryTiming[];
-}
+// interface Lottery {
+//   id: number;
+//   name: string;
+//   abbreviation: string;
+//   status: string;
+//   timings: LotteryTiming[];
+// }
 
 const Winners: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

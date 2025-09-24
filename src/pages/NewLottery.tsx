@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setInitialData, type Lottery } from "../store/slicer/initalDataSlice";
 import { lotteriesData } from "../utils/services/Lotteries.services";
