@@ -3,6 +3,8 @@ import Sidebar from "../../components/layout/Sidebar";
 import Header from "../../components/layout/Header";
 import { useSelector } from "react-redux";
 import { getTransactions } from "../../utils/services/Transaction.services";
+import { ChevronLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Transaction {
   id: number;
@@ -19,6 +21,15 @@ const Transactions: React.FC = () => {
   const [info, setInfo] = useState<string | null>(null);
   const userID = useSelector((state: any) => state.user.userData?.id);
   const [isMenuOpen, setIsMenuOpen] = useState(false); // State for menu toggle
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     console.log("Fetching transactions for userID:", userID);
@@ -79,10 +90,18 @@ const Transactions: React.FC = () => {
     <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
-        <Header
-          isMenuOpen={isMenuOpen}
-          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
-        />
+        {!isMobile && (
+          <Header
+            isMenuOpen={isMenuOpen}
+            onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+          />
+        )}
+        {isMobile && <Link
+          to="/home"
+          className="flex mt-2 items-center text-gray-300 hover:text-white transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 mr-2" /> Back
+        </Link>}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">

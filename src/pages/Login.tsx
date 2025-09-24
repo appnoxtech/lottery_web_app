@@ -7,7 +7,7 @@ import { loginSchema } from '../utils/validationSchemas';
 import { userSignIn } from '../utils/services/Registration.services';
 import { showToast } from '../utils/toast.util';
 import { Input, Button, PhoneInput } from '../components/common';
-import { User, Lock } from 'lucide-react';
+// import { User, Lock } from 'lucide-react';
 import { setUser } from '../store/slicer/userSlice';
 
 interface LoginFormData {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { User, ChevronDown, LogOut, Search } from "lucide-react";
+import { User, ChevronDown, LogOut } from "lucide-react";
 import { type RootState } from "../../store";
 import { clearUser } from "../../store/slicer/userSlice";
 
@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
   const userData = useSelector((state: RootState) => state.user.userData);
 
   const user = {
-    name: userData?.name || "User",
+    name: userData?.name || "Shiva",
     phone: userData?.phone_number || "",
     avatar: userData?.profile_image || null,
     id: userData?.id || "",
@@ -53,27 +53,40 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 
   return (
     <header
-      className={`bg-[#2A2D36] border-b border-gray-700 flex-shrink-0 ${className}`}
+      className={`bg-[#1D1F27] border-b border-gray-700 flex-shrink-0 ${className}`}
     >
       <div className="px-4 lg:px-6 py-4">
-        <div className="flex items-center justify-end">
-          {/* Mobile menu button */}
-          <div className="lg:hidden mr-12">
-            {/* <button
-              onClick={onMenuToggle}
-              className="p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
-            >
-              {isMenuOpen ? (
-                <X className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between lg:justify-end">
+          {/* Profile Section - Visible on small screens, hidden on large screens */}
+          <div
+            onClick={() => navigate("/profile")} // Navigate to edit page on click
+            className="flex items-center space-x-2 lg:hidden cursor-pointer"
+          >
+            <div className="w-10 h-10 bg-[#EDB726] rounded-full flex items-center justify-center border border-2 border-[#EDB726]">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-10 h-10 rounded-full"
+                />
               ) : (
-                <Menu className="w-5 h-5 text-white" />
+                <span className="text-sm font-bold text-[#1D1F27]">
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </span>
               )}
-            </button> */}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-[#EDB726]">Welcome</p>
+              <p className="text-sm font-medium text-white">{user.name}</p>
+            </div>
           </div>
 
           {/* Right Side - Transactions and User Menu */}
-          <div className="flex items-center space-x-4 ml-3">
-            {/* Transactions Section */}
+          <div className="flex items-center space-x-4">
+            {/* Transactions Section - Same as original */}
             <div
               onClick={() => navigate("/transactions")}
               className="flex items-center space-x-1 sm:space-x-2 p-2 bg-[#EDB726] rounded-3xl border border-gray-600 hover:border-[#D4A422] transition-colors cursor-pointer"
@@ -81,22 +94,22 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
               <img
                 src="/image.png"
                 alt="Transaction Icon"
-                className="w-6 h-6 sm:w-8 sm:h-8"
+                className="w-8 h-8 sm:w-8 sm:h-8"
               />
-              <span className="text-[10px] sm:text-xs  text-[#1D1F27]">
-                Your 
-                <p className="text-white">Transactions</p> 
+              <span className="text-[10px] sm:text-xs text-[#1D1F27]">
+                Your
+                <p className="text-white">Transactions</p>
               </span>
             </div>
 
             {/* User Menu - Hidden on small screens, visible on medium and up */}
-            <div className="relative md:block">
+            <div className="relative md:block hidden lg:block">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
-                {/* Profile Image or Avatar */}
-                <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center border border-2 border-[#EDB726]">
+                {/* Profile Image or Avatar - Hidden on small screens */}
+                <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center border border-2 border-[#EDB726] hidden lg:block">
                   {user.avatar ? (
                     <img
                       src={user.avatar}

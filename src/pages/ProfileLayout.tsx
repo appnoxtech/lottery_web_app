@@ -163,11 +163,10 @@ const ProfileLayout: React.FC = () => {
                 <li key={item.id}>
                   <Link
                     to={item.path}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 text-left ${
-                      isActive
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 text-left ${isActive
                         ? "bg-[#EDB726] text-[#1D1F27] font-semibold"
                         : "text-gray-300 hover:bg-[#3A3D46] hover:text-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       <Icon className="w-5 h-5" />
@@ -226,15 +225,16 @@ const ProfileLayout: React.FC = () => {
             </Link>
           </div>
           <div className="flex flex-col items-center p-6 border-b border-gray-700">
-            <div className="mb-6 text-center">
-              <h1 className="text-3xl font-bold text-white mb-1">
-                Wega di Number
-              </h1>
-              <p className="text-lg font-light text-[#EDB726] tracking-widest">
-                online
-              </p>
+            <div className="mb-6 flex flex-col text-center items-center mt-8 lg:mt-0">
+              <img
+                src="/image.png" // Path relative to public folder
+                alt="Transactions Icon"
+                className="w-12 h-12"
+              />
+              <h1 className="text-2xl font-semibold text-white ">Wega di Number</h1>
+              <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
             </div>
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mb-3">
+            <div className="w-20 h-20 rounded-full border border-2 border-[#EDB726] overflow-hidden bg-gray-700 flex items-center justify-center mb-3">
               {userData?.profile_image ? (
                 <img
                   src={userData.profile_image}
@@ -248,10 +248,10 @@ const ProfileLayout: React.FC = () => {
             <h2 className="text-xl font-semibold text-[#EDB726]">
               {userData?.name || "User"}
             </h2>
-            <p className="text-sm text-gray-400">{userData?.phone_number}</p>
+            {/* <p className="text-sm text-gray-400">{userData?.phone_number}</p> */}
           </div>
           <nav className="flex-1 p-4 overflow-y-auto min-h-0">
-            <ul className="space-y-2">
+            <ul className="space-y-2 ">
               {profileMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -259,14 +259,13 @@ const ProfileLayout: React.FC = () => {
                   <li key={item.id}>
                     <Link
                       to={item.path}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 text-left ${
-                        isActive
+                      className={`w-full  flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 text-left ${isActive
                           ? "bg-[#EDB726] text-[#1D1F27] font-semibold"
                           : "text-gray-300 hover:bg-[#3A3D46] hover:text-white"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <Icon className="w-5 h-5" />
+                        {/* <Icon className="w-5 h-5" /> */}
                         <span>{item.label}</span>
                       </div>
                       <ChevronRight className="w-5 h-5" />

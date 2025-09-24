@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, Ticket, Trophy, Menu, X } from "lucide-react";
+import { Plus, Ticket, Trophy,Home } from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -34,52 +34,65 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
 
   const handleItemClick = (path: string) => {
     navigate(path);
-    setIsOpen(false); // Close mobile menu
+    setIsOpen(false); // Close mobile menu if open
   };
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      {!isOpen && (
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-black border-t border-gray-700 flex justify-around items-center p-2 z-50">
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 py-3 bg-[#2A2D36] rounded-lg border border-gray-700 shadow-lg"
+          onClick={() => handleItemClick("/tickets")}
+          className={`flex flex-col items-center text-center text-[#5C5C89] hover:text-white transition-colors ${location.pathname === "/tickets" ? "text-[#EDB726]" : ""
+            }`}
         >
-          <Menu className="w-6 h-6 text-white" />
+          <Ticket className="w-6 h-6" />
+          <span className="text-xs mt-4">Tickets</span> {/* Adjusted mt for alignment */}
         </button>
-      )}
-
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
+        <div className="relative flex flex-col items-center">
+          <button
+            onClick={() => handleItemClick("/new-lottery")}
+            className="flex items-center justify-center border-1 border-white rounded-full absolute"
+            style={{
+              background: "linear-gradient(135deg, #DFA93D, #530E16)",
+              boxSizing: "border-box",
+              width: "4rem",
+              height: "4rem",
+              padding: "0.20rem",
+              top: "-3rem", // Pushes the button 3rem above the parent
+              left: "50%",
+              transform: "translateX(-50%)", // Centers the button horizontally
+            }}
+          >
+            <Home className="w-6 h-6 text-[#EDB726]" />
+          </button>
+          {/* <span
+            className={`mt-10 text-xs text-white transition-colors ${location.pathname === "/new-lottery" ? "text-[#EDB726]" : "text-gray-300 hover:text-white"
+              }`}
+          >
+            HOME
+          </span> */}
+        </div>
+        <button
+          onClick={() => handleItemClick("/winners")}
+          className={`flex flex-col items-center text-center text-[#5C5C89] hover:text-white transition-colors ${location.pathname === "/winners" ? "text-[#EDB726]" : ""
+            }`}
+        >
+          <Trophy className="w-6 h-6" />
+          <span className="text-xs mt-4">Winners</span> {/* Adjusted mt for alignment */}
+        </button>
+      </div>
+      {/* Sidebar for larger screens */}
       <div
         className={`
-        fixed inset-y-0 left-0 z-40
-        w-64 bg-[#2A2D36] border-r border-gray-700
-        transform transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        ${className}
-      `}
+          hidden lg:block fixed inset-y-0 left-0 z-40
+          w-64 bg-[#2A2D36] border-r border-gray-700
+          ${className}
+        `}
       >
         <div className="flex flex-col h-full">
-          {/* Logo/Brand with Close Button */}
-          <div className="p-6 pb-4 border-b border-gray-700 relative">
-            {/* Close Button (X) - Only visible on mobile when sidebar is open */}
-            {isOpen && (
-              <button
-                onClick={() => setIsOpen(false)}
-                className="lg:hidden absolute top-5 right-4 p-1 text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            )}
-
+          {/* Logo/Brand */}
+          <div className="p-6 pb-4 border-b border-gray-700">
             <div className="flex items-center space-x-5">
               <div className="w-10 h-10 bg-[#EDB726] rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-[#1D1F27]" />
@@ -92,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
             </div>
           </div>
 
-          {/* Navigation Menu */}
+          {/* Navigation Menu for larger screens */}
           <nav className="flex-1 p-4">
             <ul className="space-y-2">
               {menuItems.map((item) => {
