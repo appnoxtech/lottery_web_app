@@ -311,7 +311,7 @@ const NewLottery: React.FC = () => {
     }
   };
   return (
-    <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden mb-20">
+    <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden mb-20 lg:mb-0">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
         <Header
@@ -592,30 +592,31 @@ const NewLottery: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
-                      {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
-                        selectedLotteries.flatMap((lottery) =>
-                          Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
-                            numbers.map((number, index) => (
-                              <div
-                                key={`${lottery.id}-${digit}-${number}`}
-                                className="grid grid-cols-4 p-2 border-b border-gray-700 items-center"
-                              >
-                                <span className="text-white">{number}</span>
-                                <span className="text-white">{lottery.abbreviation}</span>
-                                <span className="text-white">${betAmount || "0"}</span>
+                    {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
+                      <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
+                        <h3 className="text-md text-white border-b pb-1 border-white">Selected <span className="text-[#EDB726]">Lottery Numbers</span></h3>
+                        {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
+                          numbers.map((number, index) => (
+                            <div
+                              key={`${digit}-${number}`}
+                              className="grid grid-cols-4 p-2 items-center"
+                            >
+                              <span className="text-[#EDB726] text-sm">{number}</span>
+                              <span className="text-white text-[0.6rem]">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
+                              <span className="text-[#EDB726] text-right text-sm">f{betAmount || "0"}</span>
+                              <div className="text-right">
                                 <button
                                   onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                  className="text-[#EDB726] hover:text-yellow-600"
+                                  className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] rounded-full bg-[#EDB726] p-[0.1rem]"
                                 >
-                                  <X className="w-5 h-5" />
+                                  <X className="w-3 h-3 text-black" />
                                 </button>
                               </div>
-                            ))
-                          )
-                        )
-                      )}
-                    </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-6 flex space-x-4">
                     <button
@@ -692,42 +693,34 @@ const NewLottery: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-4">
-                      
-                      <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
-                        {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
-                          selectedLotteries.flatMap((lottery) =>
-                            Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
-                              numbers.map((number, index) => (
-                                <div
-                                  key={`${lottery.id}-${digit}-${number}`}
-                                  className="grid grid-cols-4 p-2 border-b border-gray-700 items-center"
-                                >
-                                  <span className="text-white">{number}</span>
-                                  <span className="text-white">{lottery.abbreviation}</span>
-                                  <span className="text-white">f{betAmount || "0"}</span>
+
+                      {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
+                        <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
+                          <h3 className="text-lg text-white border-b border-white pb-1">Selected <span className="text-[#EDB726]">Lottery Numbers</span> </h3>
+                          {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
+                            numbers.map((number, index) => (
+                              <div
+                                key={`${digit}-${number}`}
+                                className="grid grid-cols-4 p-2 items-center"
+                              >
+                                <span className="text-[#EDB726]">{number}</span>
+                                <span className="text-white text-sm">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
+                                <span className="text-[#EDB726] text-right">f{betAmount || "0"}</span>
+                                <div className="text-right">
                                   <button
                                     onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                    className="text-[#EDB726] hover:text-yellow-600"
+                                    className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] p-1 rounded-full bg-[#EDB726]"
                                   >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-3 h-3 text-black" />
                                   </button>
                                 </div>
-                              ))
-                            )
-                          )
-                        )}
-                      </div>
-                    </div>
-                    {newOrderInfo && (
-                      <div className="mt-4 p-3 bg-[#2A2D36] rounded border border-[#EDB726]">
-                        <h4 className="text-sm font-semibold text-[#EDB726] mb-2">Order Created</h4>
-                        <div className="text-xs text-gray-300 space-y-1">
-                          <div>Order ID: {newOrderInfo.order_id}</div>
-                          <div>Total: {newOrderInfo.local_total}</div>
-                          <div>Numbers: {newOrderInfo.ticket_numbers.join(", ")}</div>
+                              </div>
+                            ))
+                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -754,7 +747,7 @@ const NewLottery: React.FC = () => {
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
                   <div>Total Amount: XCG {newOrderInfo.local_total}</div>
-                  <div>Numbers: {newOrderInfo.ticket_numbers.length}</div>
+                  <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
               </div>

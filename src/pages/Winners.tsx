@@ -257,7 +257,8 @@ const Winners: React.FC = () => {
           />
         )}
         <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto w-full mb-20 lg:mb-0">
-          <div className="w-full mx-auto max-w-full px-2 sm:px-4 lg:px-6">
+          
+          <div className="w-full mx-auto max-w-full ">
 
             {isMobile && !isViewAllActive ? (
               <>
@@ -383,7 +384,7 @@ const Winners: React.FC = () => {
               </>
             ) : (
               <>
-                <div className={isMobile ? "space-y-2 mb-4" : "bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-gray-700 mb-4 sm:mb-6 md:mb-8 w-full max-w-full overflow-x-auto"}>
+                <div className={isMobile ? "space-y-2 mb-4" : "bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8 w-full max-w-full overflow-x-auto"}>
                   <div className={isMobile ? "space-y-2" : "flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0"}>
                     {!isMobile && (
                       <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
@@ -419,7 +420,7 @@ const Winners: React.FC = () => {
                             placeholder="Search by price or winnig numbers"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full px-2 py-3 bg-[#2A2D36] border border-gray-600 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-[#EDB726]"
+                            className="w-full px-2 py-3 bg-[#2A2D36] border border-white rounded-lg text-gray-200 text-xs focus:outline-none focus:border-[#EDB726]"
                             aria-label="Search winners"
                           />
                         </>
@@ -461,7 +462,7 @@ const Winners: React.FC = () => {
                           placeholder="Search by price or winnig numbers"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full sm:w-48 md:w-64 px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-gray-600 rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726]"
+                          className="w-full sm:w-48 md:w-64 px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-white rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726]"
                           aria-label="Search winners"
                         />
                       )}
@@ -469,16 +470,16 @@ const Winners: React.FC = () => {
                   </div>
                 </div>
                 {selectedPeriod === "today" && (
-                  <div className="p-2 sm:p-4 md:p-6 mb-4 sm:mb-6 md:mb-8">
+                  <div className=" mb-4 sm:mb-6 md:mb-8">
                     <div className="text-center">
-                      <div className="bg-[#1D1F27] rounded-lg p-2 sm:p-4 inline-block">
+                      <div className="bg-[#1D1F27] rounded-lg  inline-block">
                         <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-300 mb-1 sm:mb-2">
                           Today's Countdown
                         </h3>
                         <div className="text-2xl sm:text-3xl md:text-5xl font-bold text-[#EDB726]">
                           {countdown}
                         </div>
-                        <div className="mt-2 sm:mt-4 border border-black p-1 px-2 sm:px-4 bg-black rounded-lg flex justify-center">
+                        <div className="mt-2 sm:mt-4  p-1 px-2 sm:px-4 rounded-lg flex justify-center">
                           <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#EDB726] whitespace-nowrap">
                             {getDisplayLotteryName()}
                           </h3>

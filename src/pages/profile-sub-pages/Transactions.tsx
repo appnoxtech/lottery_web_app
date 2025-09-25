@@ -8,9 +8,9 @@ import { Link } from "react-router-dom";
 
 interface Transaction {
   id: number;
-  mode: string;
+  payment_mode: string;
   date: string;
-  amount: string;
+  total_price: number;
   status?: string;
   isToday?: boolean;
 }
@@ -47,9 +47,9 @@ const Transactions: React.FC = () => {
             const transactionsData = response.data.result || [];
             const mappedTransactions = transactionsData.map((tx: any) => ({
               id: tx.order_id,
-              mode: "Online",
+              payment_mode: tx.payment_mode,
               date: new Date(tx.created_at).toLocaleString(),
-              amount: `${tx.amount}`,
+              total_price: `${tx.total_price}`,
               status: tx.status,
               isToday: tx.todays_transaction,
             }));
@@ -140,7 +140,7 @@ const Transactions: React.FC = () => {
                       <div className="text-sm">
                         <p className="font-semibold">
                           {tx.isToday ? "Payment Mode" : "Payment mode:"}{" "}
-                          <span className="capitalize">{tx.mode}</span>
+                          <span className="capitalize">{tx.payment_mode}</span>
                         </p>
                         <p className="text-xs opacity-80">{tx.date}</p>
                       </div>
@@ -151,7 +151,7 @@ const Transactions: React.FC = () => {
                           Pending
                         </span>
                       )}
-                      <p className="text-lg font-bold">XCG {tx.amount}</p>
+                      <p className="text-sm sm:text-lg font-bold">XCG {tx.total_price}</p>
                     </div>
                   </div>
                 ))

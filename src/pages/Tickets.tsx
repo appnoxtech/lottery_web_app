@@ -79,57 +79,57 @@ const Tickets: React.FC = () => {
     if (success) fetchLotteryRecords();
   };
 
- const fetchLotteryRecords = useCallback(async () => {
-  if (!userData?.id) return;
-  setLoading(true);
-  try {
-    if (selectedTab === "today") {
-      const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
-      
-      if (response?.data?.result && response?.status === 200) {
-        console.log("Today Tickets:", response.data.result);
-        setLotteryTickets(
-          response.data.result.map((ticket: any) => ({
-            ...ticket,
-            payment_mode: ticket.payment_mode || "-", // Fallback if missing
-            total_no: ticket.total_no || 0, // Fallback if missing
-            grand_total: ticket.grand_total || 0, // Fallback if missing
-          }))
-        );
+  const fetchLotteryRecords = useCallback(async () => {
+    if (!userData?.id) return;
+    setLoading(true);
+    try {
+      if (selectedTab === "today") {
+        const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
+
+        if (response?.data?.result && response?.status === 200) {
+          console.log("Today Tickets:", response.data.result);
+          setLotteryTickets(
+            response.data.result.map((ticket: any) => ({
+              ...ticket,
+              payment_mode: ticket.payment_mode || "-", // Fallback if missing
+              total_no: ticket.total_no || 0, // Fallback if missing
+              grand_total: ticket.grand_total || 0, // Fallback if missing
+            }))
+          );
+        } else {
+          setLotteryTickets([]);
+        }
       } else {
-        setLotteryTickets([]);
+        const histResponse = await getOrderHistory("");
+        if (histResponse?.data?.success) {
+          const orders = histResponse.data.result;
+          const detailedPromises = orders.map((ord: { order: number }) => getOrderDetails(ord.order));
+          const detailsResponses = await Promise.all(detailedPromises);
+          const tickets = detailsResponses
+            .map((resp, index) => {
+              const result = resp?.data?.result;
+              if (!result) return null;
+              return {
+                ...result,
+                order_id: result.order_id || orders[index].order,
+                receipt: result.receipt || orders[index].receipt,
+              };
+            })
+            .filter(Boolean);
+          setLotteryTickets(tickets);
+        } else {
+          setLotteryTickets([]);
+        }
       }
-    } else {
-      const histResponse = await getOrderHistory("");
-      if (histResponse?.data?.success) {
-        const orders = histResponse.data.result;
-        const detailedPromises = orders.map((ord: { order: number }) => getOrderDetails(ord.order));
-        const detailsResponses = await Promise.all(detailedPromises);
-        const tickets = detailsResponses
-          .map((resp, index) => {
-            const result = resp?.data?.result;
-            if (!result) return null;
-            return {
-              ...result,
-              order_id: result.order_id || orders[index].order,
-              receipt: result.receipt || orders[index].receipt,
-            };
-          })
-          .filter(Boolean);
-        setLotteryTickets(tickets);
-      } else {
-        setLotteryTickets([]);
-      }
+
+    } catch (error: unknown) {
+      handleApiError(error, "Failed to fetch tickets.");
+      setLotteryTickets([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    
-  } catch (error: unknown) {
-    handleApiError(error, "Failed to fetch tickets.");
-    setLotteryTickets([]);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-}, [userData?.id, selectedTab, formattedTodaysDate]);
+  }, [userData?.id, selectedTab, formattedTodaysDate]);
 
 
   useEffect(() => {
@@ -513,14 +513,9 @@ const Tickets: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="mb-2 sm:mb-4 md:mb-8 hidden lg:block">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
-                Ticket Management
-              </h1>
-            </div>
             <div className="bg-[#2A2D36] rounded-lg p-2 hidden lg:block sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-2 lg:space-y-0">
-                <div className="flex flex-wrap gap-1 sm:gap-2 hidden lg:flex">
+                <div className="lex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
                   {["today", "all"].map(
                     (tab) => (
                       <button
@@ -565,7 +560,7 @@ const Tickets: React.FC = () => {
               </div>
             ) : selectedTab === "today" && !showAllView ? (
               <div>
-                
+
                 <div className="lg:hidden mb-2 sm:mb-4 md:mb-8">
                   <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
                     Today's <span className="text-[#EDB726]">Lottery Ticket</span>
@@ -597,23 +592,23 @@ const Tickets: React.FC = () => {
                             </p>
                           </div>
                           <div className="border border-gray-300 rounded overflow-hidden mb-4" style={{ minWidth: "100%", display: "block" }}>
-  <table className="w-full text-sm">
-    <thead className="bg-[#EDB726] text-black uppercase">
-      <tr>
-        <th className="px-2 py-1 text-center">P Mode</th>
-        <th className="px-2 py-1 text-center">Total No.</th>
-        <th className="px-2 py-1 text-center">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td className="px-2 py-1 text-center">{ticket.payment_mode || "-"}</td>
-        <td className="px-2 py-1 text-center">{ticket.total_no || 0}</td>
-        <td className="px-2 py-1 text-center">XCG {ticket.grand_total || "0.00"}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+                            <table className="w-full text-sm">
+                              <thead className="bg-[#EDB726] text-black uppercase">
+                                <tr>
+                                  <th className="px-2 py-1 text-center">P Mode</th>
+                                  <th className="px-2 py-1 text-center">Total No.</th>
+                                  <th className="px-2 py-1 text-center">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td className="px-2 py-1 text-center">{ticket.payment_mode || "-"}</td>
+                                  <td className="px-2 py-1 text-center">{ticket.total_no || 0}</td>
+                                  <td className="px-2 py-1 text-center">XCG {ticket.grand_total || "0.00"}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
 
                         <div className="flex justify-around items-center">
@@ -622,7 +617,7 @@ const Tickets: React.FC = () => {
                               e.stopPropagation();
                               downloadTicketPdf(ticket);
                             }}
-                            className="text-white mb-4 hover:text-[#d4a422] flex items-center"
+                            className="text-white mb-4 hover:text-[#d4a422] flex items-center cursor-pointer"
                             title="Download PDF"
                           >
                             <Download className="w-5 h-5 mr-1" /> Download
@@ -633,7 +628,7 @@ const Tickets: React.FC = () => {
                                 e.stopPropagation();
                                 openPayment(ticket);
                               }}
-                              className="px-2 mb-4 bg-[#EDB726] text-black rounded hover:bg-[#d4a422] transition-colors"
+                              className="px-2 mb-4 bg-[#EDB726] text-black rounded hover:bg-[#d4a422] transition-colors cursor-pointer"
                             >
                               Pay
                             </button>

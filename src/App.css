@@ -10,15 +10,12 @@
   color: white !important;
 }
 
-
-
 .react-tel-input .form-control:focus.error {
   border-color: #ef4444 !important;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 .react-tel-input .flag-dropdown {
-  /* background-color: #2A2D36 !important; */
   margin-right: 2px !important;
 }
 
@@ -38,11 +35,71 @@
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
+/* FIX FOR SMALL SCREENS - COUNTRY DROPDOWN */
 .react-tel-input .country-list {
   background-color: #2A2D36 !important;
   border-color: #374151 !important;
   animation: fadeIn 0.15s ease-out !important;
   transform-origin: top !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+/* Mobile-specific dropdown fixes */
+@media (max-width: 640px) {
+  .react-tel-input .country-list {
+    position: fixed !important;
+    top: 50% !important;
+    left: 5% !important;
+    width: 90% !important;
+    max-height: 70vh !important;
+    transform: translateY(-50%) !important;
+    z-index: 10000 !important;
+    border: 2px solid #EDB726 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  }
+  
+  /* Add search box styling for mobile */
+  .react-tel-input .search {
+    position: sticky !important;
+    top: 0 !important;
+    background: #1D1F27 !important;
+    border-bottom: 1px solid #374151 !important;
+    padding: 15px !important;
+    z-index: 10001 !important;
+  }
+  
+  .react-tel-input .search-box {
+    background: #2A2D36 !important;
+    border: 1px solid #4B5563 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    width: 100% !important;
+  }
+  
+  .react-tel-input .search-box::placeholder {
+    color: #9CA3AF !important;
+  }
+  
+  /* Country items styling for mobile */
+  .react-tel-input .country {
+    padding: 12px 15px !important;
+    border-bottom: 1px solid #374151 !important;
+  }
+  
+  /* Create overlay for better visibility */
+  .react-tel-input .country-list::before {
+    content: '' !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    z-index: -1 !important;
+  }
 }
 
 @keyframes fadeIn {
@@ -103,7 +160,6 @@
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-
 .react-tel-input .selected-flag .arrow {
   border-top-color: #9CA3AF !important;
   margin-left: 0.5rem !important;
@@ -139,10 +195,13 @@
   transition: all 0.2s ease-in-out !important;
 }
 
-/* Proper dropdown positioning */
-.react-tel-input .country-list {
-  margin-top: 2px !important;
-  min-width: 300px !important;
+/* Proper dropdown positioning for desktop */
+@media (min-width: 641px) {
+  .react-tel-input .country-list {
+    margin-top: 2px !important;
+    min-width: 300px !important;
+    max-width: 400px !important;
+  }
 }
 
 /* Toast Container Responsive */
@@ -191,4 +250,15 @@
 .btn-hover:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Additional fix for the container to prevent overflow */
+.phone-input-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Ensure the form doesn't cause horizontal scroll */
+.form-control {
+  max-width: 100%;
 }
