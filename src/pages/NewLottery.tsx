@@ -19,7 +19,7 @@ interface FormValues {
   selectedLotteries: Lottery[];
   betAmount: string;
   selectedDigitType: number[];
-  selectedNumbers: number[];
+  selectedNumbers: string[];
 }
 interface Order {
   order_id: number;
@@ -27,7 +27,7 @@ interface Order {
   client_secret: string;
   total_price: string;
   local_total: string;
-  ticket_numbers: number[];
+  ticket_numbers: string[];
   selected_lotteries: string[];
 }
 interface OrderDetailItem {
@@ -166,25 +166,36 @@ const NewLottery: React.FC = () => {
     if (!numbersString || digitsToProcess.length === 0) {
       return processedResults;
     }
+
     const numbers = numbersString
       .split(",")
       .map((n) => n.trim())
       .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+
     digitsToProcess.forEach((digit) => {
       const resultForDigit: string[] = [];
       numbers.forEach((num) => {
-        const cleanNum = parseInt(num.replace(/,/g, ""), 10).toString();
-        if (cleanNum.length === digit) {
-          if (!cleanNum.startsWith("0") || cleanNum === "0") {
-            if (!resultForDigit.some(existing => cleanNum === existing || (existing.length > cleanNum.length && existing.endsWith(cleanNum)))) {
-              resultForDigit.push(cleanNum);
+        const cleanNum = num.replace(/,/g, ""); // Keep as string to preserve leading zeros
+        // Check if the number is not all zeros
+        if (!/^[0]+$/.test(cleanNum)) {
+          if (cleanNum.length === digit) {
+            // Include numbers that match the digit length
+            if (!resultForDigit.some(existing =>
+              cleanNum === existing ||
+              (existing.length > cleanNum.length && existing.endsWith(cleanNum))
+            )) {
+              resultForDigit.push(cleanNum.padStart(digit, "0"));
             }
-          }
-        } else if (cleanNum.length > digit) {
-          const truncated = cleanNum.slice(-digit);
-          if (!truncated.startsWith("0") || truncated === "0") {
-            if (!resultForDigit.some(existing => truncated === existing || (existing.length > truncated.length && existing.endsWith(truncated)))) {
-              resultForDigit.push(truncated);
+          } else if (cleanNum.length > digit) {
+            // Truncate longer numbers to the desired digit length
+            const truncated = cleanNum.slice(-digit);
+            if (!/^[0]+$/.test(truncated)) {
+              if (!resultForDigit.some(existing =>
+                truncated === existing ||
+                (existing.length > truncated.length && existing.endsWith(truncated))
+              )) {
+                resultForDigit.push(truncated.padStart(digit, "0"));
+              }
             }
           }
         }
@@ -195,11 +206,11 @@ const NewLottery: React.FC = () => {
     });
     return processedResults;
   };
-  const getAllProcessedNumbers = (): number[] => {
-    const allNumbers: number[] = [];
+  const getAllProcessedNumbers = (): string[] => {
+    const allNumbers: string[] = [];
     Object.values(processedNumbers).forEach((numberArray) => {
       numberArray.forEach((num) => {
-        allNumbers.push(parseInt(num));
+        allNumbers.push(num); // Use the string value directly
       });
     });
     return allNumbers;
@@ -224,10 +235,37 @@ const NewLottery: React.FC = () => {
     setProcessedNumbers((prev) => {
       const updatedList = [...prev[digit]];
       updatedList.splice(index, 1);
-      return {
+      const newProcessed = {
         ...prev,
         [digit]: updatedList,
       };
+
+      if (newProcessed[digit].length === 0) {
+        delete newProcessed[digit];
+      }
+
+      if (newOrderInfo) {
+        const allNumbers = Object.values(newProcessed)
+          .flat()
+          .map((num) => num); // Keep as string
+        const localTotal =
+          allNumbers.length > 0 && betAmount && selectedLotteries.length > 0
+            ? allNumbers.length * +betAmount * selectedLotteries.length
+            : "0";
+
+        if (allNumbers.length === 0) {
+          setNewOrderInfo(null);
+        } else {
+          setNewOrderInfo({
+            ...newOrderInfo,
+            ticket_numbers: allNumbers,
+            local_total: localTotal.toString(),
+            selected_lotteries: selectedLotteries.map((item) => item.abbreviation),
+          });
+        }
+      }
+
+      return newProcessed;
     });
   };
   const handleCreateLottery = async (e: React.FormEvent) => {
@@ -243,7 +281,7 @@ const NewLottery: React.FC = () => {
         selectedLotteries: selectedLotteries,
         betAmount: betAmount,
         selectedDigitType: selectedDigits,
-        selectedNumbers: getAllProcessedNumbers(),
+        selectedNumbers: getAllProcessedNumbers(), // Use string array
       };
       const isValid = isOrderValid(formData);
       if (!isValid) {
@@ -256,7 +294,7 @@ const NewLottery: React.FC = () => {
           {
             bet_amount: formData.betAmount,
             lottery_id: formData.selectedLotteries.map((item) => item.id),
-            lottery_number: formData.selectedNumbers,
+            lottery_number: formData.selectedNumbers, // Send padded strings
           },
         ],
         total_price: dollarConversion(localTotal),
@@ -269,10 +307,8 @@ const NewLottery: React.FC = () => {
           ...data,
           total_price: orderParams.total_price as string,
           local_total: localTotal.toString(),
-          ticket_numbers: orderParams.userorder[0].lottery_number as number[],
-          selected_lotteries: formData.selectedLotteries.map(
-            (item) => item.abbreviation
-          ),
+          ticket_numbers: orderParams.userorder[0].lottery_number as string[], // Use string[]
+          selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
         });
         setShowPaymentModal(true);
       }

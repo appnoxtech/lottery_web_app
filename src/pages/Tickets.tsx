@@ -604,7 +604,7 @@ const Tickets: React.FC = () => {
                                 <tr>
                                   <td className="px-2 py-1 text-center">{ticket.payment_mode || "-"}</td>
                                   <td className="px-2 py-1 text-center">{ticket.total_no || 0}</td>
-                                  <td className="px-2 py-1 text-center">XCG {ticket.grand_total || "0.00"}</td>
+                                  <td className="px-2 py-1 text-center">XCG {ticket.bet || "0.00"}</td>
                                 </tr>
                               </tbody>
                             </table>
