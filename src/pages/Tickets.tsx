@@ -602,7 +602,7 @@ const fetchLotteryRecords = useCallback(async () => {
                           const dateObj = parseCreatedAt(createdAt);
                           const isValidDate = !!dateObj && !isNaN(dateObj.getTime());
                           const dateStr = isValidDate ? formatDate(dateObj.toISOString()) : "-";
-                          const timeStr = isValidDate ? dayjs(dateObj).format("hh:mm A") : "-";
+                          // const timeStr = isValidDate ? dayjs(dateObj).format("hh:mm A") : "-";
                           return (
                             <tr key={ticket.receipt} className="hover:bg-[#3A3D46] transition-colors">
                               <td className="px-2 sm:px-3 md:px-4 py-2">
