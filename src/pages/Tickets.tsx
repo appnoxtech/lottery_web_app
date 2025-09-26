@@ -14,6 +14,10 @@ import PaymentMethodModal from "./PaymentMethodModal";
 import WhatsAppModal from "./WhatsAppModal";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 const Tickets: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,11 +29,9 @@ const Tickets: React.FC = () => {
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
   const [showAllView, setShowAllView] = useState(false);
-
   const [selectedPaymentTicket, setSelectedPaymentTicket] = useState<any | null>(null);
-
   const userData = useSelector((state: any) => state.user.userData);
-  const todaysDate = new Date();
+  const todaysDate = dayjs().local();
   const formattedTodaysDate = formatDate(todaysDate.toISOString());
   const navigate = useNavigate();
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -37,10 +39,20 @@ const Tickets: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+  const parseCreatedAt = (value?: string): Date | null => {
+  if (!value || typeof value !== "string") return null;
+  // Try parsing as ISO string first
+  const date = dayjs.utc(value).local();
+  if (date.isValid()) return date.toDate();
+  // If invalid as ISO, try parsing as YYYY-MM-DD
+  const simpleDate = dayjs(value, "YYYY-MM-DD", true);
+  if (simpleDate.isValid()) return simpleDate.toDate();
+  return null;
+};
+
   const openPayment = async (ticket: any) => {
     const resp = await getOrderDetails(ticket.order_id);
     const items = resp?.data?.result?.details ?? [];
-
     const orderInfo = {
       order_id: ticket.order_id,
       total_price: ticket.grand_total,
@@ -48,7 +60,6 @@ const Tickets: React.FC = () => {
       ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
       selected_lotteries: items.map((i: any) => i.abbreviation[0] ?? "-"),
     };
-
     setSelectedPaymentTicket(orderInfo);
     setPaymentMethodOpen(true);
   };
@@ -56,7 +67,6 @@ const Tickets: React.FC = () => {
   const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
     if (!selectedPaymentTicket) return;
     setPaymentMethodOpen(false);
-
     if (method === "stripe") {
       setPaymentTicket({
         ...selectedPaymentTicket,
@@ -79,109 +89,57 @@ const Tickets: React.FC = () => {
     if (success) fetchLotteryRecords();
   };
 
-  const fetchLotteryRecords = useCallback(async () => {
-    if (!userData?.id) return;
-    setLoading(true);
-    try {
-      if (selectedTab === "today") {
-        const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
-
-        if (response?.data?.result && response?.status === 200) {
-          console.log("Today Tickets:", response.data.result);
-          setLotteryTickets(
-            response.data.result.map((ticket: any) => ({
-              ...ticket,
-              payment_mode: ticket.payment_mode || "-", // Fallback if missing
-              total_no: ticket.total_no || 0, // Fallback if missing
-              grand_total: ticket.grand_total || 0, // Fallback if missing
-            }))
-          );
-        } else {
-          setLotteryTickets([]);
-        }
+const fetchLotteryRecords = useCallback(async () => {
+  if (!userData?.id) return;
+  setLoading(true);
+  try {
+    if (selectedTab === "today") {
+      const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
+      if (response?.data?.result && response?.status === 200) {
+        console.log("Today Tickets:", response.data.result);
+        setLotteryTickets(
+          response.data.result.map((ticket: any) => ({
+            ...ticket,
+            payment_mode: ticket.payment_mode || "-",
+            total_no: ticket.total_no || 0,
+            grand_total: ticket.grand_total || 0,
+            created_at: ticket.created_at, // Already in ISO format
+          }))
+        );
       } else {
-        const histResponse = await getOrderHistory("");
-        if (histResponse?.data?.success) {
-          const orders = histResponse.data.result;
-          const detailedPromises = orders.map((ord: { order: number }) => getOrderDetails(ord.order));
-          const detailsResponses = await Promise.all(detailedPromises);
-          const tickets = detailsResponses
-            .map((resp, index) => {
-              const result = resp?.data?.result;
-              if (!result) return null;
-              return {
-                ...result,
-                order_id: result.order_id || orders[index].order,
-                receipt: result.receipt || orders[index].receipt,
-              };
-            })
-            .filter(Boolean);
-          setLotteryTickets(tickets);
-        } else {
-          setLotteryTickets([]);
-        }
+        setLotteryTickets([]);
       }
-
-    } catch (error: unknown) {
-      handleApiError(error, "Failed to fetch tickets.");
-      setLotteryTickets([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    } else {
+      const histResponse = await getOrderHistory("");
+      if (histResponse?.data?.success) {
+        const orders = histResponse.data.result;
+        const detailedPromises = orders.map((ord: { order: number; date: string; receipt: string }) => 
+          getOrderDetails(ord.order).then(resp => ({
+            ...resp?.data?.result,
+            order_id: ord.order,
+            receipt: ord.receipt,
+            created_at: ord.date, // Map API's date to created_at
+          }))
+        );
+        const detailsResponses = await Promise.all(detailedPromises);
+        const tickets = detailsResponses.filter((result): result is NonNullable<typeof result> => result !== null);
+        setLotteryTickets(tickets);
+      } else {
+        setLotteryTickets([]);
+      }
     }
-  }, [userData?.id, selectedTab, formattedTodaysDate]);
-
+  } catch (error: unknown) {
+    handleApiError(error, "Failed to fetch tickets.");
+    setLotteryTickets([]);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [userData?.id, selectedTab, formattedTodaysDate]);
 
   useEffect(() => {
     fetchLotteryRecords();
   }, [fetchLotteryRecords, selectedTab]);
-
-  // const getStatusColor = (status: string) => {
-  //   switch (status) {
-  //     case "active":
-  //       return "bg-green-500/20 text-green-400 border-green-500/30";
-  //     case "completed":
-  //       return "bg-green-500/20 text-green-400 border-green-500/30";
-  //     case "failed":
-  //       return "bg-red-500/20 text-red-400 border-red-500/30";
-  //     case "winner":
-  //       return "bg-[#EDB726]/20 text-[#EDB726] border-[#EDB726]/30";
-  //     case "expired":
-  //     case "pending":
-  //       return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-  //     case "cancelled":
-  //       return "bg-red-500/20 text-red-400 border-red-500/30";
-  //     default:
-  //       return "bg-gray-500/20 text-gray-400 border-gray-500/30";
-  //   }
-  // };
-
-  const parseCreatedAt = (value?: string): Date | null => {
-    if (!value || typeof value !== "string") return null;
-    const parts = value.split(" - ");
-    if (parts.length !== 2) return null;
-    const [datePart, timePart] = parts;
-    const [dayStr, monStr, yearStr] = datePart.split(" ");
-    const monthMap: Record<string, number> = {
-      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-    };
-    const day = parseInt(dayStr, 10);
-    const month = monthMap[monStr as keyof typeof monthMap];
-    const year = parseInt(yearStr, 10);
-    if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
-      return null;
-    }
-    const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (!timeMatch) return null;
-    let hours = parseInt(timeMatch[1], 10);
-    const minutes = parseInt(timeMatch[2], 10);
-    const ampm = timeMatch[3].toUpperCase();
-    if (ampm === "PM" && hours < 12) hours += 12;
-    if (ampm === "AM" && hours === 12) hours = 0;
-    const d = new Date(year, month, day, hours, minutes, 0, 0);
-    return Number.isNaN(d.getTime()) ? null : d;
-  };
 
   const filteredTickets = useMemo(() => {
     const term = (searchTerm || "").toLowerCase();
@@ -190,12 +148,11 @@ const Tickets: React.FC = () => {
         const receiptText = String(ticket?.receipt ?? "").toLowerCase();
         const createdAt = ticket?.created_at;
         const dateObj = parseCreatedAt(createdAt);
+        if (!dateObj && createdAt) {
+          console.log("Invalid created_at:", createdAt); // Debug invalid dates
+        }
         const ticketDate = dateObj ? formatDate(dateObj.toISOString()) : "";
-
-        // Check if searchTerm is a date (using formatDate output format)
         const isDateSearch = term === ticketDate;
-
-        // Filter by receipt or date
         return term === "" ? true : isDateSearch || receiptText.includes(term);
       })
       .filter((ticket) => {
@@ -205,12 +162,12 @@ const Tickets: React.FC = () => {
           const dateObj = parseCreatedAt(createdAt);
           if (!dateObj) return false;
           const ticketDate = formatDate(dateObj.toISOString());
+          console.log("Ticket Date:", ticketDate, "Formatted Today's Date:", formattedTodaysDate);
           return ticketDate === formattedTodaysDate;
         }
         return ticket?.status === selectedTab;
       });
   }, [lotteryTickets, searchTerm, selectedTab, formattedTodaysDate]);
-
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -238,41 +195,21 @@ const Tickets: React.FC = () => {
     document.body.appendChild(s);
   });
 
+  const parseCreatedAtForPdf = (value?: string): { date: string; time: string } => {
+    if (!value || typeof value !== "string") return { date: "-", time: "-" };
+    const date = dayjs.utc(value).local();
+    if (!date.isValid()) return { date: "-", time: "-" };
+    return {
+      date: date.format("YYYY-MM-DD"),
+      time: date.format("hh:mm A"),
+    };
+  };
+
   const downloadTicketPdf = async (ticket: any) => {
     try {
       const resp = await getOrderDetails(ticket.order_id);
       const items = (resp as any)?.data?.result?.details || [];
-
-      const parseCreatedAt = (value?: string): { date: string; time: string } => {
-        if (!value || typeof value !== "string") return { date: "-", time: "-" };
-        const parts = value.split(" - ");
-        if (parts.length !== 2) return { date: "-", time: "-" };
-        const [datePart, timePart] = parts;
-        const [dayStr, monStr, yearStr] = datePart.split(" ");
-        const monthMap: Record<string, number> = {
-          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-        };
-        const day = parseInt(dayStr, 10);
-        const month = monthMap[monStr as keyof typeof monthMap];
-        const year = parseInt(yearStr, 10);
-        if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
-          return { date: "-", time: "-" };
-        }
-        const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (!timeMatch) return { date: "-", time: "-" };
-        let hours = parseInt(timeMatch[1], 10);
-        const minutes = parseInt(timeMatch[2], 10);
-        const ampm = timeMatch[3].toUpperCase();
-        if (ampm === "PM" && hours < 12) hours += 12;
-        if (ampm === "AM" && hours === 12) hours = 0;
-        const d = new Date(year, month, day, hours, minutes, 0, 0);
-        if (Number.isNaN(d.getTime())) return { date: "-", time: "-" };
-        const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-        return { date, time };
-      };
-      const parsed = parseCreatedAt(ticket?.created_at);
+      const parsed = parseCreatedAtForPdf(ticket?.created_at);
 
       const rows = items.length > 0 ? items
         .map((item: any) => {
@@ -464,18 +401,18 @@ const Tickets: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             {selectedTab === "all" && (
               <div className="lg:hidden mb-4">
-                {isMobile && <button
-                  onClick={() => {
-                    setSelectedTab("today");
-                    setShowAllView(false);
-                  }}
-                  className="flex items-center text-white hover:text-yellow-600 transition-colors text-sm sm:text-base"
-                  aria-label="Back to today"
-                >
-
-                  <ChevronLeft className="w-5 h-5 mr-2" /> Tickets
-                </button>}
-
+                {isMobile && (
+                  <button
+                    onClick={() => {
+                      setSelectedTab("today");
+                      setShowAllView(false);
+                    }}
+                    className="flex items-center text-white hover:text-yellow-600 transition-colors text-sm sm:text-base"
+                    aria-label="Back to today"
+                  >
+                    <ChevronLeft className="w-5 h-5 mr-2" /> Tickets
+                  </button>
+                )}
                 <div className="flex flex-col justify-between px-3 py-2">
                   <p className="text-sm mb-1">Select Your lottery</p>
                   <div className="flex items-center border border-1 border-[#EDB726] rounded w-full py-2 relative">
@@ -499,13 +436,13 @@ const Tickets: React.FC = () => {
                             setIsDatePickerOpen(false);
                             if (date) {
                               const formattedDate = formatDate(date.toISOString());
-                              setSearchTerm(formattedDate); // Update search term with selected date
+                              setSearchTerm(formattedDate);
                             } else {
-                              setSearchTerm(""); // Clear search term if no date is selected
+                              setSearchTerm("");
                             }
                           }}
                           inline
-                          maxDate={new Date()} // Prevent selecting future dates
+                          maxDate={new Date()}
                         />
                       </div>
                     )}
@@ -515,24 +452,22 @@ const Tickets: React.FC = () => {
             )}
             <div className="bg-[#2A2D36] rounded-lg p-2 hidden lg:block sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-2 lg:space-y-0">
-                <div className="lex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
-                  {["today", "all"].map(
-                    (tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => {
-                          setSelectedTab(tab);
-                          setShowAllView(tab === "all");
-                        }}
-                        className={`px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base font-medium transition-colors whitespace-nowrap ${selectedTab === tab
-                          ? "bg-[#EDB726] text-[#1D1F27]"
-                          : "text-gray-400 hover:text-white cursor-pointer"
-                          }`}
-                      >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      </button>
-                    )
-                  )}
+                <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
+                  {["today", "all"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setSelectedTab(tab);
+                        setShowAllView(tab === "all");
+                      }}
+                      className={`px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base font-medium transition-colors whitespace-nowrap ${selectedTab === tab
+                        ? "bg-[#EDB726] text-[#1D1F27]"
+                        : "text-gray-400 hover:text-white cursor-pointer"
+                        }`}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
                 </div>
                 <div className="w-full lg:w-auto">
                   <div className="relative hidden lg:block">
@@ -560,7 +495,6 @@ const Tickets: React.FC = () => {
               </div>
             ) : selectedTab === "today" && !showAllView ? (
               <div>
-
                 <div className="lg:hidden mb-2 sm:mb-4 md:mb-8">
                   <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
                     Today's <span className="text-[#EDB726]">Lottery Ticket</span>
@@ -570,11 +504,9 @@ const Tickets: React.FC = () => {
                   {filteredTickets.map((ticket) => {
                     const createdAt = ticket?.created_at;
                     const dateObj = parseCreatedAt(createdAt);
-                    const isValidDate = !!dateObj;
-                    const dateStr = isValidDate ? formatDate((dateObj as Date).toISOString()) : "-";
-                    const timeStr = isValidDate
-                      ? (dateObj as Date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                      : "-";
+                    const isValidDate = !!dateObj && !isNaN(dateObj.getTime());
+                    const dateStr = isValidDate ? formatDate(dateObj.toISOString()) : "-";
+                    const timeStr = isValidDate ? dayjs(dateObj).format("hh:mm A") : "-";
                     const statusText = String(ticket?.status || "-");
 
                     return (
@@ -610,7 +542,6 @@ const Tickets: React.FC = () => {
                             </table>
                           </div>
                         </div>
-
                         <div className="flex justify-around items-center">
                           <button
                             onClick={(e) => {
@@ -655,7 +586,6 @@ const Tickets: React.FC = () => {
               </div>
             ) : (
               <div>
-
                 <div className="bg-[#2A2D36] rounded-lg border border-white overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs sm:text-sm md:text-base">
@@ -670,19 +600,13 @@ const Tickets: React.FC = () => {
                         {filteredTickets.map((ticket) => {
                           const createdAt: string | undefined = ticket?.created_at;
                           const dateObj = parseCreatedAt(createdAt);
-                          const isValidDate = !!dateObj;
-                          const dateStr = isValidDate ? formatDate((dateObj as Date).toISOString()) : "-";
-                          const timeStr = isValidDate
-                            ? (dateObj as Date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                            : "-";
+                          const isValidDate = !!dateObj && !isNaN(dateObj.getTime());
+                          const dateStr = isValidDate ? formatDate(dateObj.toISOString()) : "-";
+                          const timeStr = isValidDate ? dayjs(dateObj).format("hh:mm A") : "-";
                           return (
-                            <tr
-                              key={ticket.receipt}
-                              className="hover:bg-[#3A3D46] transition-colors"
-                            >
+                            <tr key={ticket.receipt} className="hover:bg-[#3A3D46] transition-colors">
                               <td className="px-2 sm:px-3 md:px-4 py-2">
                                 <div className="text-white">{dateStr}</div>
-                                <div className="text-gray-400 text-xs sm:text-sm">{timeStr}</div>
                               </td>
                               <td className="px-2 sm:px-3 md:px-4 py-2">
                                 <div className="text-white font-medium">{ticket.receipt}</div>

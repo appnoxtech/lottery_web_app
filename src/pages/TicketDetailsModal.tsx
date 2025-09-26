@@ -3,6 +3,10 @@ import { X } from "lucide-react";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { handleApiError } from "../hooks/handleApiError";
 import { dollarConversion, euroConversion } from "../hooks/utilityFn";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 type Ticket = {
   order_id: number;
@@ -22,32 +26,24 @@ interface Props {
 
 const parseCreatedAt = (value?: string): { date: string; time: string } => {
   if (!value || typeof value !== "string") return { date: "-", time: "-" };
-  const parts = value.split(" - ");
-  if (parts.length !== 2) return { date: "-", time: "-" };
-  const [datePart, timePart] = parts;
-  const [dayStr, monStr, yearStr] = datePart.split(" ");
-  const monthMap: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const day = parseInt(dayStr, 10);
-  const month = monthMap[monStr as keyof typeof monthMap];
-  const year = parseInt(yearStr, 10);
-  if (Number.isNaN(day) || month === undefined || Number.isNaN(year)) {
-    return { date: "-", time: "-" };
+  // Try parsing as ISO string first
+  const utcDate = dayjs.utc(value);
+  if (utcDate.isValid()) {
+    const localDate = utcDate.local();
+    return {
+      date: localDate.format("YYYY-MM-DD"),
+      time: localDate.format("hh:mm A"),
+    };
   }
-  const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!timeMatch) return { date: "-", time: "-" };
-  let hours = parseInt(timeMatch[1], 10);
-  const minutes = parseInt(timeMatch[2], 10);
-  const ampm = timeMatch[3].toUpperCase();
-  if (ampm === "PM" && hours < 12) hours += 12;
-  if (ampm === "AM" && hours === 12) hours = 0;
-  const d = new Date(year, month, day, hours, minutes, 0, 0);
-  if (Number.isNaN(d.getTime())) return { date: "-", time: "-" };
-  const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-  return { date, time };
+  // Try parsing as YYYY-MM-DD
+  const simpleDate = dayjs(value, "YYYY-MM-DD", true);
+  if (simpleDate.isValid()) {
+    return {
+      date: simpleDate.format("YYYY-MM-DD"),
+      time: "-", // No time for YYYY-MM-DD format
+    };
+  }
+  return { date: "-", time: "-" };
 };
 
 const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
@@ -103,7 +99,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                 <p className="text-black-300">Receipt# CW - <span className="text-black font-semibold">{ticket.receipt}</span></p>
               </div>
               <div>
-                <p className="text-black-300">Date: <span className="font-bold">{parsed.date} - {parsed.time}</span></p>
+                <p className="text-black-300">Date: <span className="font-bold">{parsed.date} - {parsed.time !== "-" ? parsed.time : ""}</span></p>
               </div>
               <div>
                 <p className="text-gray-500 font-bold">

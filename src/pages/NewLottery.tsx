@@ -356,11 +356,6 @@ const NewLottery: React.FC = () => {
         />
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-8 lg:block hidden">
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Buy New Lottery
-              </h1>
-            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
                 <h2 className="text-xl font-semibold text-white mb-6 lg:block hidden">
@@ -376,7 +371,7 @@ const NewLottery: React.FC = () => {
                     </label>
                     <textarea
                       id="inputNumbers"
-                      rows={3}
+                      rows={1}
                       value={inputNumbers}
                       onChange={(e) => {
                         const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
@@ -388,7 +383,7 @@ const NewLottery: React.FC = () => {
                         e.preventDefault();
                         setInputNumbers((prev) => prev + sanitized);
                       }}
-                      className="w-full px-3 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                      className="w-full px-3 py-2 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
                       placeholder="Enter 2,3,4 digit lottery number"
                     />
                   </div>
@@ -396,7 +391,7 @@ const NewLottery: React.FC = () => {
                     <label className="block text-sm font-medium text-white mb-2">
                       Select Lottery
                     </label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg p-2">
+                    <div className="space-y-2 max-h-40 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg">
                       {loadingLotteries && (
                         <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
                       )}
@@ -459,7 +454,7 @@ const NewLottery: React.FC = () => {
                           setBetAmount(value);
                         }
                       }}
-                      className="w-full px-3 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                      className="w-full px-3 py-1 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
                       placeholder="Enter bet amount"
                       required
                     />
@@ -475,7 +470,7 @@ const NewLottery: React.FC = () => {
                             key={digit}
                             type="button"
                             onClick={() => handleDigitChange(digit)}
-                            className={`flex-1 px-0 py-2 font-semibold transition-colors ${selectedDigits.includes(digit)
+                            className={`flex-1 px-0 py-1 font-semibold transition-colors ${selectedDigits.includes(digit)
                               ? "bg-[#EDB726] text-[#1D1F27]"
                               : "bg-transparent text-gray-300 cursor-pointer"
                               } text-xs md:text-sm`}

@@ -17,6 +17,7 @@
     "@stripe/stripe-js": "^7.9.0",
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
+    "dayjs": "^1.11.18",
     "libphonenumber-js": "^1.12.15",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
