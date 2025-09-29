@@ -21,13 +21,13 @@ const getWinningNumber = async (lotteryID: string | number): Promise<AxiosRespon
   }
 };
 
-const getTodayWinningNumber = async (lotteryID: string | number): Promise<AxiosResponse | void> => {
+const getTodayWinningNumber = async (lotteryID: string | number, digitType: string | number): Promise<AxiosResponse | void> => {
   try {
-    const response = await get(`todays-winner?lottery_id=${lotteryID}`);
+    const response = await get(`todays-winner?digit=${digitType}&lottery_id=${lotteryID}`);
     return response;
   } catch (error: any) {
-//     console.error("get today winner data error: ", error);
-//     throw error;
+    // console.error("get today winner data error: ", error);
+    // throw error;
   }
 };
 

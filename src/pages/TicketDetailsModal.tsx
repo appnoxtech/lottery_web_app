@@ -145,7 +145,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                   <thead className="bg-[#EDB726] text-black uppercase text-lg">
                     <tr>
                       <th className="px-3 py-2 text-left">Name</th>
-                      <th className="px-3 py-2 text-center">Digits</th>
+                      <th className="px-3 py-2 sm:pl-16 text-center">Digits</th>
                       <th className="px-3 py-2 text-right">Total</th>
                     </tr>
                   </thead>
@@ -160,7 +160,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                             <p className="text-red-600">{abbreviations}</p>
                             <p className="text-lg font-semibold">{number}</p>
                           </td>
-                          <td className="px-3 py-2 text-center">{String(number).length} digits</td>
+                          <td className="px-3 py-2 sm:pl-16 text-center">{String(number).length} digits</td>
                           <td className="px-3 py-2 text-right">
                             XCG {bet.toFixed(2)}
                           </td>

@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { getWinnerHistory } from "../utils/services/Winners.services";
+import { getWinnerHistory, getTodayWinningNumber } from "../utils/services/Winners.services";
 import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
 import { showToast } from "../utils/toast.util";
 import { formatDate } from "../hooks/dateFormatter";
 import { Trophy, ChevronLeft } from "lucide-react";
+
 
 interface Winner {
   date: string;
@@ -112,28 +113,65 @@ const Winners: React.FC = () => {
     }
   }, [selectedPeriod, selectedLottery, getCurrentLotteryTiming]);
 
-  const fetchWinnerHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setInfo(null);
-    try {
-      let response = await getWinnerHistory(
-        selectedLottery?.id || "",
-        selectedLotteryType.digitType
-      );
-      if (
-        response?.data?.result?.winners &&
-        response.data.result.winners.length > 0
-      ) {
+ const fetchWinnerHistory = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  setInfo(null);
+  try {
+    let response;
+    if (selectedPeriod === "today") {
+      response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
+      if (response?.data?.result?.data && response.data.result.data.length > 0 && response.data.success) {
+        const winnerData = response.data.result.data[0].PhAM;
+        const date = formatDate(new Date().toISOString()); // Use today's date
+        const winner = {
+          id: `${date}-${selectedLottery?.id || 'unknown'}`,
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount: (winnerData.first_prize ? parseInt(winnerData.first_prize[0]) : 0) +
+                       (winnerData.second_prize ? parseInt(winnerData.second_prize[0]) : 0) +
+                       (winnerData.third_prize ? parseInt(winnerData.third_prize[0]) : 0),
+          drawDate: date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: selectedLottery?.id || 'unknown',
+          date: date,
+          firstPrize: winnerData.first_prize ? winnerData.first_prize[0] : "-",
+          secondPrize: winnerData.second_prize ? winnerData.second_prize[0] : "-",
+          thirdPrize: winnerData.third_prize ? winnerData.third_prize[0] : "-",
+        };
+        dispatch(addToWinnerList([winner]));
+      } else {
+        // Handle no winners case by dispatching a default winner object with dashes
+        const date = formatDate(new Date().toISOString());
+        const defaultWinner = {
+          id: `${date}-${selectedLottery?.id || 'unknown'}`,
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount: 0,
+          drawDate: date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: selectedLottery?.id || 'unknown',
+          date: date,
+          firstPrize: "-",
+          secondPrize: "-",
+          thirdPrize: "-",
+        };
+        dispatch(addToWinnerList([defaultWinner]));
+      }
+    } else {
+      response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
+      if (response?.data?.result?.winners && response.data.result.winners.length > 0) {
         let winners = response.data.result.winners;
-        if (selectedPeriod === "today") {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          winners = winners.filter((item: any) => {
-            const winnerDate = new Date(item.date);
-            return winnerDate >= today;
-          });
-        }
         const grouped: { [key: string]: Winner } = {};
         winners.forEach((item: any) => {
           const date = formatDate(item.date);
@@ -141,9 +179,9 @@ const Winners: React.FC = () => {
             grouped[date] = {
               date,
               lotteryId: item.lottery_id,
-              firstPrize: item.first_prize || undefined,
-              secondPrize: item.second_prize || undefined,
-              thirdPrize: item.third_prize || undefined,
+              firstPrize: item.first_prize || "-",
+              secondPrize: item.second_prize || "-",
+              thirdPrize: item.third_prize || "-",
             };
           }
         });
@@ -153,10 +191,9 @@ const Winners: React.FC = () => {
           ticketNumber: "-",
           winnerName: "-",
           winnerPhone: "-",
-          prizeAmount:
-            (item.firstPrize ? parseInt(item.firstPrize) : 0) +
-            (item.secondPrize ? parseInt(item.secondPrize) : 0) +
-            (item.thirdPrize ? parseInt(item.thirdPrize) : 0),
+          prizeAmount: (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
+                       (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
+                       (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
           drawDate: item.date,
           drawTime: "-",
           claimStatus: "unclaimed",
@@ -169,22 +206,20 @@ const Winners: React.FC = () => {
           thirdPrize: item.thirdPrize,
         }));
         dispatch(addToWinnerList(formattedWinners));
-        setError(null);
-        setInfo(null);
       } else {
-        setError(null);
-        setInfo(null);
+        setInfo("No winners found for selected criteria.");
         dispatch(clearWinnersList());
       }
-    } catch (err: any) {
-      setError("Failed to fetch winner history. Please try again.");
-      setInfo(null);
-      showToast("Failed to fetch winner history.", "error");
-      dispatch(clearWinnersList());
-    } finally {
-      setLoading(false);
     }
-  }, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
+  } catch (err: any) {
+    setError("Failed to fetch winner history. Please try again.");
+    setInfo(null);
+    showToast("Failed to fetch winner history.", "error");
+    dispatch(clearWinnersList());
+  } finally {
+    setLoading(false);
+  }
+}, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
 
   useEffect(() => {
     fetchWinnerHistory();
@@ -413,7 +448,7 @@ const Winners: React.FC = () => {
                             className="flex items-center text-white hover:text-yellow-600 transition-colors text-sm sm:text-base"
                             aria-label="Back to today"
                           >
-                            <ChevronLeft className="w-5 h-5 mr-2" />Winners
+                            <ChevronLeft className="w-5 h-5 mr-2 mb-1" />Winners
                           </button>
                           <input
                             type="text"
@@ -571,7 +606,7 @@ const Winners: React.FC = () => {
                       </div>
                     ) : (
                       <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
-                        <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-gray-500">
+                        <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-[#EDB726]">
                           <tr>
                             <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">Date</th>
                             <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">

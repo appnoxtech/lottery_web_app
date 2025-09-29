@@ -269,55 +269,65 @@ const NewLottery: React.FC = () => {
     });
   };
   const handleCreateLottery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (newOrderInfo) {
-        setShowPaymentModal(true);
-        return;
-      }
-      setLoading(true);
-      const formData: FormValues = {
-        lotteryNumber: inputNumbers,
-        selectedLotteries: selectedLotteries,
-        betAmount: betAmount,
-        selectedDigitType: selectedDigits,
-        selectedNumbers: getAllProcessedNumbers(), // Use string array
-      };
-      const isValid = isOrderValid(formData);
-      if (!isValid) {
-        setLoading(false);
-        return;
-      }
-      const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
-      const orderParams = {
-        userorder: [
-          {
-            bet_amount: formData.betAmount,
-            lottery_id: formData.selectedLotteries.map((item) => item.id),
-            lottery_number: formData.selectedNumbers, // Send padded strings
-          },
-        ],
-        total_price: dollarConversion(localTotal),
-        user_id: userData?.id,
-      };
-      const response = await placeOrder(orderParams);
-      if ((response as any)?.data?.success) {
-        const { data } = (response as any)?.data;
-        setNewOrderInfo({
-          ...data,
-          total_price: orderParams.total_price as string,
-          local_total: localTotal.toString(),
-          ticket_numbers: orderParams.userorder[0].lottery_number as string[], // Use string[]
-          selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
-        });
-        setShowPaymentModal(true);
-      }
-    } catch (error) {
-      handleApiError(error, "Failed to place order");
-    } finally {
-      setLoading(false);
+  e.preventDefault();
+  try {
+    if (newOrderInfo) {
+      setShowPaymentModal(true);
+      return;
     }
-  };
+    setLoading(true);
+    const formData: FormValues = {
+      lotteryNumber: inputNumbers,
+      selectedLotteries: selectedLotteries,
+      betAmount: betAmount,
+      selectedDigitType: selectedDigits,
+      selectedNumbers: getAllProcessedNumbers(),
+    };
+    const isValid = isOrderValid(formData);
+    if (!isValid) {
+      setLoading(false);
+      return;
+    }
+    const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+    const orderParams = {
+      userorder: [
+        {
+          bet_amount: formData.betAmount,
+          lottery_id: formData.selectedLotteries.map((item) => item.id),
+          lottery_number: formData.selectedNumbers,
+        },
+      ],
+      total_price: dollarConversion(localTotal),
+      user_id: userData?.id,
+    };
+    const response = await placeOrder(orderParams);
+    if ((response as any)?.data?.success) {
+      const { data } = (response as any)?.data;
+      setNewOrderInfo({
+        ...data,
+        total_price: orderParams.total_price as string,
+        local_total: localTotal.toString(),
+        ticket_numbers: orderParams.userorder[0].lottery_number as string[],
+        selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
+      });
+      setShowPaymentModal(true);
+    }
+  } catch (error: any) {
+    // Extract and display validation errors
+    const errorMessage = error.response?.data?.message || "Failed to place order";
+    const validationErrors = error.response?.data?.errors;
+    if (validationErrors) {
+      // Combine all validation error messages
+      const allErrors = Object.values(validationErrors).flat().join(" ");
+      showToast(allErrors || errorMessage, "error");
+    } else {
+      showToast(errorMessage, "error");
+    }
+    handleApiError(error, errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleStripePayment = (success: boolean) => {
     if (success) {
       resetForm();
@@ -361,7 +371,7 @@ const NewLottery: React.FC = () => {
                 <h2 className="text-xl font-semibold text-white mb-6 lg:block hidden">
                   Lottery Details
                 </h2>
-                <form className="space-y-6 lg:block hidden" onSubmit={handleCreateLottery}>
+                <form className="space-y-4 lg:block hidden" onSubmit={handleCreateLottery}>
                   <div>
                     <label
                       htmlFor="inputNumbers"
@@ -391,7 +401,7 @@ const NewLottery: React.FC = () => {
                     <label className="block text-sm font-medium text-white mb-2">
                       Select Lottery
                     </label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg">
+                    <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg">
                       {loadingLotteries && (
                         <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
                       )}
@@ -532,7 +542,7 @@ const NewLottery: React.FC = () => {
                     <label className="block text-sm font-medium text-white mb-2">
                       Select Lottery
                     </label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg p-2">
+                    <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg p-2">
                       {loadingLotteries && (
                         <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
                       )}
@@ -638,7 +648,7 @@ const NewLottery: React.FC = () => {
                               <div className="text-right">
                                 <button
                                   onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                  className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] rounded-full bg-[#EDB726] p-[0.1rem]"
+                                  className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] rounded-full bg-[#EDB726] p-[0.1rem] cursor-pointer"
                                 >
                                   <X className="w-3 h-3 text-black" />
                                 </button>
@@ -740,7 +750,7 @@ const NewLottery: React.FC = () => {
                                 <div className="text-right">
                                   <button
                                     onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                    className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] p-1 rounded-full bg-[#EDB726]"
+                                    className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] p-1 rounded-full bg-[#EDB726] cursor-pointer"
                                   >
                                     <X className="w-3 h-3 text-black" />
                                   </button>

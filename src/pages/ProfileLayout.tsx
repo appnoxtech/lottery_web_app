@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
+  ChevronLeft,
   User,
   LogOut,
   ChevronRight,
@@ -134,7 +134,7 @@ const ProfileLayout: React.FC = () => {
             to="/home"
             className="flex items-center text-gray-300 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" /> Back
+            <ChevronLeft className="w-5 h-5 mr-2" /> Back
           </Link>
         </div>
         <div className="flex flex-col items-center p-6 border-b border-gray-700">
@@ -221,7 +221,7 @@ const ProfileLayout: React.FC = () => {
               to="/home"
               className="flex items-center text-gray-300 hover:text-white transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" /> Back
+              <ChevronLeft className="w-5 h-5 mr-2" /> Back
             </Link>
           </div>
           <div className="flex flex-col items-center p-6 border-b border-gray-700">
@@ -299,14 +299,14 @@ const ProfileLayout: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
-          <header className="bg-[#2A2D36] border-b border-gray-700 p-4 flex items-center">
+          <header className=" border-b border-gray-700 p-4 flex items-center">
             <button
               onClick={() => navigate("/profile")}
               className="text-gray-300 hover:text-white transition-colors mr-4"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-white">Back</h1>
+            <h1 className="text-xl text-white">Back</h1>
           </header>
           <main className="flex-1 p-6 overflow-y-auto min-h-0">
             <div className="max-w-7xl mx-auto">

@@ -16,6 +16,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import noTicketsIcon from "../assets/Images/noTicketsIcon.png";
+import noTicketHistoyIcon from "../assets/Images/noTicketHistoryIcon.png";
 
 dayjs.extend(utc);
 
@@ -40,15 +42,15 @@ const Tickets: React.FC = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const parseCreatedAt = (value?: string): Date | null => {
-  if (!value || typeof value !== "string") return null;
-  // Try parsing as ISO string first
-  const date = dayjs.utc(value).local();
-  if (date.isValid()) return date.toDate();
-  // If invalid as ISO, try parsing as YYYY-MM-DD
-  const simpleDate = dayjs(value, "YYYY-MM-DD", true);
-  if (simpleDate.isValid()) return simpleDate.toDate();
-  return null;
-};
+    if (!value || typeof value !== "string") return null;
+    // Try parsing as ISO string first
+    const date = dayjs.utc(value).local();
+    if (date.isValid()) return date.toDate();
+    // If invalid as ISO, try parsing as YYYY-MM-DD
+    const simpleDate = dayjs(value, "YYYY-MM-DD", true);
+    if (simpleDate.isValid()) return simpleDate.toDate();
+    return null;
+  };
 
   const openPayment = async (ticket: any) => {
     const resp = await getOrderDetails(ticket.order_id);
@@ -89,53 +91,53 @@ const Tickets: React.FC = () => {
     if (success) fetchLotteryRecords();
   };
 
-const fetchLotteryRecords = useCallback(async () => {
-  if (!userData?.id) return;
-  setLoading(true);
-  try {
-    if (selectedTab === "today") {
-      const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
-      if (response?.data?.result && response?.status === 200) {
-        console.log("Today Tickets:", response.data.result);
-        setLotteryTickets(
-          response.data.result.map((ticket: any) => ({
-            ...ticket,
-            payment_mode: ticket.payment_mode || "-",
-            total_no: ticket.total_no || 0,
-            grand_total: ticket.grand_total || 0,
-            created_at: ticket.created_at, // Already in ISO format
-          }))
-        );
+  const fetchLotteryRecords = useCallback(async () => {
+    if (!userData?.id) return;
+    setLoading(true);
+    try {
+      if (selectedTab === "today") {
+        const response = await getDailyLotteryTickets(userData.id, formattedTodaysDate);
+        if (response?.data?.result && response?.status === 200) {
+          console.log("Today Tickets:", response.data.result);
+          setLotteryTickets(
+            response.data.result.map((ticket: any) => ({
+              ...ticket,
+              payment_mode: ticket.payment_mode || "-",
+              total_no: ticket.total_no || 0,
+              grand_total: ticket.grand_total || 0,
+              created_at: ticket.created_at, // Already in ISO format
+            }))
+          );
+        } else {
+          setLotteryTickets([]);
+        }
       } else {
-        setLotteryTickets([]);
+        const histResponse = await getOrderHistory("");
+        if (histResponse?.data?.success) {
+          const orders = histResponse.data.result;
+          const detailedPromises = orders.map((ord: { order: number; date: string; receipt: string }) =>
+            getOrderDetails(ord.order).then(resp => ({
+              ...resp?.data?.result,
+              order_id: ord.order,
+              receipt: ord.receipt,
+              created_at: ord.date, // Map API's date to created_at
+            }))
+          );
+          const detailsResponses = await Promise.all(detailedPromises);
+          const tickets = detailsResponses.filter((result): result is NonNullable<typeof result> => result !== null);
+          setLotteryTickets(tickets);
+        } else {
+          setLotteryTickets([]);
+        }
       }
-    } else {
-      const histResponse = await getOrderHistory("");
-      if (histResponse?.data?.success) {
-        const orders = histResponse.data.result;
-        const detailedPromises = orders.map((ord: { order: number; date: string; receipt: string }) => 
-          getOrderDetails(ord.order).then(resp => ({
-            ...resp?.data?.result,
-            order_id: ord.order,
-            receipt: ord.receipt,
-            created_at: ord.date, // Map API's date to created_at
-          }))
-        );
-        const detailsResponses = await Promise.all(detailedPromises);
-        const tickets = detailsResponses.filter((result): result is NonNullable<typeof result> => result !== null);
-        setLotteryTickets(tickets);
-      } else {
-        setLotteryTickets([]);
-      }
+    } catch (error: unknown) {
+      handleApiError(error, "Failed to fetch tickets.");
+      setLotteryTickets([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  } catch (error: unknown) {
-    handleApiError(error, "Failed to fetch tickets.");
-    setLotteryTickets([]);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-}, [userData?.id, selectedTab, formattedTodaysDate]);
+  }, [userData?.id, selectedTab, formattedTodaysDate]);
 
   useEffect(() => {
     fetchLotteryRecords();
@@ -410,7 +412,7 @@ const fetchLotteryRecords = useCallback(async () => {
                     className="flex items-center text-white hover:text-yellow-600 transition-colors text-sm sm:text-base"
                     aria-label="Back to today"
                   >
-                    <ChevronLeft className="w-5 h-5 mr-2" /> Tickets
+                    <ChevronLeft className="w-5 h-5 mr-2  mb-1" /> Tickets
                   </button>
                 )}
                 <div className="flex flex-col justify-between px-3 py-2">
@@ -488,10 +490,32 @@ const fetchLotteryRecords = useCallback(async () => {
                 <p className="text-gray-400 text-xs sm:text-sm md:text-base">Loading tickets...</p>
               </div>
             ) : filteredTickets.length === 0 ? (
-              <div className="flex justify-center items-center h-32 sm:h-48">
-                <p className="text-gray-400 text-xs sm:text-sm md:text-base">
-                  No tickets found for selected criteria.
-                </p>
+              <div className="flex flex-col justify-center items-center h-32 sm:h-48">
+                {selectedTab === "today" ? (
+                  <>
+                    <img
+                      src={noTicketsIcon}
+                      alt="No Tickets Icon"
+                      className="w-24 h-24 sm:w-28 sm:h-28 mb-4"
+                    />
+                    <p className="text-gray-400 text-center text-xs sm:text-sm md:text-base">
+                      No tickets purchased yet!<br />
+                      There’s still time to get in on the action. Buy to Win!
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src={noTicketHistoyIcon}
+                      alt="No Ticket History Icon"
+                      className="w-16 h-16 sm:w-20 sm:h-20 mb-4"
+                    />
+                    <p className="text-gray-400 text-center text-xs sm:text-sm md:text-base">
+                      No tickets purchased yet!<br />
+                      Buy Big, Win Big!!
+                    </p>
+                  </>
+                )}
               </div>
             ) : selectedTab === "today" && !showAllView ? (
               <div>
