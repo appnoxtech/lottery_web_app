@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
     <header
       className={`bg-[#1D1F27] border-b border-gray-700 flex-shrink-0 ${className}`}
     >
-      <div className="px-4 lg:px-6 py-4">
+      <div className="px-4 lg:px-6 py-[0.59rem]">
         <div className="flex items-center justify-between lg:justify-end">
           {/* Profile Section - Visible on small screens, hidden on large screens */}
           <div

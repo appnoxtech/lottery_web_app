@@ -6,8 +6,8 @@ import { getWinnerHistory, getTodayWinningNumber } from "../utils/services/Winne
 import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
 import { showToast } from "../utils/toast.util";
 import { formatDate } from "../hooks/dateFormatter";
-import { Trophy, ChevronLeft } from "lucide-react";
-
+import { ChevronLeft } from "lucide-react";
+import winnerIcon from "../assets/Images/winnerIcon.png";
 
 interface Winner {
   date: string;
@@ -113,113 +113,113 @@ const Winners: React.FC = () => {
     }
   }, [selectedPeriod, selectedLottery, getCurrentLotteryTiming]);
 
- const fetchWinnerHistory = useCallback(async () => {
-  setLoading(true);
-  setError(null);
-  setInfo(null);
-  try {
-    let response;
-    if (selectedPeriod === "today") {
-      response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
-      if (response?.data?.result?.data && response.data.result.data.length > 0 && response.data.success) {
-        const winnerData = response.data.result.data[0].PhAM;
-        const date = formatDate(new Date().toISOString()); // Use today's date
-        const winner = {
-          id: `${date}-${selectedLottery?.id || 'unknown'}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount: (winnerData.first_prize ? parseInt(winnerData.first_prize[0]) : 0) +
-                       (winnerData.second_prize ? parseInt(winnerData.second_prize[0]) : 0) +
-                       (winnerData.third_prize ? parseInt(winnerData.third_prize[0]) : 0),
-          drawDate: date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: selectedLottery?.id || 'unknown',
-          date: date,
-          firstPrize: winnerData.first_prize ? winnerData.first_prize[0] : "-",
-          secondPrize: winnerData.second_prize ? winnerData.second_prize[0] : "-",
-          thirdPrize: winnerData.third_prize ? winnerData.third_prize[0] : "-",
-        };
-        dispatch(addToWinnerList([winner]));
-      } else {
-        // Handle no winners case by dispatching a default winner object with dashes
-        const date = formatDate(new Date().toISOString());
-        const defaultWinner = {
-          id: `${date}-${selectedLottery?.id || 'unknown'}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount: 0,
-          drawDate: date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: selectedLottery?.id || 'unknown',
-          date: date,
-          firstPrize: "-",
-          secondPrize: "-",
-          thirdPrize: "-",
-        };
-        dispatch(addToWinnerList([defaultWinner]));
-      }
-    } else {
-      response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
-      if (response?.data?.result?.winners && response.data.result.winners.length > 0) {
-        let winners = response.data.result.winners;
-        const grouped: { [key: string]: Winner } = {};
-        winners.forEach((item: any) => {
-          const date = formatDate(item.date);
-          if (!grouped[date]) {
-            grouped[date] = {
-              date,
-              lotteryId: item.lottery_id,
-              firstPrize: item.first_prize || "-",
-              secondPrize: item.second_prize || "-",
-              thirdPrize: item.third_prize || "-",
-            };
-          }
-        });
-        const formattedWinners = Object.values(grouped).map((item) => ({
-          id: `${item.date}-${item.lotteryId}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount: (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
-                       (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
-                       (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
-          drawDate: item.date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: item.lotteryId,
-          date: item.date,
-          firstPrize: item.firstPrize,
-          secondPrize: item.secondPrize,
-          thirdPrize: item.thirdPrize,
-        }));
-        dispatch(addToWinnerList(formattedWinners));
-      } else {
-        setInfo("No winners found for selected criteria.");
-        dispatch(clearWinnersList());
-      }
-    }
-  } catch (err: any) {
-    setError("Failed to fetch winner history. Please try again.");
+  const fetchWinnerHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     setInfo(null);
-    showToast("Failed to fetch winner history.", "error");
-    dispatch(clearWinnersList());
-  } finally {
-    setLoading(false);
-  }
-}, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
+    try {
+      let response;
+      if (selectedPeriod === "today") {
+        response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
+        if (response?.data?.result?.data && response.data.result.data.length > 0 && response.data.success) {
+          const winnerData = response.data.result.data[0].PhAM;
+          const date = formatDate(new Date().toISOString()); // Use today's date
+          const winner = {
+            id: `${date}-${selectedLottery?.id || 'unknown'}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount: (winnerData.first_prize ? parseInt(winnerData.first_prize[0]) : 0) +
+              (winnerData.second_prize ? parseInt(winnerData.second_prize[0]) : 0) +
+              (winnerData.third_prize ? parseInt(winnerData.third_prize[0]) : 0),
+            drawDate: date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: selectedLottery?.id || 'unknown',
+            date: date,
+            firstPrize: winnerData.first_prize ? winnerData.first_prize[0] : "-",
+            secondPrize: winnerData.second_prize ? winnerData.second_prize[0] : "-",
+            thirdPrize: winnerData.third_prize ? winnerData.third_prize[0] : "-",
+          };
+          dispatch(addToWinnerList([winner]));
+        } else {
+          // Handle no winners case by dispatching a default winner object with dashes
+          const date = formatDate(new Date().toISOString());
+          const defaultWinner = {
+            id: `${date}-${selectedLottery?.id || 'unknown'}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount: 0,
+            drawDate: date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: selectedLottery?.id || 'unknown',
+            date: date,
+            firstPrize: "-",
+            secondPrize: "-",
+            thirdPrize: "-",
+          };
+          dispatch(addToWinnerList([defaultWinner]));
+        }
+      } else {
+        response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
+        if (response?.data?.result?.winners && response.data.result.winners.length > 0) {
+          let winners = response.data.result.winners;
+          const grouped: { [key: string]: Winner } = {};
+          winners.forEach((item: any) => {
+            const date = formatDate(item.date);
+            if (!grouped[date]) {
+              grouped[date] = {
+                date,
+                lotteryId: item.lottery_id,
+                firstPrize: item.first_prize || "-",
+                secondPrize: item.second_prize || "-",
+                thirdPrize: item.third_prize || "-",
+              };
+            }
+          });
+          const formattedWinners = Object.values(grouped).map((item) => ({
+            id: `${item.date}-${item.lotteryId}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount: (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
+              (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
+              (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
+            drawDate: item.date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: item.lotteryId,
+            date: item.date,
+            firstPrize: item.firstPrize,
+            secondPrize: item.secondPrize,
+            thirdPrize: item.thirdPrize,
+          }));
+          dispatch(addToWinnerList(formattedWinners));
+        } else {
+          setInfo("No winners found for selected criteria.");
+          dispatch(clearWinnersList());
+        }
+      }
+    } catch (err: any) {
+      setError("Failed to fetch winner history. Please try again.");
+      setInfo(null);
+      showToast("Failed to fetch winner history.", "error");
+      dispatch(clearWinnersList());
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
 
   useEffect(() => {
     fetchWinnerHistory();
@@ -292,7 +292,7 @@ const Winners: React.FC = () => {
           />
         )}
         <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto w-full mb-20 lg:mb-0">
-          
+
           <div className="w-full mx-auto max-w-full ">
 
             {isMobile && !isViewAllActive ? (
@@ -322,7 +322,7 @@ const Winners: React.FC = () => {
                         <h3 className="text-base font-semibold text-gray-300 mb-1">
                           Today's Countdown
                         </h3>
-                        <div className="text-2xl font-bold text-[#EDB726]">
+                        <div className="text-xl font-bold text-[#EDB726]">
                           {countdown}
                         </div>
                         <div className="mt-2 p-1 px-2 rounded-lg flex justify-center">
@@ -337,11 +337,9 @@ const Winners: React.FC = () => {
                     ) : filteredWinners.length > 0 ? (
                       <div className="text-center mt-2">
                         <p className="text-lg font-normal text-white mb-2">Previous Winning <br /> Numbers</p>
-                        <div className="flex flex-col items-center">
-                          <div className="text-center mb-2">
-                            <div className="bg-[#EDB726] rounded-full p-4 inline-block">
-                              <Trophy className="text-[#571102]" />
-                            </div>
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="text-center">
+                            <img src={winnerIcon} alt="Winner Icon" className="w-12 h-12 inline-block mb-1" />
                             <p className="text-base font-bold text-white">1st prize</p>
                             <div className="text-xl font-bold text-[#EDB726]">
                               {filteredWinners[0]?.firstPrize || "-"}
@@ -349,18 +347,14 @@ const Winners: React.FC = () => {
                           </div>
                           <div className="flex justify-center space-x-8">
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.secondPrize || "-"}
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.thirdPrize || "-"}
@@ -372,28 +366,28 @@ const Winners: React.FC = () => {
                     ) : (
                       <div className="text-center mt-2">
                         <p className="text-lg font-normal text-white mb-2">Previous Winning <br /> Numbers</p>
-                        <div className="flex flex-col items-center">
-                          <div className="text-center mb-2">
-                            <div className="bg-[#EDB726] rounded-full p-4 inline-block">
-                              <Trophy className="text-[#571102]" />
-                            </div>
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="text-center">
+                            <img src={winnerIcon} alt="Winner Icon" className="w-12 h-12 inline-block mb-1" />
                             <p className="text-base font-bold text-white">1st prize</p>
-                            <div className="text-xl font-bold text-[#EDB726]">-</div>
+                            <div className="text-xl font-bold text-[#EDB726]">
+                              {filteredWinners[0]?.firstPrize || "-"}
+                            </div>
                           </div>
                           <div className="flex justify-center space-x-8">
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
-                              <div className="text-xl font-bold text-[#EDB726]">-</div>
+                              <div className="text-xl font-bold text-[#EDB726]">
+                                {filteredWinners[0]?.secondPrize || "-"}
+                              </div>
                             </div>
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
-                              <div className="text-xl font-bold text-[#EDB726]">-</div>
+                              <div className="text-xl font-bold text-[#EDB726]">
+                                {filteredWinners[0]?.thirdPrize || "-"}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -419,7 +413,7 @@ const Winners: React.FC = () => {
               </>
             ) : (
               <>
-                <div className={isMobile ? "space-y-2 mb-4" : "bg-[#2A2D36] rounded-lg p-2 sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8 w-full max-w-full overflow-x-auto"}>
+                <div className={isMobile ? "space-y-2 mb-4" : "bg-[#2A2D36] rounded-lg p-2 sm:p-3 md:p-4 border border-white mb-4 sm:mb-6 md:mb-8 w-full max-w-full overflow-x-auto"}>
                   <div className={isMobile ? "space-y-2" : "flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0"}>
                     {!isMobile && (
                       <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
@@ -464,7 +458,7 @@ const Winners: React.FC = () => {
                       <select
                         value={selectedLottery?.id || ""}
                         onChange={handleLotterySelection}
-                        className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-[#EDB726] rounded-md text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
+                        className="w-full sm:w-auto px-1 sm:px-0 py-1 sm:py-2 bg-[#1D1F27] border border-[#EDB726] rounded-md text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
                         aria-label="Select lottery"
                       >
                         <option value="">All Lotteries</option>
@@ -494,10 +488,10 @@ const Winners: React.FC = () => {
                       {!isMobile && (
                         <input
                           type="text"
-                          placeholder="Search by price or winnig numbers"
+                          placeholder="Search"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full sm:w-48 md:w-64 px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-white rounded-lg text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726]"
+                          className="w-full sm:w-48 md:w-32 px-2 sm:px-3 py-1 sm:py-2 bg-[#1D1F27] border border-[#EDB726] rounded-lg text-gray-300 text-xs sm:text-xs md:text-base focus:outline-none focus:border-[#EDB726]"
                           aria-label="Search winners"
                         />
                       )}
@@ -511,7 +505,7 @@ const Winners: React.FC = () => {
                         <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-300 mb-1 sm:mb-2">
                           Today's Countdown
                         </h3>
-                        <div className="text-2xl sm:text-3xl md:text-5xl font-bold text-[#EDB726]">
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#EDB726]">
                           {countdown}
                         </div>
                         <div className="mt-2 sm:mt-4  p-1 px-2 sm:px-4 rounded-lg flex justify-center">
@@ -526,30 +520,24 @@ const Winners: React.FC = () => {
                     ) : filteredWinners.length > 0 ? (
                       <div className="text-center mt-2">
                         <p className="text-lg font-normal text-white mb-2">Previous Winning <br /> Numbers</p>
-                        <div className="flex flex-col items-center">
-                          <div className="text-center mb-2">
-                            <div className="bg-[#EDB726] rounded-full p-4 inline-block">
-                              <Trophy className="text-[#571102]" />
-                            </div>
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="text-center">
+                            <img src={winnerIcon} alt="Winner Icon" className="w-12 h-12 inline-block mb-1" />
                             <p className="text-base font-bold text-white">1st prize</p>
                             <div className="text-xl font-bold text-[#EDB726]">
                               {filteredWinners[0]?.firstPrize || "-"}
                             </div>
                           </div>
-                          <div className="flex justify-center space-x-20">
+                          <div className="flex justify-center space-x-8">
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.secondPrize || "-"}
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.thirdPrize || "-"}
@@ -561,28 +549,28 @@ const Winners: React.FC = () => {
                     ) : (
                       <div className="text-center mt-2">
                         <p className="text-lg font-normal text-white mb-2">Previous Winning <br /> Numbers</p>
-                        <div className="flex flex-col items-center">
-                          <div className="text-center mb-2">
-                            <div className="bg-[#EDB726] rounded-full p-4 inline-block">
-                              <Trophy className="text-[#571102]" />
-                            </div>
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="text-center">
+                            <img src={winnerIcon} alt="Winner Icon" className="w-12 h-12 inline-block mb-1" />
                             <p className="text-base font-bold text-white">1st prize</p>
-                            <div className="text-xl font-bold text-[#EDB726]">-</div>
+                            <div className="text-xl font-bold text-[#EDB726]">
+                              {filteredWinners[0]?.firstPrize || "-"}
+                            </div>
                           </div>
-                          <div className="flex justify-center space-x-20">
+                          <div className="flex justify-center space-x-8">
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
-                              <div className="text-xl font-bold text-[#EDB726]">-</div>
+                              <div className="text-xl font-bold text-[#EDB726]">
+                                {filteredWinners[0]?.secondPrize || "-"}
+                              </div>
                             </div>
                             <div className="text-center">
-                              <div className="bg-[#EDB726] rounded-full p-4 inline-block mb-1">
-                                <Trophy className="text-[#571102]" />
-                              </div>
+                              <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
-                              <div className="text-xl font-bold text-[#EDB726]">-</div>
+                              <div className="text-xl font-bold text-[#EDB726]">
+                                {filteredWinners[0]?.thirdPrize || "-"}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -605,7 +593,8 @@ const Winners: React.FC = () => {
                         No winners found for selected criteria.
                       </div>
                     ) : (
-                      <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
+                      <div className="max-h-[calc(74vh)] overflow-y-auto">
+                          <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
                         <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-[#EDB726]">
                           <tr>
                             <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">Date</th>
@@ -640,6 +629,8 @@ const Winners: React.FC = () => {
                           ))}
                         </tbody>
                       </table>
+                      </div>
+                      
                     )}
                   </div>
                 )}

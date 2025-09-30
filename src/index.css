@@ -257,3 +257,9 @@ body {
   line-height: 1.6;
   text-align: justify;
 }
+select {
+  cursor: pointer !important;
+}
+select option {
+  cursor: pointer !important;
+}

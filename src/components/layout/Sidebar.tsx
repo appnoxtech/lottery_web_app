@@ -92,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
-          <div className="p-6 pb-2 border-b border-gray-700">
+          <div className="py-3 px-6 pb-2 border-b border-gray-700">
             <div className="flex items-center space-x-5">
               <div className="w-10 h-10 bg-[#EDB726] rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-[#1D1F27]" />

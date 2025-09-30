@@ -13,6 +13,7 @@ import { dollarConversion } from "../hooks/utilityFn";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
+import  truncateString  from "../utils/helpers";
 // Define interfaces
 interface FormValues {
   lotteryNumber: string;
@@ -357,7 +358,7 @@ const NewLottery: React.FC = () => {
     }
   };
   return (
-    <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden mb-20 lg:mb-0">
+    <div className="max-h-screen bg-[#1D1F27] text-white flex overflow-hidden mb-20 lg:mb-0">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
         <Header
@@ -368,9 +369,7 @@ const NewLottery: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-                <h2 className="text-xl font-semibold text-white mb-6 lg:block hidden">
-                  Lottery Details
-                </h2>
+                
                 <form className="space-y-4 lg:block hidden" onSubmit={handleCreateLottery}>
                   <div>
                     <label
@@ -522,7 +521,7 @@ const NewLottery: React.FC = () => {
                     </label>
                     <textarea
                       id="inputNumbers"
-                      rows={3}
+                      rows={1}
                       value={inputNumbers}
                       onChange={(e) => {
                         const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
@@ -634,9 +633,10 @@ const NewLottery: React.FC = () => {
                   </div>
                   <div className="mt-4">
                     {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
-                      <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
+                      <div className="bg-[#1D1F27] rounded-lg overflow-hidden ">
                         <h3 className="text-md text-white border-b pb-1 border-white">Selected <span className="text-[#EDB726]">Lottery Numbers</span></h3>
-                        {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
+                        <div className="max-h-32 overflow-y-auto">
+                          {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
                           numbers.map((number, index) => (
                             <div
                               key={`${digit}-${number}`}
@@ -656,6 +656,8 @@ const NewLottery: React.FC = () => {
                             </div>
                           ))
                         )}
+                        </div>
+                        
                       </div>
                     )}
                   </div>
@@ -682,9 +684,7 @@ const NewLottery: React.FC = () => {
                 </form>
               </div>
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-                <h2 className="text-xl font-semibold text-white mb-6 lg:block hidden">
-                  Lottery Preview
-                </h2>
+                
                 <div className="space-y-4 lg:block hidden">
                   <div className="lg:bg-[#1D1F27] lg:rounded-lg lg:p-4 lg:border lg:border-white">
                     <div className="flex items-center justify-between mb-3">
@@ -712,7 +712,7 @@ const NewLottery: React.FC = () => {
                             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 4v4m0 4v2m-6-4H6m-2 0H4m4-8V6m0 4V2"
                           />
                         </svg>
-                        <span className="text-sm text-gray-300">{betAmount || "0.00"} per bet</span>
+                        <span className="text-sm text-gray-300">{truncateString(betAmount || "0.00")} per bet</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <svg
@@ -738,7 +738,8 @@ const NewLottery: React.FC = () => {
                       {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
                         <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
                           <h3 className="text-lg text-white border-b border-white pb-1">Selected <span className="text-[#EDB726]">Lottery Numbers</span> </h3>
-                          {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
+                          <div className="max-h-50 overflow-y-auto">
+                            {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
                             numbers.map((number, index) => (
                               <div
                                 key={`${digit}-${number}`}
@@ -746,7 +747,7 @@ const NewLottery: React.FC = () => {
                               >
                                 <span className="text-[#EDB726]">{number}</span>
                                 <span className="text-white text-sm">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
-                                <span className="text-[#EDB726] text-right">f{betAmount || "0"}</span>
+                                <span className="text-[#EDB726] text-right">f {truncateString(betAmount || "0.00")}</span>
                                 <div className="text-right">
                                   <button
                                     onClick={() => handleRemoveNumber(parseInt(digit), index)}
@@ -758,6 +759,8 @@ const NewLottery: React.FC = () => {
                               </div>
                             ))
                           )}
+                          </div>
+                          
                         </div>
                       )}
                     </div>

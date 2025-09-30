@@ -40,7 +40,7 @@ const EditProfile: React.FC = () => {
       if (response && response.status === 200 && response.data.success) {
         const updatedUserData = { ...userData, ...response.data.result };
         dispatch(updateUser({ userData: updatedUserData }));
-        showToast("Profile updated successfully!", "success");
+        showToast("Profile updated successfully !", "success");
         setProfileImage(null);
         setUsername(response.data.result.name || "");
         setPreviewImage(response.data.result.profile_image || null);

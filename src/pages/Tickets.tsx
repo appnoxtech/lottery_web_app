@@ -103,7 +103,7 @@ const Tickets: React.FC = () => {
             response.data.result.map((ticket: any) => ({
               ...ticket,
               payment_mode: ticket.payment_mode || "-",
-              total_no: ticket.total_no || 0,
+              total_no: ticket.total_no || 0, // Fallback to 0 if not provided
               grand_total: ticket.grand_total || 0,
               created_at: ticket.created_at, // Already in ISO format
             }))
@@ -120,7 +120,8 @@ const Tickets: React.FC = () => {
               ...resp?.data?.result,
               order_id: ord.order,
               receipt: ord.receipt,
-              created_at: ord.date, // Map API's date to created_at
+              created_at: ord.date,
+              total_no: resp?.data?.result?.details?.length || 0, // Calculate total_no as length of details
             }))
           );
           const detailsResponses = await Promise.all(detailedPromises);
@@ -211,6 +212,7 @@ const Tickets: React.FC = () => {
     try {
       const resp = await getOrderDetails(ticket.order_id);
       const items = (resp as any)?.data?.result?.details || [];
+      const totalNo = ticket.total_no ?? items.length; // Fallback to items.length
       const parsed = parseCreatedAtForPdf(ticket?.created_at);
 
       const rows = items.length > 0 ? items
@@ -219,14 +221,14 @@ const Tickets: React.FC = () => {
           const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
           const bet = parseFloat(item.bet_amount) || 0;
           return `
-          <tr style="border-bottom: 1px solid #E5E7EB;">
-            <td style="padding: 6px;">
-              <p style="color: #DC2626; margin: 0;">${abbreviation}</p>
-              <p style="font-weight: 600; margin: 0; font-size: 14px;">${number}</p>
-            </td>
-            <td style="padding: 6px; text-align: center; color: #000; font-size: 14px;">${String(number).length} digit</td>
-            <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px;">XCG ${bet.toFixed(2)}</td>
-          </tr>`;
+        <tr style="border-bottom: 1px solid #E5E7EB;">
+          <td style="padding: 6px;">
+            <p style="color: #DC2626; margin: 0;">${abbreviation}</p>
+            <p style="font-weight: 600; margin: 0; font-size: 14px;">${number}</p>
+          </td>
+          <td style="padding: 6px; padding-left: 16px; text-align: center; color: #000; font-size: 14px;">${String(number).length} digit</td>
+          <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px;">XCG ${bet.toFixed(2)}</td>
+        </tr>`;
         })
         .join("") : `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6B7280; font-size: 14px;">No items found.</td></tr>`;
 
@@ -239,88 +241,89 @@ const Tickets: React.FC = () => {
       container.style.padding = '0';
       container.style.overflow = 'visible';
       container.innerHTML = `
-      <div style="font-family: Arial, sans-serif; color: #000; width: 148mm; padding: 5mm; border: 2px solid #D1D5DB">
-        <div style="text-align: center; margin-bottom:4px;padding-bottom:10px">
-          <p style="color: #6B7280; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 4px 0;">Lottery Numbers</p>
-        </div>
-        <div style="border-top: 1px solid #D1D5DB; margin: 6px 2px;"></div>
-        <div style="padding: 0 16px; margin-bottom: 10px">
-          <div style="display: grid; grid-template-columns: 1fr; gap: 8px; text-align: center; font-size: 14px;">
-            <div>
-              <p style="color: #000; margin: 0;">Receipt# CW - <span style="font-weight: 600;">${ticket.receipt}</span></p>
-            </div>
-            <div>
-              <p style="color: #000; margin: 0;">Date: <span style="font-weight: 600;">${parsed.date} - ${parsed.time}</span></p>
-            </div>
-            <div>
-              <p style="color: #6B7280; font-weight: 600; margin: 0;">
-                Status: <span style="font-size: 16px; text-transform: capitalize; color: ${ticket.status === "completed" ? "#22C55E" : "#EF4444"}">${ticket.status}</span>
-              </p>
-            </div>
+    <div style="font-family: Arial, sans-serif; color: #000; width: 148mm; padding: 5mm; border: 2px solid #D1D5DB">
+      <div style="text-align: center; margin-bottom:4px;padding-bottom:10px">
+        <p style="color: #6B7280; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 4px 0;">Lottery Numbers</p>
+      </div>
+      <div style="border-top: 1px solid #D1D5DB; margin: 6px 2px;"></div>
+      <div style="padding: 0 16px; margin-bottom: 10px">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 8px; text-align: center; font-size: 14px;">
+          <div>
+            <p style="color: #000; margin: 0;">Receipt# CW - <span style="font-weight: 600;">${ticket.receipt}</span></p>
           </div>
-        </div>
-        <div style="padding: 0 16px; margin-bottom: 12px;">
-          <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
-                <tr>
-                  <th style="padding: 6px; text-align: center;">P Mode</th>
-                  <th style="padding: 6px; text-align: center;">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="padding: 6px; text-align: center; color: #000;">${ticket.payment_mode}</td>
-                  <td style="padding: 6px; text-align: center; color: #000;">XCG ${ticket.grand_total}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div>
+            <p style="color: #000; margin: 0;">Date: <span style="font-weight: 600;">${parsed.date} - ${parsed.time}</span></p>
           </div>
-        </div>
-        <div style="padding: 0 16px; margin-bottom: 12px;">
-          <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
-                <tr>
-                  <th style="padding: 6px; text-align: left;">Name</th>
-                  <th style="padding: 6px; text-align: center;">Digits</th>
-                  <th style="padding: 6px; text-align: right;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-              <tfoot>
-                <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                  <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Total Numbers:</td>
-                  <td style="padding: 6px; text-align: right; color: #000;">${ticket.total_no}</td>
-                </tr>
-                <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                  <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Sub Total:</td>
-                  <td style="padding: 6px; text-align: right; color: #000;">XCG ${ticket.grand_total}</td>
-                </tr>
-                <tr style="border-top: 1px solid #9CA3AF; font-weight: 700;">
-                  <td colspan="2" style="padding: 6px; text-align: left;">Grand Total:</td>
-                  <td style="padding: 6px; text-align: right;">
-                    XCG ${ticket.grand_total}
-                    <div style="color: #000; font-size: 12px; font-weight: bold;">
-                      ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
-                    </div>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+          <div>
+            <p style="color: #6B7280; font-weight: 600; margin: 0;">
+              Status: <span style="font-size: 16px; text-transform: capitalize; color: ${ticket.status === "completed" ? "#22C55E" : "#EF4444"}">${ticket.status}</span>
+            </p>
           </div>
-        </div>
-        <div style="text-align: center; padding: 0 16px; padding-bottom: 12px; font-size: 12px;">
-          <p style="color: #000; margin: 2px 0;">Korda kontrola bo numbernan ‼️</p>
-          <p style="color: #000; margin: 2px 0;">Despues di wega NO ta asepta reklamo ‼️</p>
-          <p style="color: #000; margin: 2px 0;">Tur number ta wordu skibi ekivalente na Florin ‼️</p>
-          <p style="color: #000; margin: 2px 0;">Pa bo por kobra premio, bo numbernan mester ta mark "Completed".</p>
-          <p style="color: #000; margin: 2px 0;">Suerte paki ratu. 🍀🇳🇬💶💰</p>
         </div>
       </div>
-    `;
+      <div style="padding: 0 16px; margin-bottom: 12px;">
+        <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
+              <tr>
+                <th style="padding: 6px; text-align: center;">P Mode</th>
+                <th style="padding: 6px; text-align: center;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 6px; text-align: center; color: #000;">${ticket.payment_mode}</td>
+                <td style="padding: 6px; text-align: center; color: #000;">XCG ${ticket.grand_total}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="padding: 0 16px; margin-bottom: 12px;">
+        <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
+              <tr>
+                <th style="padding: 6px; text-align: left;">Name</th>
+                <th style="padding: 6px; padding-left: 16px; text-align: center;">Digits</th>
+                <th style="padding: 6px; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+            <tfoot>
+              <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
+                <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Total Numbers:</td>
+                <td style="padding: 6px; text-align: right; color: #000;">${totalNo}</td>
+              </tr>
+              <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
+                <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Sub Total:</td>
+                <td style="padding: 6px; text-align: right; color: #000;">XCG ${ticket.grand_total}</td>
+              </tr>
+              <tr style="border-top: 1px solid #9CA3AF; font-weight: 700;">
+                <td colspan="2" style="padding: 6px; text-align: left;">Grand Total:</td>
+                <td style="padding: 6px; text-align: right;">
+                  XCG ${ticket.grand_total}
+                  <div style="color: #000; font-size: 12px; font-weight: bold;">
+                    ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 0 16px; padding-bottom: 12px; font-size: 12px;">
+        <p style="color: #000; margin: 2px 0;">Korda kontrola bo numbernan ‼️</p>
+        <p style="color: #000; margin: 2px 0;">Despues di wega NO ta asepta reklamo ‼️</p>
+        <p style="color: #000; margin: 2px 0;">Tur number ta wordu skibi ekivalente na Florin ‼️</p>
+        <p style="color: #000; margin: 2px 0;">Pa bo por kobra premio, bo numbernan mester ta mark "Completed".</p>
+        <p style="color: #000; margin: 2px 0;">Suerte paki ratu. 🍀🇳🇬💶💰</p>
+      </div>
+    </div>
+  `;
+
       document.body.appendChild(container);
 
       await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
@@ -346,7 +349,9 @@ const Tickets: React.FC = () => {
       const usablePageHeight = pdfPageHeight - 2 * margin;
       const canvasHeight = canvas.height * (pdfWidth / canvas.width);
 
-      if (canvasHeight <= usablePageHeight) {
+      // Add a small threshold to avoid adding a blank page for negligible overflow
+      const threshold = 5; // 5mm threshold
+      if (canvasHeight <= usablePageHeight + threshold) {
         pdf.addImage(
           imgData,
           'PNG',
@@ -360,21 +365,20 @@ const Tickets: React.FC = () => {
       } else {
         let position = 0;
         while (position < canvasHeight) {
-          if (position > 0) {
-            pdf.addPage();
-          }
-          const sliceHeight = Math.min(usablePageHeight, canvasHeight - position);
           pdf.addImage(
             imgData,
             'PNG',
             margin,
             margin - position,
             pdfWidth - 2 * margin,
-            sliceHeight,
+            Math.min(usablePageHeight, canvasHeight - position),
             undefined,
             'FAST'
           );
           position += usablePageHeight;
+          if (position < canvasHeight - threshold) {
+            pdf.addPage();
+          }
         }
       }
 
@@ -390,7 +394,7 @@ const Tickets: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
+    <div className="max-h-screen bg-[#1D1F27] text-white flex overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col lg:ml-64">
         {!(isMobile && showAllView) && (
@@ -452,7 +456,7 @@ const Tickets: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="bg-[#2A2D36] rounded-lg p-2 hidden lg:block sm:p-4 md:p-6 border border-white mb-4 sm:mb-6 md:mb-8">
+            <div className="bg-[#2A2D36] rounded-lg p-2 hidden lg:block sm:p-3 md:p-4 border border-white mb-4 sm:mb-6 md:mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-2 lg:space-y-0">
                 <div className="flex space-x-1 bg-[#1D1F27] rounded-lg p-1 md:mr-2">
                   {["today", "all"].map((tab) => (
@@ -490,13 +494,13 @@ const Tickets: React.FC = () => {
                 <p className="text-gray-400 text-xs sm:text-sm md:text-base">Loading tickets...</p>
               </div>
             ) : filteredTickets.length === 0 ? (
-              <div className="flex flex-col justify-center items-center h-32 sm:h-48">
+              <div className="flex flex-col justify-center items-center min-h-[calc(100vh-18rem)]">
                 {selectedTab === "today" ? (
                   <>
                     <img
                       src={noTicketsIcon}
                       alt="No Tickets Icon"
-                      className="w-24 h-24 sm:w-28 sm:h-28 mb-4"
+                      className="w-30 h-30 sm:w-28 sm:h-28 mb-4"
                     />
                     <p className="text-gray-400 text-center text-xs sm:text-sm md:text-base">
                       No tickets purchased yet!<br />
@@ -612,69 +616,70 @@ const Tickets: React.FC = () => {
               <div>
                 <div className="bg-[#2A2D36] rounded-lg border border-white overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs sm:text-sm md:text-base">
-                      <thead className="bg-[#1D1F27] text-[#EDB726]">
-                        <tr>
-                          <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Date</th>
-                          <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Receipt</th>
-                          <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-700">
-                        {filteredTickets.map((ticket) => {
-                          const createdAt: string | undefined = ticket?.created_at;
-                          const dateObj = parseCreatedAt(createdAt);
-                          const isValidDate = !!dateObj && !isNaN(dateObj.getTime());
-                          const dateStr = isValidDate ? formatDate(dateObj.toISOString()) : "-";
-                          // const timeStr = isValidDate ? dayjs(dateObj).format("hh:mm A") : "-";
-                          return (
-                            <tr key={ticket.receipt} className="hover:bg-[#3A3D46] transition-colors">
-                              <td className="px-2 sm:px-3 md:px-4 py-2">
-                                <div className="text-white">{dateStr}</div>
-                              </td>
-                              <td className="px-2 sm:px-3 md:px-4 py-2">
-                                <div className="text-white font-medium">{ticket.receipt}</div>
-                              </td>
-                              <td className="px-2 sm:px-3 md:px-4 py-2 text-right">
-                                <div className="inline-flex items-center gap-1 sm:gap-2">
-                                  {ticket.status === "pending" && dateStr === formattedTodaysDate ? (
+                    <div className="max-h-[calc(74vh)] overflow-y-auto">
+                      <table className="w-full text-xs sm:text-sm md:text-base">
+                        <thead className="bg-[#1D1F27] text-[#EDB726] sticky top-0">
+                          <tr>
+                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Date</th>
+                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-left">Receipt</th>
+                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-700">
+                          {filteredTickets.map((ticket) => {
+                            const createdAt: string | undefined = ticket?.created_at;
+                            const dateObj = parseCreatedAt(createdAt);
+                            const isValidDate = !!dateObj && !isNaN(dateObj.getTime());
+                            const dateStr = isValidDate ? formatDate(dateObj.toISOString()) : "-";
+                            return (
+                              <tr key={ticket.receipt} className="hover:bg-[#3A3D46] transition-colors">
+                                <td className="px-2 sm:px-3 md:px-4 py-2">
+                                  <div className="text-white">{dateStr}</div>
+                                </td>
+                                <td className="px-2 sm:px-3 md:px-4 py-2">
+                                  <div className="text-white font-medium">{ticket.receipt}</div>
+                                </td>
+                                <td className="px-2 sm:px-3 md:px-4 py-2 text-right">
+                                  <div className="inline-flex items-center gap-1 sm:gap-2">
+                                    {ticket.status === "pending" && dateStr === formattedTodaysDate ? (
+                                      <button
+                                        onClick={() => openPayment(ticket)}
+                                        className="text-[#EDB726] hover:text-[#d4a422]"
+                                        title="Complete Payment"
+                                      >
+                                        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => reuseTicketNumbers(ticket)}
+                                        className="text-[#EDB726] hover:text-[#d4a422]"
+                                        title="Reuse Numbers"
+                                      >
+                                        <Repeat className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
+                                      </button>
+                                    )}
                                     <button
-                                      onClick={() => openPayment(ticket)}
+                                      onClick={() => openDetails(ticket)}
                                       className="text-[#EDB726] hover:text-[#d4a422]"
-                                      title="Complete Payment"
+                                      title="View details"
                                     >
-                                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
+                                      <Eye className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                     </button>
-                                  ) : (
                                     <button
-                                      onClick={() => reuseTicketNumbers(ticket)}
+                                      onClick={() => downloadTicketPdf(ticket)}
                                       className="text-[#EDB726] hover:text-[#d4a422]"
-                                      title="Reuse Numbers"
+                                      title="Download PDF"
                                     >
-                                      <Repeat className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
+                                      <Download className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
                                     </button>
-                                  )}
-                                  <button
-                                    onClick={() => openDetails(ticket)}
-                                    className="text-[#EDB726] hover:text-[#d4a422]"
-                                    title="View details"
-                                  >
-                                    <Eye className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
-                                  </button>
-                                  <button
-                                    onClick={() => downloadTicketPdf(ticket)}
-                                    className="text-[#EDB726] hover:text-[#d4a422]"
-                                    title="Download PDF"
-                                  >
-                                    <Download className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
