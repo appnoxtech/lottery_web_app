@@ -407,7 +407,7 @@ const NewLottery: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleRefreshLotteries}
-                        className="text-[#EDB726] hover:text-yellow-600"
+                        className="text-[#EDB726] hover:text-yellow-600 cursor-pointer"
                         disabled={loadingLotteries}
                       >
                         <RefreshCw className={`w-5 h-5 ${loadingLotteries ? 'animate-spin' : ''}`} />
