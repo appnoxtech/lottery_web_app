@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import { getWinnerHistory, getTodayWinningNumber } from "../utils/services/Winners.services";
+import { getLotteriesList } from "../utils/services/Lotteries.services";// Import the service
 import { addToWinnerList, clearWinnersList } from "../store/slicer/winnerSlice";
 import { showToast } from "../utils/toast.util";
 import { formatDate } from "../hooks/dateFormatter";
@@ -16,22 +17,6 @@ interface Winner {
   secondPrize?: string;
   thirdPrize?: string;
 }
-
-// interface LotteryTiming {
-//   id: number;
-//   lottery_id: number;
-//   day: string;
-//   starting_time: string;
-//   cut_off_time: string;
-// }
-
-// interface Lottery {
-//   id: number;
-//   name: string;
-//   abbreviation: string;
-//   status: string;
-//   timings: LotteryTiming[];
-// }
 
 const Winners: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,23 +33,64 @@ const Winners: React.FC = () => {
   const selectedLottery = useSelector(
     (state: any) => state.initialData.selectedLotteryData
   );
-  const lotteries = useSelector((state: any) => state.initialData.initData);
+  const [lotteries, setLotteries] = useState<any[]>([]); // State to store fetched lotteries
   const [selectedLotteryType, setSelectedLotteryType] = useState({
     id: 1,
     digitType: 2,
     name: "2-digit",
   });
-  const defaultLotteries = [
-    { id: 1, name: "Super Lucky Draw", abbreviation: "SLD" },
-    { id: 2, name: "Mega Jackpot", abbreviation: "MJ" },
-    { id: 3, name: "Daily Fortune", abbreviation: "DF" },
-  ];
   const ticketTypes = [
     { id: 1, name: "2-digit", digitType: 2 },
     { id: 2, name: "3-digit", digitType: 3 },
     { id: 3, name: "4-digit", digitType: 4 },
   ];
 
+  // Fetch lotteries using getLotteriesList
+  // Fetch lotteries using getLotteriesList
+useEffect(() => {
+  const fetchLotteries = async () => {
+    setLoading(true);
+    try {
+      const response = await getLotteriesList();
+      if (response?.data?.success && response.data.result) {
+        // Filter lotteries for the current day
+        const today = new Date(); // Use current date and time
+        const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" }); // Get current day (e.g., Wednesday for tomorrow)
+        const filteredLotteries = response.data.result.filter((lottery: any) =>
+          lottery.timings.some(
+            (timing: any) => timing.day === dayOfWeek
+          )
+        );
+        setLotteries(filteredLotteries);
+        // Set default selected lottery if none is selected
+        if (!selectedLottery && filteredLotteries.length > 0) {
+          dispatch({
+            type: "initialData/setInitialSelectedLottery",
+            payload: filteredLotteries[0],
+          });
+        }
+      } else {
+        setError("Failed to fetch lotteries.");
+        showToast("Failed to fetch lotteries.", "error");
+      }
+    } catch (err: any) {
+      setError("Failed to fetch lotteries. Please try again.");
+      showToast("Failed to fetch lotteries.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchLotteries();
+}, [dispatch]);
+
+const getCurrentLotteryTiming = useCallback(() => {
+  if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
+    return null;
+  }
+  const today = new Date(); // Use current date
+  const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" });
+  return selectedLottery.timings.find((timing: any) => timing.day === dayOfWeek) || selectedLottery.timings[0];
+}, [selectedLottery]);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
@@ -72,12 +98,14 @@ const Winners: React.FC = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const getCurrentLotteryTiming = useCallback(() => {
-    if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
-      return null;
-    }
-    return selectedLottery.timings[0];
-  }, [selectedLottery]);
+  // const getCurrentLotteryTiming = useCallback(() => {
+  //   if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
+  //     return null;
+  //   }
+  //   const today = new Date("2025-09-30T07:04:00+05:30");
+  //   const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" });
+  //   return selectedLottery.timings.find((timing: any) => timing.day === dayOfWeek) || selectedLottery.timings[0];
+  // }, [selectedLottery]);
 
   useEffect(() => {
     if (selectedPeriod === "today" && selectedLottery) {
@@ -102,7 +130,7 @@ const Winners: React.FC = () => {
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
         setCountdown(
-          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
         );
       };
       updateCountdown();
@@ -123,9 +151,9 @@ const Winners: React.FC = () => {
         response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
         if (response?.data?.result?.data && response.data.result.data.length > 0 && response.data.success) {
           const winnerData = response.data.result.data[0].PhAM;
-          const date = formatDate(new Date().toISOString()); // Use today's date
+          const date = formatDate(new Date().toISOString());
           const winner = {
-            id: `${date}-${selectedLottery?.id || 'unknown'}`,
+            id: `${date}-${selectedLottery?.id || "unknown"}`,
             lotteryName: selectedLottery?.name || "Unknown Lottery",
             ticketNumber: "-",
             winnerName: "-",
@@ -138,7 +166,7 @@ const Winners: React.FC = () => {
             claimStatus: "unclaimed",
             claimDate: null,
             prizeType: "unknown",
-            lotteryId: selectedLottery?.id || 'unknown',
+            lotteryId: selectedLottery?.id || "unknown",
             date: date,
             firstPrize: winnerData.first_prize ? winnerData.first_prize[0] : "-",
             secondPrize: winnerData.second_prize ? winnerData.second_prize[0] : "-",
@@ -146,10 +174,9 @@ const Winners: React.FC = () => {
           };
           dispatch(addToWinnerList([winner]));
         } else {
-          // Handle no winners case by dispatching a default winner object with dashes
           const date = formatDate(new Date().toISOString());
           const defaultWinner = {
-            id: `${date}-${selectedLottery?.id || 'unknown'}`,
+            id: `${date}-${selectedLottery?.id || "unknown"}`,
             lotteryName: selectedLottery?.name || "Unknown Lottery",
             ticketNumber: "-",
             winnerName: "-",
@@ -160,7 +187,7 @@ const Winners: React.FC = () => {
             claimStatus: "unclaimed",
             claimDate: null,
             prizeType: "unknown",
-            lotteryId: selectedLottery?.id || 'unknown',
+            lotteryId: selectedLottery?.id || "unknown",
             date: date,
             firstPrize: "-",
             secondPrize: "-",
@@ -245,8 +272,7 @@ const Winners: React.FC = () => {
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const lotteryId = event.target.value;
-    const availableLotteries = lotteries.length > 0 ? lotteries : defaultLotteries;
-    const selected = availableLotteries.find(
+    const selected = lotteries.find(
       (lottery: any) => lottery.id.toString() === lotteryId
     );
     if (selected) {
@@ -292,9 +318,7 @@ const Winners: React.FC = () => {
           />
         )}
         <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto w-full mb-20 lg:mb-0">
-
-          <div className="w-full mx-auto max-w-full ">
-
+          <div className="w-full mx-auto max-w-full">
             {isMobile && !isViewAllActive ? (
               <>
                 <div className="mb-4">
@@ -306,13 +330,11 @@ const Winners: React.FC = () => {
                     aria-label="Select lottery"
                   >
                     <option value="">Select Lottery</option>
-                    {(lotteries.length > 0 ? lotteries : defaultLotteries).map(
-                      (lottery: any) => (
-                        <option key={lottery.id} value={lottery.id}>
-                          {lottery.name}
-                        </option>
-                      )
-                    )}
+                    {lotteries.map((lottery: any) => (
+                      <option key={lottery.id} value={lottery.id}>
+                        {lottery.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {selectedPeriod === "today" && (
@@ -453,7 +475,6 @@ const Winners: React.FC = () => {
                             aria-label="Search winners"
                           />
                         </>
-
                       )}
                       <select
                         value={selectedLottery?.id || ""}
@@ -462,13 +483,11 @@ const Winners: React.FC = () => {
                         aria-label="Select lottery"
                       >
                         <option value="">All Lotteries</option>
-                        {(lotteries.length > 0 ? lotteries : defaultLotteries).map(
-                          (lottery: any) => (
-                            <option key={lottery.id} value={lottery.id}>
-                              {lottery.name}
-                            </option>
-                          )
-                        )}
+                        {lotteries.map((lottery: any) => (
+                          <option key={lottery.id} value={lottery.id}>
+                            {lottery.name}
+                          </option>
+                        ))}
                       </select>
                       <select
                         value={selectedLotteryType.id}
@@ -501,14 +520,14 @@ const Winners: React.FC = () => {
                 {selectedPeriod === "today" && (
                   <div className=" mb-4 sm:mb-6 md:mb-8">
                     <div className="text-center">
-                      <div className="bg-[#1D1F27] rounded-lg  inline-block">
+                      <div className="bg-[#1D1F27] rounded-lg inline-block">
                         <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-300 mb-1 sm:mb-2">
                           Today's Countdown
                         </h3>
                         <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#EDB726]">
                           {countdown}
                         </div>
-                        <div className="mt-2 sm:mt-4  p-1 px-2 sm:px-4 rounded-lg flex justify-center">
+                        <div className="mt-2 sm:mt-4 p-1 px-2 sm:px-4 rounded-lg flex justify-center">
                           <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#EDB726] whitespace-nowrap">
                             {getDisplayLotteryName()}
                           </h3>
@@ -594,43 +613,42 @@ const Winners: React.FC = () => {
                       </div>
                     ) : (
                       <div className="max-h-[calc(74vh)] overflow-y-auto">
-                          <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
-                        <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-[#EDB726]">
-                          <tr>
-                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">Date</th>
-                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                              1<sup>st</sup> Prize
-                            </th>
-                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                              2<sup>nd</sup> Prize
-                            </th>
-                            <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                              3<sup>rd</sup> Prize
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredWinners.map((winner, index) => (
-                            <tr
-                              key={index}
-                              className="border-t border-gray-700 hover:bg-gray-800"
-                            >
-                              <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">{winner.date}</td>
-                              <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                                {winner.firstPrize || "-"}
-                              </td>
-                              <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                                {winner.secondPrize || "-"}
-                              </td>
-                              <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
-                                {winner.thirdPrize || "-"}
-                              </td>
+                        <table className="min-w-full text-xs sm:text-sm md:text-base text-left text-gray-300">
+                          <thead className="bg-[#1D1F27] text-xs sm:text-sm md:text-base text-[#EDB726]">
+                            <tr>
+                              <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">Date</th>
+                              <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                1<sup>st</sup> Prize
+                              </th>
+                              <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                2<sup>nd</sup> Prize
+                              </th>
+                              <th className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                3<sup>rd</sup> Prize
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {filteredWinners.map((winner, index) => (
+                              <tr
+                                key={index}
+                                className="border-t border-gray-700 hover:bg-gray-800"
+                              >
+                                <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">{winner.date}</td>
+                                <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                  {winner.firstPrize || "-"}
+                                </td>
+                                <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                  {winner.secondPrize || "-"}
+                                </td>
+                                <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-2">
+                                  {winner.thirdPrize || "-"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      
                     )}
                   </div>
                 )}

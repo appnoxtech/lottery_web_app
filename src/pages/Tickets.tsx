@@ -506,6 +506,21 @@ const Tickets: React.FC = () => {
                       No tickets purchased yet!<br />
                       There’s still time to get in on the action. Buy to Win!
                     </p>
+                    {/* Add this new div and button for small screens only */}
+                    <div className="mt-6 lg:hidden">
+                      <button
+                        onClick={() => {
+                          setSelectedTab("all");
+                          setShowAllView(true);
+                        }}
+                        className="px-4 py-2 bg-[#EDB726] font-bold text-black rounded-full hover:bg-[#d4a422] transition-colors"
+                        style={{
+                          background: "linear-gradient(135deg, #DCC549, #7B5910)"
+                        }}
+                      >
+                        View All
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>

@@ -62,12 +62,12 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
             onClick={() => navigate("/profile")} // Navigate to edit page on click
             className="flex items-center space-x-2 lg:hidden cursor-pointer"
           >
-            <div className="w-10 h-10 bg-[#EDB726] rounded-full flex items-center justify-center border border-2 border-[#EDB726]">
+            <div className="w-10 h-10 bg-[#EDB726] rounded-full flex items-center justify-center ">
               {user.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.name}
-                  className="w-10 h-10 rounded-full"
+                  className="w-10 h-10 rounded-full border border-1 border-[#EDB726]"
                 />
               ) : (
                 <span className="text-sm font-bold text-[#1D1F27]">

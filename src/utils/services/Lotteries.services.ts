@@ -42,10 +42,21 @@ const checkLottery = async (data: any): Promise<AxiosResponse | void> => {
     throw error;
   }
 };
+const getLotteriesList = async (): Promise<AxiosResponse | void> => {
+  try {
+    const response = await get(`lotteries-list`);
+    return response;
+  } catch (error: any) {
+    console.error("Get Lotteries List error: ", error);
+    throw error;
+  }
+};
+
 
 export{
   lotteriesData,
   searchlotteryTickets,
   getLotteryAvailability,
   checkLottery,
+  getLotteriesList
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
-import { X } from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setInitialData, type Lottery } from "../store/slicer/initalDataSlice";
 import { lotteriesData } from "../utils/services/Lotteries.services";
@@ -13,7 +13,7 @@ import { dollarConversion } from "../hooks/utilityFn";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
-import  truncateString  from "../utils/helpers";
+import truncateString from "../utils/helpers";
 // Define interfaces
 interface FormValues {
   lotteryNumber: string;
@@ -63,38 +63,41 @@ const NewLottery: React.FC = () => {
   const [newOrderInfo, setNewOrderInfo] = useState<Order | null>(null);
   const [processedNumbers, setProcessedNumbers] = useState<{ [key: number]: string[] }>({});
   const [searchParams] = useSearchParams();
-  useEffect(() => {
-    const fetchLotteries = async () => {
-      try {
-        setLoadingLotteries(true);
-        setErrorFetchingLotteries(null);
-        const response = await lotteriesData();
-        if (response?.data?.result) {
-          dispatch(setInitialData(response.data.result));
-        }
-      } catch (error: unknown) {
-        setErrorFetchingLotteries("Failed to fetch lotteries.");
-        let apiErrorMessage = "Failed to fetch lotteries.";
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "response" in error &&
-          typeof error.response === "object" &&
-          error.response !== null &&
-          "data" in error.response &&
-          typeof error.response.data === "object" &&
-          error.response.data !== null &&
-          "message" in error.response.data
-        ) {
-          apiErrorMessage = (error.response.data as { message: string }).message;
-        }
-        handleApiError(error, apiErrorMessage);
-      } finally {
-        setLoadingLotteries(false);
+  const fetchLotteries = async () => {
+    try {
+      setLoadingLotteries(true);
+      setErrorFetchingLotteries(null);
+      const response = await lotteriesData();
+      if (response?.data?.result) {
+        dispatch(setInitialData(response.data.result));
       }
-    };
+    } catch (error: unknown) {
+      setErrorFetchingLotteries("Failed to fetch lotteries.");
+      let apiErrorMessage = "Failed to fetch lotteries.";
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof error.response === "object" &&
+        error.response !== null &&
+        "data" in error.response &&
+        typeof error.response.data === "object" &&
+        error.response.data !== null &&
+        "message" in error.response.data
+      ) {
+        apiErrorMessage = (error.response.data as { message: string }).message;
+      }
+      handleApiError(error, apiErrorMessage);
+    } finally {
+      setLoadingLotteries(false);
+    }
+  };
+  useEffect(() => {
     fetchLotteries();
   }, [dispatch]);
+  const handleRefreshLotteries = () => {
+    fetchLotteries();
+  };
   useEffect(() => {
     const orderId = searchParams.get("orderId");
     if (orderId) {
@@ -270,65 +273,65 @@ const NewLottery: React.FC = () => {
     });
   };
   const handleCreateLottery = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    if (newOrderInfo) {
-      setShowPaymentModal(true);
-      return;
-    }
-    setLoading(true);
-    const formData: FormValues = {
-      lotteryNumber: inputNumbers,
-      selectedLotteries: selectedLotteries,
-      betAmount: betAmount,
-      selectedDigitType: selectedDigits,
-      selectedNumbers: getAllProcessedNumbers(),
-    };
-    const isValid = isOrderValid(formData);
-    if (!isValid) {
+    e.preventDefault();
+    try {
+      if (newOrderInfo) {
+        setShowPaymentModal(true);
+        return;
+      }
+      setLoading(true);
+      const formData: FormValues = {
+        lotteryNumber: inputNumbers,
+        selectedLotteries: selectedLotteries,
+        betAmount: betAmount,
+        selectedDigitType: selectedDigits,
+        selectedNumbers: getAllProcessedNumbers(),
+      };
+      const isValid = isOrderValid(formData);
+      if (!isValid) {
+        setLoading(false);
+        return;
+      }
+      const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+      const orderParams = {
+        userorder: [
+          {
+            bet_amount: formData.betAmount,
+            lottery_id: formData.selectedLotteries.map((item) => item.id),
+            lottery_number: formData.selectedNumbers,
+          },
+        ],
+        total_price: dollarConversion(localTotal),
+        user_id: userData?.id,
+      };
+      const response = await placeOrder(orderParams);
+      if ((response as any)?.data?.success) {
+        const { data } = (response as any)?.data;
+        setNewOrderInfo({
+          ...data,
+          total_price: orderParams.total_price as string,
+          local_total: localTotal.toString(),
+          ticket_numbers: orderParams.userorder[0].lottery_number as string[],
+          selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
+        });
+        setShowPaymentModal(true);
+      }
+    } catch (error: any) {
+      // Extract and display validation errors
+      const errorMessage = error.response?.data?.message || "Failed to place order";
+      const validationErrors = error.response?.data?.errors;
+      if (validationErrors) {
+        // Combine all validation error messages
+        const allErrors = Object.values(validationErrors).flat().join(" ");
+        showToast(allErrors || errorMessage, "error");
+      } else {
+        showToast(errorMessage, "error");
+      }
+      handleApiError(error, errorMessage);
+    } finally {
       setLoading(false);
-      return;
     }
-    const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
-    const orderParams = {
-      userorder: [
-        {
-          bet_amount: formData.betAmount,
-          lottery_id: formData.selectedLotteries.map((item) => item.id),
-          lottery_number: formData.selectedNumbers,
-        },
-      ],
-      total_price: dollarConversion(localTotal),
-      user_id: userData?.id,
-    };
-    const response = await placeOrder(orderParams);
-    if ((response as any)?.data?.success) {
-      const { data } = (response as any)?.data;
-      setNewOrderInfo({
-        ...data,
-        total_price: orderParams.total_price as string,
-        local_total: localTotal.toString(),
-        ticket_numbers: orderParams.userorder[0].lottery_number as string[],
-        selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
-      });
-      setShowPaymentModal(true);
-    }
-  } catch (error: any) {
-    // Extract and display validation errors
-    const errorMessage = error.response?.data?.message || "Failed to place order";
-    const validationErrors = error.response?.data?.errors;
-    if (validationErrors) {
-      // Combine all validation error messages
-      const allErrors = Object.values(validationErrors).flat().join(" ");
-      showToast(allErrors || errorMessage, "error");
-    } else {
-      showToast(errorMessage, "error");
-    }
-    handleApiError(error, errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const handleStripePayment = (success: boolean) => {
     if (success) {
       resetForm();
@@ -369,7 +372,7 @@ const NewLottery: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-                
+
                 <form className="space-y-4 lg:block hidden" onSubmit={handleCreateLottery}>
                   <div>
                     <label
@@ -397,9 +400,19 @@ const NewLottery: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Select Lottery
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-white">
+                        Select Lottery
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRefreshLotteries}
+                        className="text-[#EDB726] hover:text-yellow-600"
+                        disabled={loadingLotteries}
+                      >
+                        <RefreshCw className={`w-5 h-5 ${loadingLotteries ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
                     <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg">
                       {loadingLotteries && (
                         <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
@@ -538,9 +551,19 @@ const NewLottery: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Select Lottery
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-white">
+                        Select Lottery
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRefreshLotteries}
+                        className="text-[#EDB726] hover:text-yellow-600"
+                        disabled={loadingLotteries}
+                      >
+                        <RefreshCw className={`w-5 h-5 ${loadingLotteries ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
                     <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg p-2">
                       {loadingLotteries && (
                         <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
@@ -637,27 +660,27 @@ const NewLottery: React.FC = () => {
                         <h3 className="text-md text-white border-b pb-1 border-white">Selected <span className="text-[#EDB726]">Lottery Numbers</span></h3>
                         <div className="max-h-32 overflow-y-auto">
                           {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
-                          numbers.map((number, index) => (
-                            <div
-                              key={`${digit}-${number}`}
-                              className="grid grid-cols-4 p-2 items-center"
-                            >
-                              <span className="text-[#EDB726] text-sm">{number}</span>
-                              <span className="text-white text-[0.6rem]">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
-                              <span className="text-[#EDB726] text-right text-sm">f{betAmount || "0"}</span>
-                              <div className="text-right">
-                                <button
-                                  onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                  className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] rounded-full bg-[#EDB726] p-[0.1rem] cursor-pointer"
-                                >
-                                  <X className="w-3 h-3 text-black" />
-                                </button>
+                            numbers.map((number, index) => (
+                              <div
+                                key={`${digit}-${number}`}
+                                className="grid grid-cols-4 p-2 items-center"
+                              >
+                                <span className="text-[#EDB726] text-sm">{number}</span>
+                                <span className="text-white text-[0.6rem]">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
+                                <span className="text-[#EDB726] text-right text-sm">f{betAmount || "0"}</span>
+                                <div className="text-right">
+                                  <button
+                                    onClick={() => handleRemoveNumber(parseInt(digit), index)}
+                                    className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] rounded-full bg-[#EDB726] p-[0.1rem] cursor-pointer"
+                                  >
+                                    <X className="w-3 h-3 text-black" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))
-                        )}
+                            ))
+                          )}
                         </div>
-                        
+
                       </div>
                     )}
                   </div>
@@ -684,7 +707,7 @@ const NewLottery: React.FC = () => {
                 </form>
               </div>
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-                
+
                 <div className="space-y-4 lg:block hidden">
                   <div className="lg:bg-[#1D1F27] lg:rounded-lg lg:p-4 lg:border lg:border-white">
                     <div className="flex items-center justify-between mb-3">
@@ -738,29 +761,29 @@ const NewLottery: React.FC = () => {
                       {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
                         <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
                           <h3 className="text-lg text-white border-b border-white pb-1">Selected <span className="text-[#EDB726]">Lottery Numbers</span> </h3>
-                          <div className="max-h-50 overflow-y-auto">
+                          <div className="max-h-86 overflow-y-auto">
                             {Object.entries(processedNumbers).flatMap(([digit, numbers]) =>
-                            numbers.map((number, index) => (
-                              <div
-                                key={`${digit}-${number}`}
-                                className="grid grid-cols-4 p-2 items-center"
-                              >
-                                <span className="text-[#EDB726]">{number}</span>
-                                <span className="text-white text-sm">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
-                                <span className="text-[#EDB726] text-right">f {truncateString(betAmount || "0.00")}</span>
-                                <div className="text-right">
-                                  <button
-                                    onClick={() => handleRemoveNumber(parseInt(digit), index)}
-                                    className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] p-1 rounded-full bg-[#EDB726] cursor-pointer"
-                                  >
-                                    <X className="w-3 h-3 text-black" />
-                                  </button>
+                              numbers.map((number, index) => (
+                                <div
+                                  key={`${digit}-${number}`}
+                                  className="grid grid-cols-4 p-2 items-center"
+                                >
+                                  <span className="text-[#EDB726]">{number}</span>
+                                  <span className="text-white text-sm">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
+                                  <span className="text-[#EDB726] text-right">f {truncateString(betAmount || "0.00")}</span>
+                                  <div className="text-right">
+                                    <button
+                                      onClick={() => handleRemoveNumber(parseInt(digit), index)}
+                                      className="text-[#EDB726] hover:text-yellow-600 border border-[#EDB726] p-1 rounded-full bg-[#EDB726] cursor-pointer"
+                                    >
+                                      <X className="w-3 h-3 text-black" />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))
-                          )}
+                              ))
+                            )}
                           </div>
-                          
+
                         </div>
                       )}
                     </div>
