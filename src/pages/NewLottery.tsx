@@ -325,7 +325,7 @@ const NewLottery: React.FC = () => {
         const allErrors = Object.values(validationErrors).flat().join(" ");
         showToast(allErrors || errorMessage, "error");
       } else {
-        showToast(errorMessage, "error");
+        // showToast(errorMessage, "error");
       }
       handleApiError(error, errorMessage);
     } finally {
