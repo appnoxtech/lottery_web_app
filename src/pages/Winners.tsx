@@ -141,112 +141,122 @@ const getCurrentLotteryTiming = useCallback(() => {
     }
   }, [selectedPeriod, selectedLottery, getCurrentLotteryTiming]);
 
-  const fetchWinnerHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setInfo(null);
-    try {
-      let response;
-      if (selectedPeriod === "today") {
-        response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
-        if (response?.data?.result?.data && response.data.result.data.length > 0 && response.data.success) {
-          const winnerData = response.data.result.data[0].PhAM;
-          const date = formatDate(new Date().toISOString());
-          const winner = {
-            id: `${date}-${selectedLottery?.id || "unknown"}`,
-            lotteryName: selectedLottery?.name || "Unknown Lottery",
-            ticketNumber: "-",
-            winnerName: "-",
-            winnerPhone: "-",
-            prizeAmount: (winnerData.first_prize ? parseInt(winnerData.first_prize[0]) : 0) +
-              (winnerData.second_prize ? parseInt(winnerData.second_prize[0]) : 0) +
-              (winnerData.third_prize ? parseInt(winnerData.third_prize[0]) : 0),
-            drawDate: date,
-            drawTime: "-",
-            claimStatus: "unclaimed",
-            claimDate: null,
-            prizeType: "unknown",
-            lotteryId: selectedLottery?.id || "unknown",
-            date: date,
-            firstPrize: winnerData.first_prize ? winnerData.first_prize[0] : "-",
-            secondPrize: winnerData.second_prize ? winnerData.second_prize[0] : "-",
-            thirdPrize: winnerData.third_prize ? winnerData.third_prize[0] : "-",
-          };
-          dispatch(addToWinnerList([winner]));
-        } else {
-          const date = formatDate(new Date().toISOString());
-          const defaultWinner = {
-            id: `${date}-${selectedLottery?.id || "unknown"}`,
-            lotteryName: selectedLottery?.name || "Unknown Lottery",
-            ticketNumber: "-",
-            winnerName: "-",
-            winnerPhone: "-",
-            prizeAmount: 0,
-            drawDate: date,
-            drawTime: "-",
-            claimStatus: "unclaimed",
-            claimDate: null,
-            prizeType: "unknown",
-            lotteryId: selectedLottery?.id || "unknown",
-            date: date,
-            firstPrize: "-",
-            secondPrize: "-",
-            thirdPrize: "-",
-          };
-          dispatch(addToWinnerList([defaultWinner]));
-        }
+ const fetchWinnerHistory = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  setInfo(null);
+  try {
+    let response;
+    if (selectedPeriod === "today") {
+      response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
+      if (response?.data?.success && response.data.result?.data?.length > 0) {
+        // Extract the first key (e.g., "SIP") dynamically
+        const winnerData = response.data.result.data[0][Object.keys(response.data.result.data[0])[0]];
+        const date = formatDate(new Date().toISOString());
+        // Filter prize numbers based on digitType
+        const getPrizeByDigitType = (prizeArray: string[] | undefined, digitType: number): string => {
+          if (!prizeArray) return "-";
+          const matchingPrize = prizeArray.find((num) => num.length === digitType);
+          return matchingPrize || "-";
+        };
+        const winner = {
+          id: `${date}-${selectedLottery?.id || "unknown"}`,
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount:
+            (winnerData.first_prize ? parseInt(getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType)) || 0 : 0) +
+            (winnerData.second_prize ? parseInt(getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType)) || 0 : 0) +
+            (winnerData.third_prize ? parseInt(getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType)) || 0 : 0),
+          drawDate: date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: selectedLottery?.id || "unknown",
+          date: date,
+          firstPrize: getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType),
+          secondPrize: getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType),
+          thirdPrize: getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType),
+        };
+        dispatch(addToWinnerList([winner]));
       } else {
-        response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
-        if (response?.data?.result?.winners && response.data.result.winners.length > 0) {
-          let winners = response.data.result.winners;
-          const grouped: { [key: string]: Winner } = {};
-          winners.forEach((item: any) => {
-            const date = formatDate(item.date);
-            if (!grouped[date]) {
-              grouped[date] = {
-                date,
-                lotteryId: item.lottery_id,
-                firstPrize: item.first_prize || "-",
-                secondPrize: item.second_prize || "-",
-                thirdPrize: item.third_prize || "-",
-              };
-            }
-          });
-          const formattedWinners = Object.values(grouped).map((item) => ({
-            id: `${item.date}-${item.lotteryId}`,
-            lotteryName: selectedLottery?.name || "Unknown Lottery",
-            ticketNumber: "-",
-            winnerName: "-",
-            winnerPhone: "-",
-            prizeAmount: (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
-              (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
-              (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
-            drawDate: item.date,
-            drawTime: "-",
-            claimStatus: "unclaimed",
-            claimDate: null,
-            prizeType: "unknown",
-            lotteryId: item.lotteryId,
-            date: item.date,
-            firstPrize: item.firstPrize,
-            secondPrize: item.secondPrize,
-            thirdPrize: item.thirdPrize,
-          }));
-          dispatch(addToWinnerList(formattedWinners));
-        } else {
-          setInfo("No winners found for selected criteria.");
-          dispatch(clearWinnersList());
-        }
+        // No winners found, dispatch default winner with "-"
+        const date = formatDate(new Date().toISOString());
+        const defaultWinner = {
+          id: `${date}-${selectedLottery?.id || "unknown"}`,
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount: 0,
+          drawDate: date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: selectedLottery?.id || "unknown",
+          date: date,
+          firstPrize: "-",
+          secondPrize: "-",
+          thirdPrize: "-",
+        };
+        dispatch(addToWinnerList([defaultWinner]));
       }
-    } catch (err: any) {
-      setError("Failed to fetch winner history. Please try again.");
-      setInfo(null);
-      showToast("Failed to fetch winner history.", "error");
-      dispatch(clearWinnersList());
-    } finally {
-      setLoading(false);
+    } else {
+      response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
+      if (response?.data?.success && response.data.result?.winners?.length > 0) {
+        let winners = response.data.result.winners;
+        const grouped: { [key: string]: Winner } = {};
+        winners.forEach((item: any) => {
+          const date = formatDate(item.date);
+          if (!grouped[date]) {
+            grouped[date] = {
+              date,
+              lotteryId: item.lottery_id,
+              firstPrize: item.first_prize || "-",
+              secondPrize: item.second_prize || "-",
+              thirdPrize: item.third_prize || "-",
+            };
+          }
+        });
+        const formattedWinners = Object.values(grouped).map((item) => ({
+          id: `${item.date}-${item.lotteryId}`,
+          lotteryName: selectedLottery?.name || "Unknown Lottery",
+          ticketNumber: "-",
+          winnerName: "-",
+          winnerPhone: "-",
+          prizeAmount:
+            (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
+            (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
+            (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
+          drawDate: item.date,
+          drawTime: "-",
+          claimStatus: "unclaimed",
+          claimDate: null,
+          prizeType: "unknown",
+          lotteryId: item.lotteryId,
+          date: item.date,
+          firstPrize: item.firstPrize,
+          secondPrize: item.secondPrize,
+          thirdPrize: item.thirdPrize,
+        }));
+        dispatch(addToWinnerList(formattedWinners));
+      } else {
+        setInfo("No winners found for selected criteria.");
+        dispatch(clearWinnersList());
+      }
     }
-  }, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
+  } catch (err: any) {
+    setError("Failed to fetch winner history. Please try again.");
+    setInfo(null);
+    showToast("Failed to fetch winner history.", "error");
+    dispatch(clearWinnersList());
+  } finally {
+    setLoading(false);
+  }
+}, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
 
   useEffect(() => {
     fetchWinnerHistory();
@@ -482,7 +492,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                         className="w-full sm:w-auto px-1 sm:px-0 py-1 sm:py-2 bg-[#1D1F27] border border-[#EDB726] rounded-md text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
                         aria-label="Select lottery"
                       >
-                        <option value="">All Lotteries</option>
+                        {/* <option></option> */}
                         {lotteries.map((lottery: any) => (
                           <option key={lottery.id} value={lottery.id}>
                             {lottery.name}
