@@ -14,6 +14,7 @@ import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
 import truncateString from "../utils/helpers";
+
 // Define interfaces
 interface FormValues {
   lotteryNumber: string;
@@ -43,6 +44,7 @@ interface OrderDetailsResponse {
     };
   };
 }
+
 const NewLottery: React.FC = () => {
   const dispatch = useDispatch();
   const lotteries = useSelector(
@@ -62,7 +64,9 @@ const NewLottery: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [newOrderInfo, setNewOrderInfo] = useState<Order | null>(null);
   const [processedNumbers, setProcessedNumbers] = useState<{ [key: number]: string[] }>({});
+  const [numberError, setNumberError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+
   const fetchLotteries = async () => {
     try {
       setLoadingLotteries(true);
@@ -92,12 +96,15 @@ const NewLottery: React.FC = () => {
       setLoadingLotteries(false);
     }
   };
+
   useEffect(() => {
     fetchLotteries();
   }, [dispatch]);
+
   const handleRefreshLotteries = () => {
     fetchLotteries();
   };
+
   useEffect(() => {
     const orderId = searchParams.get("orderId");
     if (orderId) {
@@ -120,14 +127,13 @@ const NewLottery: React.FC = () => {
             setBetAmount(items[0]?.bet_amount || "");
             const digits = [...new Set(items.map((item) => {
               const num = String(item.lottery_number || "").length;
-              return num > 0 && num <= 4 ? num : 0; // Ensure valid digit lengths
-            }))].filter((d) => d > 0); // Filter out invalid lengths
+              return num > 0 && num <= 4 ? num : 0;
+            }))].filter((d) => d > 0);
             setSelectedDigits(digits);
             const uniqueAbvs = [...new Set(items.map((item) => item.abbreviation))];
             const selected = uniqueAbvs
               .map((abv: string) => lotteries.find((l: Lottery) => l.abbreviation === abv))
-              .filter((l): l is Lottery => l != null); // filters out both null and undefined
-            // Type guard to filter out undefined
+              .filter((l): l is Lottery => l != null);
             setSelectedLotteries(selected);
           }
         } catch (error) {
@@ -139,20 +145,24 @@ const NewLottery: React.FC = () => {
       prefillForm();
     }
   }, [searchParams, lotteries]);
+
   useEffect(() => {
     const newProcessed = processNumbers(inputNumbers, selectedDigits);
     setProcessedNumbers(newProcessed);
   }, [inputNumbers, selectedDigits]);
+
   useEffect(() => {
     if (newOrderInfo) {
       setNewOrderInfo(null);
     }
   }, [inputNumbers, betAmount, selectedDigits, selectedLotteries]);
+
   const handleDigitChange = (digit: number) => {
     setSelectedDigits((prev) =>
       prev.includes(digit) ? prev.filter((d) => d !== digit) : [...prev, digit]
     );
   };
+
   const handleLotterySelect = (lotteryId: string) => {
     const lottery = lotteries.find((l) => l.id.toString() === lotteryId);
     if (lottery) {
@@ -165,6 +175,7 @@ const NewLottery: React.FC = () => {
       });
     }
   };
+
   const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
     const processedResults: { [key: number]: string[] } = {};
     if (!numbersString || digitsToProcess.length === 0) {
@@ -179,11 +190,9 @@ const NewLottery: React.FC = () => {
     digitsToProcess.forEach((digit) => {
       const resultForDigit: string[] = [];
       numbers.forEach((num) => {
-        const cleanNum = num.replace(/,/g, ""); // Keep as string to preserve leading zeros
-        // Check if the number is not all zeros
+        const cleanNum = num.replace(/,/g, "");
         if (!/^[0]+$/.test(cleanNum)) {
           if (cleanNum.length === digit) {
-            // Include numbers that match the digit length
             if (!resultForDigit.some(existing =>
               cleanNum === existing ||
               (existing.length > cleanNum.length && existing.endsWith(cleanNum))
@@ -191,7 +200,6 @@ const NewLottery: React.FC = () => {
               resultForDigit.push(cleanNum.padStart(digit, "0"));
             }
           } else if (cleanNum.length > digit) {
-            // Truncate longer numbers to the desired digit length
             const truncated = cleanNum.slice(-digit);
             if (!/^[0]+$/.test(truncated)) {
               if (!resultForDigit.some(existing =>
@@ -210,16 +218,50 @@ const NewLottery: React.FC = () => {
     });
     return processedResults;
   };
+
   const getAllProcessedNumbers = (): string[] => {
     const allNumbers: string[] = [];
     Object.values(processedNumbers).forEach((numberArray) => {
       numberArray.forEach((num) => {
-        allNumbers.push(num); // Use the string value directly
+        allNumbers.push(num);
       });
     });
     return allNumbers;
   };
+
+  const validateNumbers = (numbersString: string): string | null => {
+    if (!numbersString) {
+      return "Please enter at least one lottery number.";
+    }
+    const numbers = numbersString
+      .split(",")
+      .map((n) => n.trim())
+      .filter((n) => n);
+    
+    if (numbers.length === 0) {
+      return "Please enter valid lottery numbers.";
+    }
+
+    const invalidNumbers = numbers.filter((num) => /^[0]+$/.test(num.replace(/,/g, "")));
+    if (invalidNumbers.length > 0) {
+      return "Enter valid Numbers.";
+    }
+
+    const validNumberPattern = /^[0-9, ]+$/;
+    if (!validNumberPattern.test(numbersString)) {
+      return "Only numbers, commas, and spaces are allowed.";
+    }
+
+    return null;
+  };
+
   const isOrderValid = (data: FormValues) => {
+    const numberValidationError = validateNumbers(data.lotteryNumber);
+    if (numberValidationError) {
+      setNumberError(numberValidationError);
+      showToast(numberValidationError, "error");
+      return false;
+    }
     if (data.selectedLotteries.length === 0) {
       showToast("Please select at least one lottery", "error");
       return false;
@@ -235,6 +277,7 @@ const NewLottery: React.FC = () => {
     }
     return true;
   };
+
   const handleRemoveNumber = (digit: number, index: number) => {
     setProcessedNumbers((prev) => {
       const updatedList = [...prev[digit]];
@@ -251,7 +294,7 @@ const NewLottery: React.FC = () => {
       if (newOrderInfo) {
         const allNumbers = Object.values(newProcessed)
           .flat()
-          .map((num) => num); // Keep as string
+          .map((num) => num);
         const localTotal =
           allNumbers.length > 0 && betAmount && selectedLotteries.length > 0
             ? allNumbers.length * +betAmount * selectedLotteries.length
@@ -272,9 +315,11 @@ const NewLottery: React.FC = () => {
       return newProcessed;
     });
   };
+
   const handleCreateLottery = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setNumberError(null); // Reset number error before validation
       if (newOrderInfo) {
         setShowPaymentModal(true);
         return;
@@ -317,30 +362,28 @@ const NewLottery: React.FC = () => {
         setShowPaymentModal(true);
       }
     } catch (error: any) {
-      // Extract and display validation errors
       const errorMessage = error.response?.data?.message || "Failed to place order";
       const validationErrors = error.response?.data?.errors;
       if (validationErrors) {
-        // Combine all validation error messages
         const allErrors = Object.values(validationErrors).flat().join(" ");
         showToast(allErrors || errorMessage, "error");
-      } else {
-        // showToast(errorMessage, "error");
       }
       handleApiError(error, errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
   const handleStripePayment = (success: boolean) => {
     if (success) {
       resetForm();
       setShowPaymentModal(false);
     } else {
-      setShowPaymentModal(false); // Close on failure or cancel
+      setShowPaymentModal(false);
       showToast("Payment was not completed.", "error");
     }
   };
+
   const resetForm = () => {
     setInputNumbers("");
     setSelectedLotteries([]);
@@ -348,7 +391,9 @@ const NewLottery: React.FC = () => {
     setSelectedDigits([]);
     setProcessedNumbers({});
     setNewOrderInfo(null);
+    setNumberError(null);
   };
+
   const handlePaymentMethodSelect = (method: string) => {
     if (method === "stripe") {
       setShowPaymentModal(false);
@@ -360,6 +405,7 @@ const NewLottery: React.FC = () => {
       setShowPaymentModal(false);
     }
   };
+
   return (
     <div className="max-h-screen bg-[#1D1F27] text-white flex overflow-hidden mb-20 lg:mb-0">
       <Sidebar />
@@ -372,7 +418,6 @@ const NewLottery: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-
                 <form className="space-y-4 lg:block hidden" onSubmit={handleCreateLottery}>
                   <div>
                     <label
@@ -388,16 +433,21 @@ const NewLottery: React.FC = () => {
                       onChange={(e) => {
                         const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
                         setInputNumbers(sanitized);
+                        setNumberError(null); // Clear error on change
                       }}
                       onPaste={(e) => {
                         const paste = e.clipboardData.getData("text");
                         const sanitized = paste.replace(/[^0-9, ]/g, "");
                         e.preventDefault();
                         setInputNumbers((prev) => prev + sanitized);
+                        setNumberError(null); // Clear error on paste
                       }}
-                      className="w-full px-3 py-2 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                      className={`w-full px-3 py-2 bg-[#1D1F27] border ${numberError ? 'border-red-500' : 'border-white'} rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]`}
                       placeholder="Enter 2,3,4 digit lottery number"
                     />
+                    {numberError && (
+                      <p className="text-red-500 text-sm mt-1">{numberError}</p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -506,8 +556,8 @@ const NewLottery: React.FC = () => {
                   <div className="mt-6 flex space-x-4">
                     <button
                       type="submit"
-                      disabled={loading}
-                      className={`flex-1 ${loading ? 'bg-gray-600' : 'bg-[#EDB726] hover:bg-[#d4a422]'} text-[#1D1F27] font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer`}
+                      disabled={loading || !!numberError}
+                      className={`flex-1 ${loading || numberError ? 'bg-gray-600' : 'bg-[#EDB726] hover:bg-[#d4a422]'} text-[#1D1F27] font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer`}
                     >
                       {loading ? (
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D1F27]"></div>
@@ -539,16 +589,21 @@ const NewLottery: React.FC = () => {
                       onChange={(e) => {
                         const sanitized = e.target.value.replace(/[^0-9, ]/g, "");
                         setInputNumbers(sanitized);
+                        setNumberError(null); // Clear error on change
                       }}
                       onPaste={(e) => {
                         const paste = e.clipboardData.getData("text");
                         const sanitized = paste.replace(/[^0-9, ]/g, "");
                         e.preventDefault();
                         setInputNumbers((prev) => prev + sanitized);
+                        setNumberError(null); // Clear error on paste
                       }}
-                      className="w-full px-3 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                      className={`w-full px-3 py-3 bg-[#1D1F27] border ${numberError ? 'border-red-500' : 'border-white'} rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]`}
                       placeholder="Enter 2,3,4 digit lottery number"
                     />
+                    {numberError && (
+                      <p className="text-red-500 text-sm mt-1">{numberError}</p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -680,15 +735,14 @@ const NewLottery: React.FC = () => {
                             ))
                           )}
                         </div>
-
                       </div>
                     )}
                   </div>
                   <div className="mt-6 flex space-x-4">
                     <button
                       type="submit"
-                      disabled={loading}
-                      className={`flex-1 ${loading ? 'bg-gray-600' : 'bg-[#EDB726] hover:bg-[#d4a422]'} text-[#1D1F27] font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer`}
+                      disabled={loading || !!numberError}
+                      className={`flex-1 ${loading || numberError ? 'bg-gray-600' : 'bg-[#EDB726] hover:bg-[#d4a422]'} text-[#1D1F27] font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer`}
                     >
                       {loading ? (
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D1F27]"></div>
@@ -707,7 +761,6 @@ const NewLottery: React.FC = () => {
                 </form>
               </div>
               <div className="lg:bg-[#2A2D36] lg:rounded-lg lg:p-6 lg:border lg:border-white">
-
                 <div className="space-y-4 lg:block hidden">
                   <div className="lg:bg-[#1D1F27] lg:rounded-lg lg:p-4 lg:border lg:border-white">
                     <div className="flex items-center justify-between mb-3">
@@ -757,7 +810,6 @@ const NewLottery: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-4">
-
                       {selectedLotteries.length > 0 && Object.keys(processedNumbers).length > 0 && (
                         <div className="bg-[#1D1F27] rounded-lg overflow-hidden">
                           <h3 className="text-lg text-white border-b border-white pb-1">Selected <span className="text-[#EDB726]">Lottery Numbers</span> </h3>
@@ -783,11 +835,9 @@ const NewLottery: React.FC = () => {
                               ))
                             )}
                           </div>
-
                         </div>
                       )}
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -919,4 +969,5 @@ const NewLottery: React.FC = () => {
     </div>
   );
 };
+
 export default NewLottery;

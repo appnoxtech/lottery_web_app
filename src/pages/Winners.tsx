@@ -492,7 +492,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                         className="w-full sm:w-auto px-1 sm:px-0 py-1 sm:py-2 bg-[#1D1F27] border border-[#EDB726] rounded-md text-gray-300 text-xs sm:text-sm md:text-base focus:outline-none focus:border-[#EDB726] cursor-pointer"
                         aria-label="Select lottery"
                       >
-                        {/* <option></option> */}
+                        <option value="" disabled>All Lotteries</option>
                         {lotteries.map((lottery: any) => (
                           <option key={lottery.id} value={lottery.id}>
                             {lottery.name}
