@@ -229,31 +229,35 @@ const NewLottery: React.FC = () => {
     return allNumbers;
   };
 
-  const validateNumbers = (numbersString: string): string | null => {
-    if (!numbersString) {
-      return "Please enter at least one lottery number.";
-    }
-    const numbers = numbersString
-      .split(",")
-      .map((n) => n.trim())
-      .filter((n) => n);
-    
-    if (numbers.length === 0) {
-      return "Please enter valid lottery numbers.";
-    }
+ const validateNumbers = (numbersString: string): string | null => {
+  if (!numbersString) {
+    return "Please enter at least one lottery number.";
+  }
+  const numbers = numbersString
+    .split(",")
+    .map((n) => n.trim())
+    .filter((n) => n);
 
-    const invalidNumbers = numbers.filter((num) => /^[0]+$/.test(num.replace(/,/g, "")));
-    if (invalidNumbers.length > 0) {
-      return "Enter valid Numbers.";
-    }
+  if (numbers.length === 0) {
+    return "Please enter valid lottery numbers.";
+  }
 
-    const validNumberPattern = /^[0-9, ]+$/;
-    if (!validNumberPattern.test(numbersString)) {
-      return "Only numbers, commas, and spaces are allowed.";
-    }
+  const invalidNumbers: string[] = []; // Explicitly type as string array
+  const validNumberPattern = /^[0-9, ]+$/;
 
-    return null;
-  };
+  numbers.forEach((num) => {
+    const cleanNum = num.replace(/,/g, "");
+    if (!validNumberPattern.test(num) || /^[0]+$/.test(cleanNum)) {
+      invalidNumbers.push(num);
+    }
+  });
+
+  if (invalidNumbers.length > 0) {
+    return `Invalid numbers detected: ${invalidNumbers.join(", ")}. Only numbers and commas are allowed, and numbers should not be all zeros.`;
+  }
+
+  return null;
+};
 
   const isOrderValid = (data: FormValues) => {
     const numberValidationError = validateNumbers(data.lotteryNumber);
