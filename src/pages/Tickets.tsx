@@ -120,7 +120,7 @@ const Tickets: React.FC = () => {
               ...resp?.data?.result,
               order_id: ord.order,
               receipt: ord.receipt,
-              created_at: ord.date,
+              created_at: resp?.data?.result?.created_at || ord.date,
               total_no: resp?.data?.result?.details?.length || 0, // Calculate total_no as length of details
             }))
           );
