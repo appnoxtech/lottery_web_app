@@ -229,35 +229,35 @@ const NewLottery: React.FC = () => {
     return allNumbers;
   };
 
- const validateNumbers = (numbersString: string): string | null => {
-  if (!numbersString) {
-    return "Please enter at least one lottery number.";
-  }
-  const numbers = numbersString
-    .split(",")
-    .map((n) => n.trim())
-    .filter((n) => n);
-
-  if (numbers.length === 0) {
-    return "Please enter valid lottery numbers.";
-  }
-
-  const invalidNumbers: string[] = []; // Explicitly type as string array
-  const validNumberPattern = /^[0-9, ]+$/;
-
-  numbers.forEach((num) => {
-    const cleanNum = num.replace(/,/g, "");
-    if (!validNumberPattern.test(num) || /^[0]+$/.test(cleanNum)) {
-      invalidNumbers.push(num);
+  const validateNumbers = (numbersString: string): string | null => {
+    if (!numbersString) {
+      return "Please enter at least one lottery number.";
     }
-  });
+    const numbers = numbersString
+      .split(",")
+      .map((n) => n.trim())
+      .filter((n) => n);
 
-  if (invalidNumbers.length > 0) {
-    return `Invalid numbers detected: ${invalidNumbers.join(", ")}. Only numbers and commas are allowed, and numbers should not be all zeros.`;
-  }
+    if (numbers.length === 0) {
+      return "Please enter valid lottery numbers.";
+    }
 
-  return null;
-};
+    const invalidNumbers: string[] = []; // Explicitly type as string array
+    const validNumberPattern = /^[0-9, ]+$/;
+
+    numbers.forEach((num) => {
+      const cleanNum = num.replace(/,/g, "");
+      if (!validNumberPattern.test(num) || /^[0]+$/.test(cleanNum)) {
+        invalidNumbers.push(num);
+      }
+    });
+
+    if (invalidNumbers.length > 0) {
+      return `Invalid numbers detected: ${invalidNumbers.join(", ")}. Only numbers and commas are allowed, and numbers should not be all zeros.`;
+    }
+
+    return null;
+  };
 
   const isOrderValid = (data: FormValues) => {
     const numberValidationError = validateNumbers(data.lotteryNumber);
@@ -467,35 +467,37 @@ const NewLottery: React.FC = () => {
                         <RefreshCw className={`w-5 h-5 ${loadingLotteries ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
-                    <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg">
-                      {loadingLotteries && (
-                        <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
-                      )}
-                      {errorFetchingLotteries && (
-                        <div className="text-red-400 text-center py-2">{errorFetchingLotteries}</div>
-                      )}
-                      {!loadingLotteries &&
-                        !errorFetchingLotteries &&
-                        lotteries.length === 0 && (
-                          <div className="text-gray-400 text-center py-2">No Lotteries Available</div>
+                    <div className="h-[80px] bg-[#1D1F27] border border-white rounded-lg overflow-hidden">
+                      <div className="space-y-1 max-h-20 overflow-y-auto pl-1 scrollbar-thin scrollbar-thumb scrollbar-track scrollbar-thumb-rounded-full scrollbar-track-rounded-full scrollbar-gutter-stable">
+                        {loadingLotteries && (
+                          <div className="text-gray-400 text-center py-2 pt-6">Loading Lotteries...</div>
                         )}
-                      {!loadingLotteries &&
-                        !errorFetchingLotteries &&
-                        lotteries.length > 0 &&
-                        lotteries.map((lottery) => (
-                          <label
-                            key={lottery.id}
-                            className="flex items-center space-x-2 cursor-pointer hover:bg-[#2A2D36] p-2 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedLotteries.some(l => l.id === lottery.id)}
-                              onChange={() => handleLotterySelect(lottery.id.toString())}
-                              className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
-                            />
-                            <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
-                          </label>
-                        ))}
+                        {errorFetchingLotteries && (
+                          <div className="text-red-400 text-center py-2 pt-6">{errorFetchingLotteries}</div>
+                        )}
+                        {!loadingLotteries &&
+                          !errorFetchingLotteries &&
+                          lotteries.length === 0 && (
+                            <div className="text-gray-400 text-center py-2 pt-6">No Lotteries Available</div>
+                          )}
+                        {!loadingLotteries &&
+                          !errorFetchingLotteries &&
+                          lotteries.length > 0 &&
+                          lotteries.map((lottery) => (
+                            <label
+                              key={lottery.id}
+                              className="flex items-center space-x-2 cursor-pointer hover:bg-[#2A2D36] p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedLotteries.some(l => l.id === lottery.id)}
+                                onChange={() => handleLotterySelect(lottery.id.toString())}
+                                className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
+                              />
+                              <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
+                            </label>
+                          ))}
+                      </div>
                     </div>
                     {selectedLotteries.length > 0 && (
                       <div className="mt-2">
@@ -623,35 +625,37 @@ const NewLottery: React.FC = () => {
                         <RefreshCw className={`w-5 h-5 ${loadingLotteries ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
-                    <div className="space-y-1 max-h-20 overflow-y-auto bg-[#1D1F27] border border-white rounded-lg p-2">
-                      {loadingLotteries && (
-                        <div className="text-gray-400 text-center py-2">Loading Lotteries...</div>
-                      )}
-                      {errorFetchingLotteries && (
-                        <div className="text-red-400 text-center py-2">{errorFetchingLotteries}</div>
-                      )}
-                      {!loadingLotteries &&
-                        !errorFetchingLotteries &&
-                        lotteries.length === 0 && (
-                          <div className="text-gray-400 text-center py-2">No Lotteries Available</div>
+                    <div className="h-[80px] bg-[#1D1F27] border border-white rounded-lg overflow-hidden flex flex-col">
+                      <div className="flex-1 overflow-y-auto pl-1 space-y-1 scrollbar-thin scrollbar-thumb-[#EDB726] scrollbar-track-[#1D1F27] scrollbar-thumb-rounded-full scrollbar-track-rounded-full scrollbar-gutter-stable">
+                        {loadingLotteries && (
+                          <div className="text-gray-400 text-center py-2 pt-6">Loading Lotteries...</div>
                         )}
-                      {!loadingLotteries &&
-                        !errorFetchingLotteries &&
-                        lotteries.length > 0 &&
-                        lotteries.map((lottery) => (
-                          <label
-                            key={lottery.id}
-                            className="flex items-center space-x-2 cursor-pointer hover:bg-[#2A2D36] p-2 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedLotteries.some(l => l.id === lottery.id)}
-                              onChange={() => handleLotterySelect(lottery.id.toString())}
-                              className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
-                            />
-                            <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
-                          </label>
-                        ))}
+                        {errorFetchingLotteries && (
+                          <div className="text-red-400 text-center py-2 pt-6">{errorFetchingLotteries}</div>
+                        )}
+                        {!loadingLotteries &&
+                          !errorFetchingLotteries &&
+                          lotteries.length === 0 && (
+                            <div className="text-gray-400 text-center py-2 pt-6">No Lotteries Available</div>
+                          )}
+                        {!loadingLotteries &&
+                          !errorFetchingLotteries &&
+                          lotteries.length > 0 &&
+                          lotteries.map((lottery) => (
+                            <label
+                              key={lottery.id}
+                              className="flex items-center space-x-2 cursor-pointer hover:bg-[#2A2D36] p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedLotteries.some(l => l.id === lottery.id)}
+                                onChange={() => handleLotterySelect(lottery.id.toString())}
+                                className="w-4 h-4 text-[#EDB726] bg-[#1D1F27] border-gray-600 rounded focus:ring-[#EDB726] focus:ring-2"
+                              />
+                              <span className="text-white">{lottery?.abbreviation || "N/A"}</span>
+                            </label>
+                          ))}
+                      </div>
                     </div>
                     {selectedLotteries.length > 0 && (
                       <div className="mt-2">

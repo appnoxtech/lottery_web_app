@@ -4,8 +4,8 @@ import store from "../store";
 import { clearUser } from "../store/slicer/userSlice";
 import { showToast } from "./toast.util";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://hopisuerte.com/api/';
-const IMAGE_URL = import.meta.env.VITE_IMAGE_URL || 'https://hopisuerte.com/public/';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.hopisuerte.com/api/';
+const IMAGE_URL = import.meta.env.VITE_IMAGE_URL || 'https://api.hopisuerte.com/public/';
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_KEY || '';
 console.log("BASE_URL:", BASE_URL);
 console.log("IMAGE_URL:", IMAGE_URL);

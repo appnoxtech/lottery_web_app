@@ -50,8 +50,8 @@ Environment variables are accessed using `import.meta.env` in Vite:
 
 ```typescript
 // API Configuration
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://hopisuerte.com/api/';
-const IMAGE_URL = import.meta.env.VITE_IMAGE_URL || 'https://hopisuerte.com/public/';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.hopisuerte.com/api/';
+const IMAGE_URL = import.meta.env.VITE_IMAGE_URL || 'https://api.hopisuerte.com/public/';
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -102,7 +102,7 @@ VITE_STRIPE_KEY=pk_live_your_live_key_here
 The application includes fallback values for critical environment variables:
 
 ```typescript
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://hopisuerte.com/api/';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.hopisuerte.com/api/';
 ```
 
 This ensures the application continues to work even if environment variables are not properly configured.

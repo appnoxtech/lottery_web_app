@@ -263,3 +263,39 @@ select {
 select option {
   cursor: pointer !important;
 }
+
+/* Ensure scrollbar respects rounded corners */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+/* WebKit Scrollbar */
+.max-h-20 > div::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-20 > div::-webkit-scrollbar-track {
+  background: #1D1F27;
+  border-radius: 9999px;
+  margin: 4px;
+}
+
+.max-h-20 > div::-webkit-scrollbar-thumb {
+  background-color: #EDB726;
+  border-radius: 9999px;
+  border: 2px solid #1D1F27;
+}
+
+/* Optional: Hide scrollbar when not hovering */
+.max-h-20 > div {
+  scrollbar-color: transparent #1D1F27;
+  transition: scrollbar-color 0.2s;
+}
+
+.max-h-20 > div:hover {
+  scrollbar-color: #EDB726 #1D1F27;
+}

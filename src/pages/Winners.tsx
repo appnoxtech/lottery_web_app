@@ -377,7 +377,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                               {filteredWinners[0]?.firstPrize || "-"}
                             </div>
                           </div>
-                          <div className="flex justify-center space-x-8">
+                          <div className="flex justify-center space-x-24">
                             <div className="text-center">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
@@ -557,15 +557,15 @@ const getCurrentLotteryTiming = useCallback(() => {
                               {filteredWinners[0]?.firstPrize || "-"}
                             </div>
                           </div>
-                          <div className="flex justify-center space-x-8">
-                            <div className="text-center">
+                          <div className="flex justify-center space-x-38">
+                            <div className="text-center mt-[-30px]">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.secondPrize || "-"}
                               </div>
                             </div>
-                            <div className="text-center">
+                            <div className="text-center mt-[-30px]">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">

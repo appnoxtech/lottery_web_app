@@ -222,12 +222,12 @@ const Tickets: React.FC = () => {
           const bet = parseFloat(item.bet_amount) || 0;
           return `
         <tr style="border-bottom: 1px solid #E5E7EB;">
-          <td style="padding: 6px;">
+          <td style="padding: 6px; padding-bottom:12px">
             <p style="color: #DC2626; margin: 0;">${abbreviation}</p>
             <p style="font-weight: 600; margin: 0; font-size: 14px;">${number}</p>
           </td>
-          <td style="padding: 6px; padding-left: 16px; text-align: center; color: #000; font-size: 14px;">${String(number).length} digit</td>
-          <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px;">XCG ${bet.toFixed(2)}</td>
+          <td style="padding: 6px; padding-left: 16px; text-align: center; color: #000; font-size: 14px; padding-bottom:12px">${String(number).length} digit</td>
+          <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px; padding-bottom:12px">XCG ${bet.toFixed(2)}</td>
         </tr>`;
         })
         .join("") : `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6B7280; font-size: 14px;">No items found.</td></tr>`;
@@ -266,14 +266,14 @@ const Tickets: React.FC = () => {
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
               <tr>
-                <th style="padding: 6px; text-align: center;">P Mode</th>
-                <th style="padding: 6px; text-align: center;">Amount</th>
+                <th style="padding: 6px; text-align: center; padding-bottom:12px">P Mode</th>
+                <th style="padding: 6px; text-align: center; padding-bottom:12px">Amount</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="padding: 6px; text-align: center; color: #000;">${ticket.payment_mode}</td>
-                <td style="padding: 6px; text-align: center; color: #000;">XCG ${ticket.grand_total}</td>
+                <td style="padding: 6px; text-align: center; color: #000; padding-bottom:12px">${ticket.payment_mode}</td>
+                <td style="padding: 6px; text-align: center; color: #000; padding-bottom:12px">XCG ${ticket.grand_total}</td>
               </tr>
             </tbody>
           </table>
@@ -284,9 +284,9 @@ const Tickets: React.FC = () => {
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
               <tr>
-                <th style="padding: 6px; text-align: left;">Name</th>
-                <th style="padding: 6px; padding-left: 16px; text-align: center;">Digits</th>
-                <th style="padding: 6px; text-align: right;">Total</th>
+                <th style="padding: 6px; text-align: left; padding-bottom:12px">Name</th>
+                <th style="padding: 6px; padding-left: 16px; text-align: center; padding-bottom:12px">Digits</th>
+                <th style="padding: 6px; text-align: right; padding-bottom:12px">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -294,16 +294,16 @@ const Tickets: React.FC = () => {
             </tbody>
             <tfoot>
               <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Total Numbers:</td>
-                <td style="padding: 6px; text-align: right; color: #000;">${totalNo}</td>
+                <td colspan="2" style="padding: 6px; text-align: left; color: #000; padding-bottom:12px">Total Numbers:</td>
+                <td style="padding: 6px; text-align: right; color: #000; padding-bottom:12px">${totalNo}</td>
               </tr>
               <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                <td colspan="2" style="padding: 6px; text-align: left; color: #000;">Sub Total:</td>
-                <td style="padding: 6px; text-align: right; color: #000;">XCG ${ticket.grand_total}</td>
+                <td colspan="2" style="padding: 6px; text-align: left; color: #000; padding-bottom:12px">Sub Total:</td>
+                <td style="padding: 6px; text-align: right; color: #000; padding-bottom:12px">XCG ${ticket.grand_total}</td>
               </tr>
               <tr style="border-top: 1px solid #9CA3AF; font-weight: 700;">
-                <td colspan="2" style="padding: 6px; text-align: left;">Grand Total:</td>
-                <td style="padding: 6px; text-align: right;">
+                <td colspan="2" style="padding: 6px; text-align: left; padding-bottom:12px">Grand Total:</td>
+                <td style="padding: 6px; text-align: right; padding-bottom:12px">
                   XCG ${ticket.grand_total}
                   <div style="color: #000; font-size: 12px; font-weight: bold;">
                     ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
@@ -527,7 +527,7 @@ const Tickets: React.FC = () => {
                     <img
                       src={noTicketHistoyIcon}
                       alt="No Ticket History Icon"
-                      className="w-16 h-16 sm:w-20 sm:h-20 mb-4"
+                      className="w-30 h-30 sm:w-28 sm:h-28 mb-4"
                     />
                     <p className="text-gray-400 text-center text-xs sm:text-sm md:text-base">
                       No tickets purchased yet!<br />
