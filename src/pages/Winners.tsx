@@ -45,58 +45,87 @@ const Winners: React.FC = () => {
     { id: 3, name: "4-digit", digitType: 4 },
   ];
 
-  // Fetch lotteries using getLotteriesList
-  // Fetch lotteries using getLotteriesList
-useEffect(() => {
-  const fetchLotteries = async () => {
-    setLoading(true);
-    try {
-      const response = await getLotteriesList();
-      if (response?.data?.success && response.data.result) {
-        // Filter lotteries for the current day
-        const today = new Date(); // Use current date and time
-        const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" }); // Get current day (e.g., Wednesday for tomorrow)
-        const filteredLotteries = response.data.result.filter((lottery: any) =>
-          lottery.timings.some(
-            (timing: any) => timing.day === dayOfWeek
-          )
-        );
-        setLotteries(filteredLotteries);
-        // Set default selected lottery if none is selected
-        if (!selectedLottery && filteredLotteries.length > 0) {
-          dispatch({
-            type: "initialData/setInitialSelectedLottery",
-            payload: filteredLotteries[0],
-          });
-        }
-      } else {
-        setError("Failed to fetch lotteries.");
-        showToast("Failed to fetch lotteries.", "error");
-      }
-    } catch (err: any) {
-      setError("Failed to fetch lotteries. Please try again.");
-      showToast("Failed to fetch lotteries.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchLotteries();
-}, [dispatch]);
+  const todayLotteries = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const dayOfWeek = now.toLocaleString("en-US", { weekday: "long" });
 
-const getCurrentLotteryTiming = useCallback(() => {
-  if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
-    return null;
-  }
-  const today = new Date(); // Use current date
-  const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" });
-  return selectedLottery.timings.find((timing: any) => timing.day === dayOfWeek) || selectedLottery.timings[0];
-}, [selectedLottery]);
+    const filtered = lotteries.filter((lottery: any) => {
+      const hasTodayTiming = lottery.timings?.some((timing: any) => {
+        const cutOffDate = new Date(timing.cut_off_time);
+        const cutOffDay = cutOffDate.toLocaleString("en-US", { weekday: "long" });
+        const cutOffDateStr = cutOffDate.toDateString();
+        const isToday = cutOffDay === dayOfWeek && cutOffDateStr === todayStr;
+        return isToday;
+      });
+      return hasTodayTiming;
+    });
+    return filtered;
+  }, [lotteries]);
+
+  useEffect(() => {
+    const fetchLotteries = async () => {
+      setLoading(true);
+      try {
+        const response = await getLotteriesList();
+        if (response?.data?.success && response.data.result) {
+          // DO NOT FILTER HERE — store full list
+          setLotteries(response.data.result);
+
+          // Optional: Set default selected lottery (first one)
+          if (!selectedLottery && response.data.result.length > 0) {
+            dispatch({
+              type: "initialData/setInitialSelectedLottery",
+              payload: response.data.result[0],
+            });
+          }
+        } else {
+          setError("Failed to fetch lotteries.");
+          showToast("Failed to fetch lotteries.", "error");
+        }
+      } catch (err: any) {
+        setError("Failed to fetch lotteries. Please try again.");
+        showToast("Failed to fetch lotteries.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLotteries();
+  }, [dispatch]);
+
+
+
+  const getCurrentLotteryTiming = useCallback(() => {
+    if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
+      return null;
+    }
+    const today = new Date(); // Use current date
+    const dayOfWeek = today.toLocaleString("en-US", { weekday: "long" });
+    return selectedLottery.timings.find((timing: any) => timing.day === dayOfWeek) || selectedLottery.timings[0];
+  }, [selectedLottery]);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Auto-select first "Today" lottery if current one is invalid
+  useEffect(() => {
+    if (selectedPeriod === "today" && todayLotteries.length > 0) {
+      const isValidTodayLottery = todayLotteries.some(
+        (lottery: any) => lottery.id === selectedLottery?.id
+      );
+
+      if (!isValidTodayLottery) {
+        // Switch to first available today lottery
+        dispatch({
+          type: "initialData/setInitialSelectedLottery",
+          payload: todayLotteries[0],
+        });
+      }
+    }
+  }, [selectedPeriod, todayLotteries, selectedLottery, dispatch]);
 
   // const getCurrentLotteryTiming = useCallback(() => {
   //   if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
@@ -141,122 +170,122 @@ const getCurrentLotteryTiming = useCallback(() => {
     }
   }, [selectedPeriod, selectedLottery, getCurrentLotteryTiming]);
 
- const fetchWinnerHistory = useCallback(async () => {
-  setLoading(true);
-  setError(null);
-  setInfo(null);
-  try {
-    let response;
-    if (selectedPeriod === "today") {
-      response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
-      if (response?.data?.success && response.data.result?.data?.length > 0) {
-        // Extract the first key (e.g., "SIP") dynamically
-        const winnerData = response.data.result.data[0][Object.keys(response.data.result.data[0])[0]];
-        const date = formatDate(new Date().toISOString());
-        // Filter prize numbers based on digitType
-        const getPrizeByDigitType = (prizeArray: string[] | undefined, digitType: number): string => {
-          if (!prizeArray) return "-";
-          const matchingPrize = prizeArray.find((num) => num.length === digitType);
-          return matchingPrize || "-";
-        };
-        const winner = {
-          id: `${date}-${selectedLottery?.id || "unknown"}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount:
-            (winnerData.first_prize ? parseInt(getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType)) || 0 : 0) +
-            (winnerData.second_prize ? parseInt(getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType)) || 0 : 0) +
-            (winnerData.third_prize ? parseInt(getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType)) || 0 : 0),
-          drawDate: date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: selectedLottery?.id || "unknown",
-          date: date,
-          firstPrize: getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType),
-          secondPrize: getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType),
-          thirdPrize: getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType),
-        };
-        dispatch(addToWinnerList([winner]));
-      } else {
-        // No winners found, dispatch default winner with "-"
-        const date = formatDate(new Date().toISOString());
-        const defaultWinner = {
-          id: `${date}-${selectedLottery?.id || "unknown"}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount: 0,
-          drawDate: date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: selectedLottery?.id || "unknown",
-          date: date,
-          firstPrize: "-",
-          secondPrize: "-",
-          thirdPrize: "-",
-        };
-        dispatch(addToWinnerList([defaultWinner]));
-      }
-    } else {
-      response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
-      if (response?.data?.success && response.data.result?.winners?.length > 0) {
-        let winners = response.data.result.winners;
-        const grouped: { [key: string]: Winner } = {};
-        winners.forEach((item: any) => {
-          const date = formatDate(item.date);
-          if (!grouped[date]) {
-            grouped[date] = {
-              date,
-              lotteryId: item.lottery_id,
-              firstPrize: item.first_prize || "-",
-              secondPrize: item.second_prize || "-",
-              thirdPrize: item.third_prize || "-",
-            };
-          }
-        });
-        const formattedWinners = Object.values(grouped).map((item) => ({
-          id: `${item.date}-${item.lotteryId}`,
-          lotteryName: selectedLottery?.name || "Unknown Lottery",
-          ticketNumber: "-",
-          winnerName: "-",
-          winnerPhone: "-",
-          prizeAmount:
-            (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
-            (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
-            (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
-          drawDate: item.date,
-          drawTime: "-",
-          claimStatus: "unclaimed",
-          claimDate: null,
-          prizeType: "unknown",
-          lotteryId: item.lotteryId,
-          date: item.date,
-          firstPrize: item.firstPrize,
-          secondPrize: item.secondPrize,
-          thirdPrize: item.thirdPrize,
-        }));
-        dispatch(addToWinnerList(formattedWinners));
-      } else {
-        setInfo("No winners found for selected criteria.");
-        dispatch(clearWinnersList());
-      }
-    }
-  } catch (err: any) {
-    setError("Failed to fetch winner history. Please try again.");
+  const fetchWinnerHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     setInfo(null);
-    showToast("Failed to fetch winner history.", "error");
-    dispatch(clearWinnersList());
-  } finally {
-    setLoading(false);
-  }
-}, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
+    try {
+      let response;
+      if (selectedPeriod === "today") {
+        response = await getTodayWinningNumber(selectedLottery?.id || "", selectedLotteryType.digitType);
+        if (response?.data?.success && response.data.result?.data?.length > 0) {
+          // Extract the first key (e.g., "SIP") dynamically
+          const winnerData = response.data.result.data[0][Object.keys(response.data.result.data[0])[0]];
+          const date = formatDate(new Date().toISOString());
+          // Filter prize numbers based on digitType
+          const getPrizeByDigitType = (prizeArray: string[] | undefined, digitType: number): string => {
+            if (!prizeArray) return "-";
+            const matchingPrize = prizeArray.find((num) => num.length === digitType);
+            return matchingPrize || "-";
+          };
+          const winner = {
+            id: `${date}-${selectedLottery?.id || "unknown"}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount:
+              (winnerData.first_prize ? parseInt(getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType)) || 0 : 0) +
+              (winnerData.second_prize ? parseInt(getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType)) || 0 : 0) +
+              (winnerData.third_prize ? parseInt(getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType)) || 0 : 0),
+            drawDate: date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: selectedLottery?.id || "unknown",
+            date: date,
+            firstPrize: getPrizeByDigitType(winnerData.first_prize, selectedLotteryType.digitType),
+            secondPrize: getPrizeByDigitType(winnerData.second_prize, selectedLotteryType.digitType),
+            thirdPrize: getPrizeByDigitType(winnerData.third_prize, selectedLotteryType.digitType),
+          };
+          dispatch(addToWinnerList([winner]));
+        } else {
+          // No winners found, dispatch default winner with "-"
+          const date = formatDate(new Date().toISOString());
+          const defaultWinner = {
+            id: `${date}-${selectedLottery?.id || "unknown"}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount: 0,
+            drawDate: date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: selectedLottery?.id || "unknown",
+            date: date,
+            firstPrize: "-",
+            secondPrize: "-",
+            thirdPrize: "-",
+          };
+          dispatch(addToWinnerList([defaultWinner]));
+        }
+      } else {
+        response = await getWinnerHistory(selectedLottery?.id || "", selectedLotteryType.digitType);
+        if (response?.data?.success && response.data.result?.winners?.length > 0) {
+          let winners = response.data.result.winners;
+          const grouped: { [key: string]: Winner } = {};
+          winners.forEach((item: any) => {
+            const date = formatDate(item.date);
+            if (!grouped[date]) {
+              grouped[date] = {
+                date,
+                lotteryId: item.lottery_id,
+                firstPrize: item.first_prize || "-",
+                secondPrize: item.second_prize || "-",
+                thirdPrize: item.third_prize || "-",
+              };
+            }
+          });
+          const formattedWinners = Object.values(grouped).map((item) => ({
+            id: `${item.date}-${item.lotteryId}`,
+            lotteryName: selectedLottery?.name || "Unknown Lottery",
+            ticketNumber: "-",
+            winnerName: "-",
+            winnerPhone: "-",
+            prizeAmount:
+              (item.firstPrize && item.firstPrize !== "-" ? parseInt(item.firstPrize) : 0) +
+              (item.secondPrize && item.secondPrize !== "-" ? parseInt(item.secondPrize) : 0) +
+              (item.thirdPrize && item.thirdPrize !== "-" ? parseInt(item.thirdPrize) : 0),
+            drawDate: item.date,
+            drawTime: "-",
+            claimStatus: "unclaimed",
+            claimDate: null,
+            prizeType: "unknown",
+            lotteryId: item.lotteryId,
+            date: item.date,
+            firstPrize: item.firstPrize,
+            secondPrize: item.secondPrize,
+            thirdPrize: item.thirdPrize,
+          }));
+          dispatch(addToWinnerList(formattedWinners));
+        } else {
+          setInfo("No winners found for selected criteria.");
+          dispatch(clearWinnersList());
+        }
+      }
+    } catch (err: any) {
+      setError("Failed to fetch winner history. Please try again.");
+      setInfo(null);
+      showToast("Failed to fetch winner history.", "error");
+      dispatch(clearWinnersList());
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedLottery, selectedLotteryType, selectedPeriod, dispatch]);
 
   useEffect(() => {
     fetchWinnerHistory();
@@ -340,7 +369,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                     aria-label="Select lottery"
                   >
                     <option value="">Select Lottery</option>
-                    {lotteries.map((lottery: any) => (
+                    {(selectedPeriod === "today" ? todayLotteries : lotteries).map((lottery: any) => (
                       <option key={lottery.id} value={lottery.id}>
                         {lottery.name}
                       </option>
@@ -406,7 +435,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                               {filteredWinners[0]?.firstPrize || "-"}
                             </div>
                           </div>
-                          <div className="flex justify-center space-x-8">
+                          <div className="flex justify-center space-x-24">
                             <div className="text-center">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
@@ -493,7 +522,7 @@ const getCurrentLotteryTiming = useCallback(() => {
                         aria-label="Select lottery"
                       >
                         <option value="" disabled>All Lotteries</option>
-                        {lotteries.map((lottery: any) => (
+                        {(selectedPeriod === "today" ? todayLotteries : lotteries).map((lottery: any) => (
                           <option key={lottery.id} value={lottery.id}>
                             {lottery.name}
                           </option>
@@ -586,15 +615,15 @@ const getCurrentLotteryTiming = useCallback(() => {
                               {filteredWinners[0]?.firstPrize || "-"}
                             </div>
                           </div>
-                          <div className="flex justify-center space-x-8">
-                            <div className="text-center">
+                          <div className="flex justify-center space-x-38">
+                            <div className="text-center mt-[-30px]">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">2nd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">
                                 {filteredWinners[0]?.secondPrize || "-"}
                               </div>
                             </div>
-                            <div className="text-center">
+                            <div className="text-center mt-[-30px]">
                               <img src={winnerIcon} alt="Winner Icon" className="w-10 h-10 inline-block mb-1" />
                               <p className="text-base font-bold text-white">3rd prize</p>
                               <div className="text-xl font-bold text-[#EDB726]">

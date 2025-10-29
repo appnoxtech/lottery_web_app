@@ -58,8 +58,7 @@ const Login: React.FC = () => {
           userData: userData as Record<string, string>,
           token: token
         }));
-        
-        console.log('Token stored:', token); // Debug log
+        // Debug log
         console.log('User data stored:', userData); // Debug log
         
         // Small delay to ensure data is stored before navigation
