@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { User, ChevronDown, LogOut } from "lucide-react";
+import { User,ChevronUp, ChevronDown, LogOut } from "lucide-react";
 import { type RootState } from "../../store";
 import { clearUser } from "../../store/slicer/userSlice";
 
@@ -96,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                 alt="Transaction Icon"
                 className="w-8 h-8 sm:w-8 sm:h-8"
               />
-              <span className="text-[10px] sm:text-xs text-[#1D1F27]">
+              <span className="text-[10px] sm:text-xs text-[#1D1F27] pr-2">
                 Your
                 <p className="text-white">Transactions</p>
               </span>
@@ -132,7 +132,11 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                   {/* <p className="text-xs text-gray-400">{user.phone}</p> */}
                 </div>
 
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                {showUserMenu ? (
+                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                )}
               </button>
 
               {/* User Dropdown Menu */}
