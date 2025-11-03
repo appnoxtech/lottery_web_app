@@ -93,7 +93,33 @@ const Winners: React.FC = () => {
     fetchLotteries();
   }, [dispatch]);
 
+  // Add this useEffect — clears stale selectedLottery when no lotteries exist
+useEffect(() => {
+  if (lotteries.length === 0 && selectedLottery) {
+    dispatch({
+      type: "initialData/setInitialSelectedLottery",
+      payload: null,
+    });
+    setCountdown("");
+    setSelectedLotteryType({
+      id: 1,
+      digitType: 2,
+      name: "2-digit",
+    });
+  }
+}, [lotteries, selectedLottery, dispatch]);
 
+useEffect(() => {
+  if (selectedPeriod === "today" && lotteries.length > 0) {
+    const validToday = todayLotteries.some(l => l.id === selectedLottery?.id);
+    if (!validToday && selectedLottery) {
+      dispatch({
+        type: "initialData/setInitialSelectedLottery",
+        payload: null,
+      });
+    }
+  }
+}, [selectedPeriod, todayLotteries, selectedLottery, dispatch, lotteries]);
 
   const getCurrentLotteryTiming = useCallback(() => {
     if (!selectedLottery || !selectedLottery.timings || selectedLottery.timings.length === 0) {
@@ -343,7 +369,7 @@ const Winners: React.FC = () => {
     if (selectedLottery) {
       return selectedLottery.abbreviation || "LOTTERY";
     }
-    return "LOTTERY";
+    return "";
   };
 
   return (

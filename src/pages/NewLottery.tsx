@@ -428,7 +428,7 @@ const NewLottery: React.FC = () => {
                       htmlFor="inputNumbers"
                       className="block text-sm font-medium text-white mb-2"
                     >
-                      Lottery Number
+                      Lottery Number's
                     </label>
                     <textarea
                       id="inputNumbers"
@@ -586,7 +586,7 @@ const NewLottery: React.FC = () => {
                       htmlFor="inputNumbers"
                       className="block text-sm font-medium text-white mb-2"
                     >
-                      Lottery Number
+                      Lottery Number's
                     </label>
                     <textarea
                       id="inputNumbers"
@@ -919,7 +919,7 @@ const NewLottery: React.FC = () => {
               </button>
               <button
                 onClick={() => handlePaymentMethodSelect("whatsapp")}
-                className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-[#EDB726] transition-colors cursor-pointer"
+                className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between opacity-50 cursor-not-allowed"
               >
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
