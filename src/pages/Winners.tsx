@@ -46,22 +46,22 @@ const Winners: React.FC = () => {
   ];
 
   const todayLotteries = useMemo(() => {
-    const now = new Date();
-    const todayStr = now.toDateString();
-    const dayOfWeek = now.toLocaleString("en-US", { weekday: "long" });
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const tomorrowStr = tomorrow.toDateString();
 
-    const filtered = lotteries.filter((lottery: any) => {
-      const hasTodayTiming = lottery.timings?.some((timing: any) => {
-        const cutOffDate = new Date(timing.cut_off_time);
-        const cutOffDay = cutOffDate.toLocaleString("en-US", { weekday: "long" });
-        const cutOffDateStr = cutOffDate.toDateString();
-        const isToday = cutOffDay === dayOfWeek && cutOffDateStr === todayStr;
-        return isToday;
-      });
-      return hasTodayTiming;
-    });
-    return filtered;
-  }, [lotteries]);
+  return lotteries.filter((lottery: any) =>
+    lottery.timings?.some((timing: any) => {
+      const cutOff = new Date(timing.cut_off_time);
+      const cutOffStr = cutOff.toDateString();
+
+      // Include if cut-off is today OR tomorrow
+      return cutOffStr === todayStr || cutOffStr === tomorrowStr;
+    })
+  );
+}, [lotteries]);
 
   useEffect(() => {
     const fetchLotteries = async () => {
