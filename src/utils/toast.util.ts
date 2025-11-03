@@ -4,11 +4,12 @@ import type { ToastOptions } from 'react-toastify';
 
 export const showToast = (
   message: string,
-  type: "success" | "error" | "warning" | "info"
+  type: "success" | "error" | "warning" | "info",
+  durationMs?: number
 ) => {
   const toastOptions: ToastOptions = {
     position: "top-right",
-    autoClose: 4000,
+    autoClose:durationMs ?? 4000,
     hideProgressBar: false,
     closeOnClick: true,
     pauseOnHover: true,

@@ -7,7 +7,7 @@ export const handleApiError = (error: any, fallbackMessage: string) => {
       showToast(message, "error");
     });
   } else if (error?.response?.data?.message) {
-    showToast(error?.response?.data?.message, "error");
+    showToast(error?.response?.data?.message, "error", 10000);
   } else {
     showToast(fallbackMessage, "error");
   }
