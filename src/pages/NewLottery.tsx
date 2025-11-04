@@ -176,48 +176,39 @@ const NewLottery: React.FC = () => {
     }
   };
 
-  const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
-    const processedResults: { [key: number]: string[] } = {};
-    if (!numbersString || digitsToProcess.length === 0) {
-      return processedResults;
-    }
+  // AFTER  (replace the whole `processNumbers` function)
+const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
+  const processedResults: { [key: number]: string[] } = {};
 
-    const numbers = numbersString
-      .split(",")
-      .map((n) => n.trim())
-      .filter((n) => /^-?\d+$/.test(n.replace(/,/g, "")));
+  if (!numbersString || digitsToProcess.length === 0) return processedResults;
 
-    digitsToProcess.forEach((digit) => {
-      const resultForDigit: string[] = [];
-      numbers.forEach((num) => {
-        const cleanNum = num.replace(/,/g, "");
-        if (!/^[0]+$/.test(cleanNum)) {
-          if (cleanNum.length === digit) {
-            if (!resultForDigit.some(existing =>
-              cleanNum === existing ||
-              (existing.length > cleanNum.length && existing.endsWith(cleanNum))
-            )) {
-              resultForDigit.push(cleanNum.padStart(digit, "0"));
-            }
-          } else if (cleanNum.length > digit) {
-            const truncated = cleanNum.slice(-digit);
-            if (!/^[0]+$/.test(truncated)) {
-              if (!resultForDigit.some(existing =>
-                truncated === existing ||
-                (existing.length > truncated.length && existing.endsWith(truncated))
-              )) {
-                resultForDigit.push(truncated.padStart(digit, "0"));
-              }
-            }
-          }
-        }
-      });
-      if (resultForDigit.length > 0) {
-        processedResults[digit] = resultForDigit;
+  const numbers = numbersString
+    .split(",")
+    .map((n) => n.trim())
+    .filter((n) => n && /^[0-9 ]+$/.test(n));   // keep only digit strings
+
+  digitsToProcess.forEach((digit) => {
+    const resultForDigit: string[] = [];
+
+    numbers.forEach((num) => {
+      const cleanNum = num.replace(/,/g, "");
+
+      // ---- ANY length is now allowed ----
+      if (cleanNum.length === digit) {
+        const padded = cleanNum.padStart(digit, "0");
+        if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
+      } else if (cleanNum.length > digit) {
+        const truncated = cleanNum.slice(-digit);
+        const padded = truncated.padStart(digit, "0");
+        if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
       }
     });
-    return processedResults;
-  };
+
+    if (resultForDigit.length > 0) processedResults[digit] = resultForDigit;
+  });
+
+  return processedResults;
+};
 
   const getAllProcessedNumbers = (): string[] => {
     const allNumbers: string[] = [];
@@ -229,10 +220,12 @@ const NewLottery: React.FC = () => {
     return allNumbers;
   };
 
+  // AFTER  (replace the whole function)
   const validateNumbers = (numbersString: string): string | null => {
     if (!numbersString) {
       return "Please enter at least one lottery number.";
     }
+
     const numbers = numbersString
       .split(",")
       .map((n) => n.trim())
@@ -242,18 +235,21 @@ const NewLottery: React.FC = () => {
       return "Please enter valid lottery numbers.";
     }
 
-    const invalidNumbers: string[] = []; // Explicitly type as string array
-    const validNumberPattern = /^[0-9, ]+$/;
+    const invalidNumbers: string[] = [];
+    const validNumberPattern = /^[0-9, ]+$/;               // only digits + commas + spaces
 
     numbers.forEach((num) => {
       const cleanNum = num.replace(/,/g, "");
-      if (!validNumberPattern.test(num) || /^[0]+$/.test(cleanNum)) {
+      // ---- ONLY check that it contains digits (allow any length, any zeros) ----
+      if (!validNumberPattern.test(num) || cleanNum.length === 0) {
         invalidNumbers.push(num);
       }
     });
 
     if (invalidNumbers.length > 0) {
-      return `Invalid numbers detected: ${invalidNumbers.join(", ")}. Only numbers and commas are allowed, and numbers should not be all zeros.`;
+      return `Invalid numbers detected: ${invalidNumbers.join(
+        ", "
+      )}. Only numbers and commas are allowed.`;
     }
 
     return null;
