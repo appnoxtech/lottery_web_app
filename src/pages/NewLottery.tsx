@@ -74,6 +74,10 @@ const NewLottery: React.FC = () => {
       const response = await lotteriesData();
       if (response?.data?.result) {
         dispatch(setInitialData(response.data.result));
+        setSelectedLotteries(prev => {
+          const freshIds = new Set(response.data.result.map((l: Lottery) => l.id));
+          return prev.filter(l => freshIds.has(l.id));
+        });
       }
     } catch (error: unknown) {
       setErrorFetchingLotteries("Failed to fetch lotteries.");
@@ -177,38 +181,38 @@ const NewLottery: React.FC = () => {
   };
 
   // AFTER  (replace the whole `processNumbers` function)
-const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
-  const processedResults: { [key: number]: string[] } = {};
+  const processNumbers = (numbersString: string, digitsToProcess: number[]) => {
+    const processedResults: { [key: number]: string[] } = {};
 
-  if (!numbersString || digitsToProcess.length === 0) return processedResults;
+    if (!numbersString || digitsToProcess.length === 0) return processedResults;
 
-  const numbers = numbersString
-    .split(",")
-    .map((n) => n.trim())
-    .filter((n) => n && /^[0-9 ]+$/.test(n));   // keep only digit strings
+    const numbers = numbersString
+      .split(",")
+      .map((n) => n.trim())
+      .filter((n) => n && /^[0-9 ]+$/.test(n));   // keep only digit strings
 
-  digitsToProcess.forEach((digit) => {
-    const resultForDigit: string[] = [];
+    digitsToProcess.forEach((digit) => {
+      const resultForDigit: string[] = [];
 
-    numbers.forEach((num) => {
-      const cleanNum = num.replace(/,/g, "");
+      numbers.forEach((num) => {
+        const cleanNum = num.replace(/,/g, "");
 
-      // ---- ANY length is now allowed ----
-      if (cleanNum.length === digit) {
-        const padded = cleanNum.padStart(digit, "0");
-        if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
-      } else if (cleanNum.length > digit) {
-        const truncated = cleanNum.slice(-digit);
-        const padded = truncated.padStart(digit, "0");
-        if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
-      }
+        // ---- ANY length is now allowed ----
+        if (cleanNum.length === digit) {
+          const padded = cleanNum.padStart(digit, "0");
+          if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
+        } else if (cleanNum.length > digit) {
+          const truncated = cleanNum.slice(-digit);
+          const padded = truncated.padStart(digit, "0");
+          if (!resultForDigit.includes(padded)) resultForDigit.push(padded);
+        }
+      });
+
+      if (resultForDigit.length > 0) processedResults[digit] = resultForDigit;
     });
 
-    if (resultForDigit.length > 0) processedResults[digit] = resultForDigit;
-  });
-
-  return processedResults;
-};
+    return processedResults;
+  };
 
   const getAllProcessedNumbers = (): string[] => {
     const allNumbers: string[] = [];

@@ -26,6 +26,10 @@ import {
   DeleteAccount,
 } from "./pages";
 import "./App.css";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { userInfo } from "./utils/services/Registration.services";
+import { setUser } from "./store/slicer/userSlice";
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -54,6 +58,37 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
+  const dispatch = useDispatch();
+  const token = localStorage.getItem("userToken");
+  useEffect(() => {
+    if (!token) return;
+
+    (async () => {
+      try {
+        const r = await userInfo();               // GET /customer-info
+        if (r?.data?.success && r?.data?.result) {
+          const freshUser = r.data.result.data;   // <-- user object
+          const freshTok  = r.data.result.token;  // <-- fresh token (optional)
+
+          // 1. localStorage
+          localStorage.setItem("userData", JSON.stringify(freshUser));
+          if (freshTok) localStorage.setItem("userToken", freshTok);
+
+          // 2. Redux
+          dispatch(
+            setUser({
+              userData: freshUser,
+              token: freshTok ?? token,
+            })
+          );
+        }
+      } catch (e) {
+        console.error("userInfo sync failed", e);
+        // token may be dead → optional logout
+        // dispatch(clearUser());
+      }
+    })();
+  }, [token, dispatch]);
   return (
     <Router>
       <div className="App">
