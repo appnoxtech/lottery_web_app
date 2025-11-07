@@ -88,7 +88,7 @@ const EditProfile: React.FC = () => {
 
 
       <div className="relative w-28 h-28 mb-10">
-        <label className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer border border-2 border-[#EDB726]">
+        <label className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden cursor-pointer border border-2 border-[#EDB726]">
           {previewImage ? (
             <img
               src={previewImage}

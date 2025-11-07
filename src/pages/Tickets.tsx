@@ -209,185 +209,231 @@ const Tickets: React.FC = () => {
   };
 
   const downloadTicketPdf = async (ticket: any) => {
-    try {
-      const resp = await getOrderDetails(ticket.order_id);
-      const items = (resp as any)?.data?.result?.details || [];
-      const totalNo = ticket.total_no ?? items.length; // Fallback to items.length
-      const parsed = parseCreatedAtForPdf(ticket?.created_at);
+  try {
+    const resp = await getOrderDetails(ticket.order_id);
+    const items = (resp as any)?.data?.result?.details || [];
+    const totalNo = ticket.total_no ?? items.length;
+    const parsed = parseCreatedAtForPdf(ticket?.created_at);
 
-      const rows = items.length > 0 ? items
+    // Calculate how many items can fit on first page
+    const ITEMS_PER_PAGE_FIRST = 8;
+    const ITEMS_PER_PAGE_NEXT = 10;
+    
+    const pages = [];
+    let currentPageItems = [];
+    
+    // Split items into pages
+    for (let i = 0; i < items.length; i++) {
+      currentPageItems.push(items[i]);
+      
+      // Check if we've reached the limit for current page
+      const isFirstPage = pages.length === 0;
+      const maxItems = isFirstPage ? ITEMS_PER_PAGE_FIRST : ITEMS_PER_PAGE_NEXT;
+      
+      if (currentPageItems.length >= maxItems || i === items.length - 1) {
+        pages.push([...currentPageItems]);
+        currentPageItems = [];
+      }
+    }
+
+    // Generate HTML for each page
+    const pageHtmls = pages.map((pageItems, pageIndex) => {
+      const rows = pageItems.length > 0 ? pageItems
         .map((item: any) => {
           const number = item.lottery_number ?? "-";
           const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
           const bet = parseFloat(item.bet_amount) || 0;
           return `
-        <tr style="border-bottom: 1px solid #E5E7EB;">
-          <td style="padding: 6px; padding-bottom:12px">
-            <p style="color: #DC2626; margin: 0;">${abbreviation}</p>
-            <p style="font-weight: 600; margin: 0; font-size: 14px;">${number}</p>
-          </td>
-          <td style="padding: 6px; padding-left: 16px; text-align: center; color: #000; font-size: 14px; padding-bottom:12px">${String(number).length} digit</td>
-          <td style="padding: 6px; text-align: right; color: #000; font-weight: 400; font-size: 14px; padding-bottom:12px">XCG ${bet.toFixed(2)}</td>
-        </tr>`;
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #E5E7EB;">
+          <p style="color:#DC2626;margin:0;font-size:16px;">${abbreviation}</p>
+          <p style="font-weight:600;margin:0;font-size:16px;">${number}</p>
+        </td>
+        <td style="padding:10px;text-align:center;font-size:16px;border-bottom:1px solid #E5E7EB;">${String(number).length} digits</td>
+        <td style="padding:10px;text-align:right;font-size:16px;border-bottom:1px solid #E5E7EB;">XCG ${bet.toFixed(2)}</td>
+      </tr>`;
         })
-        .join("") : `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6B7280; font-size: 14px;">No items found.</td></tr>`;
+        .join("") : `<tr><td colspan="3" style="padding:12px;text-align:center;font-size:16px;">No items found.</td></tr>`;
 
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '148mm';
-      container.style.backgroundColor = '#ffffff';
-      container.style.padding = '0';
-      container.style.overflow = 'visible';
-      container.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #000; width: 148mm; padding: 5mm; border: 2px solid #D1D5DB">
-      <div style="text-align: center; margin-bottom:4px;padding-bottom:10px">
-        <p style="color: #6B7280; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 4px 0;">Lottery Numbers</p>
-      </div>
-      <div style="border-top: 1px solid #D1D5DB; margin: 6px 2px;"></div>
-      <div style="padding: 0 16px; margin-bottom: 10px">
-        <div style="display: grid; grid-template-columns: 1fr; gap: 8px; text-align: center; font-size: 14px;">
-          <div>
-            <p style="color: #000; margin: 0;">Receipt# CW - <span style="font-weight: 600;">${ticket.receipt}</span></p>
-          </div>
-          <div>
-            <p style="color: #000; margin: 0;">Date: <span style="font-weight: 600;">${parsed.date} - ${parsed.time}</span></p>
-          </div>
-          <div>
-            <p style="color: #6B7280; font-weight: 600; margin: 0;">
-              Status: <span style="font-size: 16px; text-transform: capitalize; color: ${ticket.status === "completed" ? "#22C55E" : "#EF4444"}">${ticket.status}</span>
-            </p>
-          </div>
+      // Show totals only on last page
+      const totalsSection = pageIndex === pages.length - 1 ? `
+        <tfoot>
+          <tr style="border-top:1px solid #9CA3AF;">
+            <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:600;">Total Numbers:</td>
+            <td style="padding:10px;text-align:right;font-size:16px;font-weight:600;">${totalNo}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:600;">Sub Total:</td>
+            <td style="padding:10px;text-align:right;font-size:16px;font-weight:600;">XCG ${ticket.grand_total}</td>
+          </tr>
+          <tr style="border-top:1px solid #9CA3AF;">
+            <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:700;">Grand Total:</td>
+            <td style="padding:10px;text-align:right;font-size:16px;font-weight:700;">
+              XCG ${ticket.grand_total}
+              <div style="font-size:14px;font-weight:normal;">
+                ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      ` : '';
+
+      // Footer only on last page
+      const footerSection = pageIndex === pages.length - 1 ? `
+        <div style="text-align:center;padding:15px 20px;font-size:13px;margin-top:20px;">
+          <p style="margin:3px 0;color:#000;font-weight:500;">Korda kontrola bo numbernan ‼️</p>
+          <p style="margin:3px 0;color:#000;font-weight:500;">Despues di wega NO ta asepta reklamo ‼️</p>
+          <p style="margin:3px 0;color:#000;font-weight:500;">Tur number ta wordu skibi ekivalente na Florin ‼️</p>
+          <p style="margin:3px 0;color:#000;font-weight:500;">Pa bo por kobra premio, bo numbernan mester ta mark "Completed".</p>
+          <p style="margin:3px 0;color:#000;font-weight:500;">Suerte paki ratu. 🍀🇳🇬💶💰</p>
+          <div style="border-top:1px dashed #9CA3AF;margin:8px 0 0 0;"></div>
         </div>
-      </div>
-      <div style="padding: 0 16px; margin-bottom: 12px;">
-        <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
-              <tr>
-                <th style="padding: 6px; text-align: center; padding-bottom:12px">P Mode</th>
-                <th style="padding: 6px; text-align: center; padding-bottom:12px">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding: 6px; text-align: center; color: #000; padding-bottom:12px">${ticket.payment_mode}</td>
-                <td style="padding: 6px; text-align: center; color: #000; padding-bottom:12px">XCG ${ticket.grand_total}</td>
-              </tr>
-            </tbody>
-          </table>
+      ` : '';
+
+      // Page indicator for multi-page tickets
+      const pageIndicator = pages.length > 1 ? `
+        <div style="text-align:right;padding:0 20px 5px;font-size:12px;color:#6B7280;">
+          Page ${pageIndex + 1} of ${pages.length}
         </div>
-      </div>
-      <div style="padding: 0 16px; margin-bottom: 12px;">
-        <div style="border: 1px solid #D1D5DB; border-radius: 6px; overflow: hidden;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <thead style="background-color: #EDB726; color: #000; text-transform: uppercase;">
-              <tr>
-                <th style="padding: 6px; text-align: left; padding-bottom:12px">Name</th>
-                <th style="padding: 6px; padding-left: 16px; text-align: center; padding-bottom:12px">Digits</th>
-                <th style="padding: 6px; text-align: right; padding-bottom:12px">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-            <tfoot>
-              <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                <td colspan="2" style="padding: 6px; text-align: left; color: #000; padding-bottom:12px">Total Numbers:</td>
-                <td style="padding: 6px; text-align: right; color: #000; padding-bottom:12px">${totalNo}</td>
-              </tr>
-              <tr style="border-top: 1px solid #9CA3AF; font-weight: 400;">
-                <td colspan="2" style="padding: 6px; text-align: left; color: #000; padding-bottom:12px">Sub Total:</td>
-                <td style="padding: 6px; text-align: right; color: #000; padding-bottom:12px">XCG ${ticket.grand_total}</td>
-              </tr>
-              <tr style="border-top: 1px solid #9CA3AF; font-weight: 700;">
-                <td colspan="2" style="padding: 6px; text-align: left; padding-bottom:12px">Grand Total:</td>
-                <td style="padding: 6px; text-align: right; padding-bottom:12px">
-                  XCG ${ticket.grand_total}
-                  <div style="color: #000; font-size: 12px; font-weight: bold;">
-                    ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+      ` : '';
+
+      return `
+        <div style="font-family: Arial; color:#000; width:190mm; background:#ffffff; margin:0 auto;">
+
+          ${pageIndex === 0 ? `
+            <!-- First Page Header -->
+            <div>
+              <div style="text-align:center;padding:12px 0 8px 0;">
+                <p style="color:#6B7280;font-size:24px;font-weight:bold;margin:0;text-transform:uppercase;">Lottery Numbers</p>
+              </div>
+
+              <div style="border-top:1px solid #9CA3AF;margin:0 20px 8px;"></div>
+
+              <!-- Ticket Details -->
+              <div style="padding:0 20px;margin:10px 0;">
+                <div style="text-align:center;">
+                  <p style="margin:4px 0;font-size:14px;">Receipt# CW - <span style="font-weight:600;">${ticket.receipt}</span></p>
+                  <p style="margin:4px 0;font-size:14px;">Date: <span style="font-weight:700;">${parsed.date} - ${parsed.time}</span></p>
+                  <p style="margin:4px 0;font-size:14px;color:#6B7280;font-weight:700;">
+                    Status: <span style="color:${ticket.status==="completed"?"#22C55E":"#EF4444"};font-weight:bold;text-transform:capitalize">${ticket.status}</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Payment Mode Table -->
+              <div style="padding:0 20px;margin:10px 0;">
+                <div style="border:1px solid #9CA3AF;border-radius:6px;overflow:hidden;">
+                  <table style="width:100%;font-size:14px;">
+                    <thead style="background-color:#EDB726;color:#000;text-transform:uppercase;">
+                      <tr>
+                        <th style="padding:8px;text-align:center; padding-bottom: 18px;">P Mode</th>
+                        <th style="padding:8px;text-align:center; padding-bottom: 18px;">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="padding:8px;text-align:center; padding-bottom: 18px;">${ticket.payment_mode}</td>
+                        <td style="padding:8px;text-align:center; padding-bottom: 18px;">XCG ${ticket.grand_total}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <!-- Subsequent Pages Header - Only "Lottery Numbers" without "Cont." -->
+            <div>
+              <div style="text-align:center;padding:12px 0 8px 0;">
+                <p style="color:#6B7280;font-size:24px;font-weight:bold;margin:0;text-transform:uppercase;">Lottery Numbers</p>
+                <p style="margin:4px 0;font-size:12px;">Receipt# CW - <span style="font-weight:600;">${ticket.receipt}</span></p>
+              </div>
+            </div>
+          `}
+
+         
+
+          <!-- Items Table -->
+          <div style="padding:0 20px;margin:8px 0;">
+            <div style="border:1px solid #9CA3AF;border-radius:6px;overflow:hidden;">
+              <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                <thead style="background-color:#EDB726;color:#000;text-transform:uppercase;">
+                  <tr>
+                    <th style="padding:8px;text-align:left;font-weight:700; padding-bottom: 18px;">Name</th>
+                    <th style="padding:8px;text-align:center;font-weight:700; padding-bottom: 18px;">Digits</th>
+                    <th style="padding:8px;text-align:right;font-weight:700; padding-bottom: 18px;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+                ${totalsSection}
+              </table>
+            </div>
+          </div>
+
+          <!-- Footer - Only on last page, placed immediately after table -->
+          ${pageIndex === pages.length - 1 ? footerSection : ''}
+           ${pageIndicator}
         </div>
-      </div>
-      <div style="text-align: center; padding: 0 16px; padding-bottom: 12px; font-size: 12px;">
-        <p style="color: #000; margin: 2px 0;">Korda kontrola bo numbernan ‼️</p>
-        <p style="color: #000; margin: 2px 0;">Despues di wega NO ta asepta reklamo ‼️</p>
-        <p style="color: #000; margin: 2px 0;">Tur number ta wordu skibi ekivalente na Florin ‼️</p>
-        <p style="color: #000; margin: 2px 0;">Pa bo por kobra premio, bo numbernan mester ta mark "Completed".</p>
-        <p style="color: #000; margin: 2px 0;">Suerte paki ratu. 🍀🇳🇬💶💰</p>
-      </div>
-    </div>
-  `;
+      `;
+    });
 
-      document.body.appendChild(container);
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '190mm';
+    container.style.backgroundColor = '#ffffff';
+    container.style.padding = '5px 0';
+    container.style.overflow = 'visible';
 
-      await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-      await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-      const html2canvas = (window as any).html2canvas;
-      const { jsPDF } = (window as any).jspdf;
+    container.innerHTML = pageHtmls.join('');
 
-      const node = container.firstElementChild as HTMLElement;
-      const canvas = await html2canvas(node, {
+    document.body.appendChild(container);
+
+    await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+
+    const html2canvas = (window as any).html2canvas;
+    const { jsPDF } = (window as any).jspdf;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Process each page element separately
+    for (let i = 0; i < container.children.length; i++) {
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      const pageElement = container.children[i] as HTMLElement;
+      const canvas = await html2canvas(pageElement, {
         scale: 2,
         backgroundColor: '#ffffff',
-        windowWidth: 148 * 3.78,
-        windowHeight: node.scrollHeight * 2,
         scrollX: 0,
         scrollY: 0,
+        useCORS: true,
+        allowTaint: true,
+        width: pageElement.scrollWidth,
+        height: pageElement.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-      const pdfWidth = 148;
-      const pdfPageHeight = 210;
-      const margin = 10;
-      const usablePageHeight = pdfPageHeight - 2 * margin;
-      const canvasHeight = canvas.height * (pdfWidth / canvas.width);
+      const pdfWidth = 210 - 25;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Add a small threshold to avoid adding a blank page for negligible overflow
-      const threshold = 5; // 5mm threshold
-      if (canvasHeight <= usablePageHeight + threshold) {
-        pdf.addImage(
-          imgData,
-          'PNG',
-          margin,
-          margin,
-          pdfWidth - 2 * margin,
-          canvasHeight,
-          undefined,
-          'FAST'
-        );
-      } else {
-        let position = 0;
-        while (position < canvasHeight) {
-          pdf.addImage(
-            imgData,
-            'PNG',
-            margin,
-            margin - position,
-            pdfWidth - 2 * margin,
-            Math.min(usablePageHeight, canvasHeight - position),
-            undefined,
-            'FAST'
-          );
-          position += usablePageHeight;
-          if (position < canvasHeight - threshold) {
-            pdf.addPage();
-          }
-        }
-      }
-
-      pdf.save(`Ticket_${ticket.receipt}.pdf`);
-      document.body.removeChild(container);
-    } catch (e) {
-      handleApiError(e, 'Failed to generate PDF');
+      // Add with more bottom margin for footer
+      pdf.addImage(imgData, 'PNG', 12, 8, imgWidth, imgHeight, undefined, 'FAST');
     }
-  };
+
+    pdf.save(`Ticket_${ticket.receipt}.pdf`);
+    document.body.removeChild(container);
+
+  } catch (e) {
+    handleApiError(e, 'Failed to generate PDF');
+  }
+};
+
 
   const reuseTicketNumbers = (ticket: any) => {
     navigate(`/new-lottery?orderId=${ticket.order_id}`);

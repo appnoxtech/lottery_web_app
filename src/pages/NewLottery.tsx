@@ -871,7 +871,7 @@ const NewLottery: React.FC = () => {
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
-                  <div>Total Amount: XCG {newOrderInfo.local_total}</div>
+                  <div>Total Amount: XCG {parseFloat(newOrderInfo.local_total || "0").toFixed(2)}</div>
                   <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>

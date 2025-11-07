@@ -109,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                 className="flex items-center space-x-3 p-2 bg-[#1D1F27] rounded-lg border border-gray-600 hover:border-[#EDB726] transition-colors cursor-pointer"
               >
                 {/* Profile Image or Avatar - Hidden on small screens */}
-                <div className="w-8 h-8 bg-[#EDB726] rounded-full flex items-center justify-center hidden lg:block">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center hidden lg:block">
                   {user.avatar ? (
                     <img
                       src={user.avatar}

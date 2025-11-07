@@ -138,7 +138,7 @@ const ProfileLayout: React.FC = () => {
           </Link>
         </div>
         <div className="flex flex-col items-center p-6 border-b border-gray-700">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center mb-3 border border-2 border-[#EDB726]">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-white flex items-center justify-center mb-3 border border-2 border-[#EDB726]">
             {userData?.profile_image ? (
               <img
                 src={userData.profile_image}
@@ -234,7 +234,7 @@ const ProfileLayout: React.FC = () => {
               <h1 className="text-2xl font-semibold text-white ">Wega di Number</h1>
               <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
             </div>
-            <div className="w-20 h-20 rounded-full border border-2 border-[#EDB726] overflow-hidden bg-gray-700 flex items-center justify-center mb-3">
+            <div className="w-20 h-20 rounded-full border border-2 border-[#EDB726] overflow-hidden bg-white flex items-center justify-center mb-3">
               {userData?.profile_image ? (
                 <img
                   src={userData.profile_image}
