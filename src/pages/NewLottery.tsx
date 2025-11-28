@@ -9,7 +9,7 @@ import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
 import { placeOrder } from "../utils/services/Order.services";
-import { dollarConversion } from "../hooks/utilityFn";
+import { dollarConversion, euroConversion } from "../hooks/utilityFn";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
@@ -66,6 +66,7 @@ const NewLottery: React.FC = () => {
   const [processedNumbers, setProcessedNumbers] = useState<{ [key: number]: string[] }>({});
   const [numberError, setNumberError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const [selectedCurrency, setSelectedCurrency] = useState<"XCG" | "USD" | "EUR">("XCG");
 
   const fetchLotteries = async () => {
     try {
@@ -319,6 +320,12 @@ const NewLottery: React.FC = () => {
       return newProcessed;
     });
   };
+  const convertToCurrency = (xcgAmount: number, target: "XCG" | "USD" | "EUR"): number => {
+    if (target === "XCG") return xcgAmount;
+    if (target === "USD") return parseFloat(dollarConversion(xcgAmount));
+    if (target === "EUR") return parseFloat(euroConversion(xcgAmount));
+    return xcgAmount;
+  };
 
   const handleCreateLottery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,7 +348,9 @@ const NewLottery: React.FC = () => {
         setLoading(false);
         return;
       }
-      const localTotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+      const localTotalXCG = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+      const amountInSelectedCurrency = convertToCurrency(localTotalXCG, selectedCurrency);
+
       const orderParams = {
         userorder: [
           {
@@ -350,7 +359,9 @@ const NewLottery: React.FC = () => {
             lottery_number: formData.selectedNumbers,
           },
         ],
-        total_price: dollarConversion(localTotal),
+        total_price: amountInSelectedCurrency.toFixed(2),
+        local_total: localTotalXCG.toFixed(2),
+        currency: selectedCurrency === "XCG" ? "XCG" : selectedCurrency, // Stripe uses "ANG"
         user_id: userData?.id,
       };
       const response = await placeOrder(orderParams);
@@ -358,10 +369,11 @@ const NewLottery: React.FC = () => {
         const { data } = (response as any)?.data;
         setNewOrderInfo({
           ...data,
-          total_price: orderParams.total_price as string,
-          local_total: localTotal.toString(),
-          ticket_numbers: orderParams.userorder[0].lottery_number as string[],
+          total_price: amountInSelectedCurrency.toFixed(2),
+          local_total: localTotalXCG.toFixed(2),
+          ticket_numbers: formData.selectedNumbers,
           selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
+          currency: selectedCurrency === "XCG" ? "XCG" : selectedCurrency,
         });
         setShowPaymentModal(true);
       }
@@ -516,26 +528,53 @@ const NewLottery: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label
-                      htmlFor="betAmount"
-                      className="block text-sm font-medium text-white mb-2"
-                    >
+                    <label className="block text-sm font-medium text-white mb-2">
                       Bet Amount
                     </label>
-                    <input
-                      id="betAmount"
-                      type="text"
-                      value={betAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^-?\d*\.?\d*$/.test(value) && value !== "-") {
-                          setBetAmount(value);
-                        }
-                      }}
-                      className="w-full px-3 py-1 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
-                      placeholder="Enter bet amount"
-                      required
-                    />
+                    <div className="flex gap-3">
+                      <input
+                        id="betAmount"
+                        type="text"
+                        value={betAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^-?\d*\.?\d*$/.test(value) && value !== "-") {
+                            setBetAmount(value);
+                          }
+                        }}
+                        className="flex-1 w-full px-3 py-2 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                        placeholder="Enter bet amount"
+                        required
+                      />
+                      <select
+                        value={selectedCurrency}
+                        onChange={(e) => setSelectedCurrency(e.target.value as "XCG" | "USD" | "EUR")}
+                        className="px-4 py-2 bg-[#1D1F27] border border-[#EDB726] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#EDB726]"
+                      >
+                        <option value="XCG">XCG (ƒ)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                      </select>
+                    </div>
+
+                    {/* LIVE TOTAL PREVIEW */}
+                    {betAmount && selectedDigits.length > 0 && selectedLotteries.length > 0 && getAllProcessedNumbers().length > 0 && (
+                      <div className="mt-3 p-4 bg-[#1D1F27] border border-[#EDB726] rounded-lg">
+                        <p className="text-sm text-gray-400">You will pay:</p>
+                        <p className="text-2xl font-bold text-[#EDB726]">
+                          {selectedCurrency === "XCG" && "ƒ"}
+                          {selectedCurrency === "USD" && "$"}
+                          {selectedCurrency === "EUR" && "€"}
+                          {convertToCurrency(
+                            getAllProcessedNumbers().length * +betAmount * selectedLotteries.length,
+                            selectedCurrency
+                          ).toFixed(2)}
+                        </p>
+                        {/* <p className="text-xs text-gray-500 mt-1">
+                          {getAllProcessedNumbers().length} number(s) × ƒ{betAmount} × {selectedLotteries.length} lotter{selectedLotteries.length > 1 ? "ies" : "y"}
+                        </p> */}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-white mb-2">
@@ -674,26 +713,48 @@ const NewLottery: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label
-                      htmlFor="betAmount"
-                      className="block text-sm font-medium text-white mb-2"
-                    >
+                    <label className="block text-sm font-medium text-white mb-2">
                       Bet Amount
                     </label>
-                    <input
-                      id="betAmount"
-                      type="text"
-                      value={betAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^-?\d*\.?\d*$/.test(value) && value !== "-") {
-                          setBetAmount(value);
-                        }
-                      }}
-                      className="w-full px-3 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
-                      placeholder="Enter bet amount"
-                      required
-                    />
+                    <div className="flex gap-3">
+                      <input
+                        id="betAmount"
+                        type="text"
+                        value={betAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^-?\d*\.?\d*$/.test(value) && value !== "-") {
+                            setBetAmount(value);
+                          }
+                        }}
+                        className="flex-1 w-full  px-3 py-3 bg-[#1D1F27] border border-white rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EDB726] focus:border-[#EDB726]"
+                        placeholder="Enter bet amount"
+                        required
+                      />
+                      <select
+                        value={selectedCurrency}
+                        onChange={(e) => setSelectedCurrency(e.target.value as "XCG" | "USD" | "EUR")}
+                        className="px-4 py-3 bg-[#1D1F27] border border-[#EDB726] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#EDB726]"
+                      >
+                        <option value="XCG">XCG (ƒ)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                      </select>
+                    </div>
+
+                    {/* LIVE TOTAL ON MOBILE */}
+                    {betAmount && selectedDigits.length > 0 && selectedLotteries.length > 0 && getAllProcessedNumbers().length > 0 && (
+                      <div className="mt-4 p-4 bg-[#1D1F27] border border-[#EDB726] rounded-lg">
+                        <p className="text-sm text-gray-400">You will pay:</p>
+                        <p className="text-2xl font-bold text-[#EDB726]">
+                          {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
+                          {convertToCurrency(
+                            getAllProcessedNumbers().length * +betAmount * selectedLotteries.length,
+                            selectedCurrency
+                          ).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-white mb-2">
@@ -870,8 +931,15 @@ const NewLottery: React.FC = () => {
             {newOrderInfo && (
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
-                <div className="text-sm text-gray-300 space-y-1">
-                  <div>Total Amount: XCG {parseFloat(newOrderInfo.local_total || "0").toFixed(2)}</div>
+                <div className="text-sm text-gray-300 space-y-2">
+                  <div>
+                    <span className="text-gray-500">Local Amount (XCG):</span> ƒ{parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
+                  </div>
+                  <div className="text-lg font-bold text-[#EDB726] pt-2 border-t border-gray-700">
+                    <span className="text-white">You will pay:</span>{" "}
+                    {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
+                    {convertToCurrency(parseFloat(newOrderInfo.local_total || "0"), selectedCurrency).toFixed(2)}
+                  </div>
                   <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
@@ -943,8 +1011,9 @@ const NewLottery: React.FC = () => {
       )}
       {showStripe && (
         <StripeCheckout
-          amount={parseFloat(newOrderInfo?.total_price || "0")}
+          amount={convertToCurrency(parseFloat(newOrderInfo?.local_total || "0"), selectedCurrency)}
           localAmount={parseFloat(newOrderInfo?.local_total || "0")}
+          currency={selectedCurrency === "XCG" ? "XCG" : selectedCurrency}
           lotteryId={selectedLotteries.map((l) => l.id).join(",")}
           newOrderInfo={newOrderInfo}
           onClose={(success: boolean) => {

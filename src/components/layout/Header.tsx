@@ -117,12 +117,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
                       className="w-8 h-8 rounded-full border border-1 border-[#EDB726] "
                     />
                   ) : (
-                    <span className="text-sm font-bold text-[#1D1F27]">
-                      {user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </span>
+                    <User className="w-6 h-6 m-auto pt-1 text-gray-400" />
                   )}
                 </div>
 

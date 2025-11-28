@@ -209,41 +209,41 @@ const Tickets: React.FC = () => {
   };
 
   const downloadTicketPdf = async (ticket: any) => {
-  try {
-    const resp = await getOrderDetails(ticket.order_id);
-    const items = (resp as any)?.data?.result?.details || [];
-    const totalNo = ticket.total_no ?? items.length;
-    const parsed = parseCreatedAtForPdf(ticket?.created_at);
+    try {
+      const resp = await getOrderDetails(ticket.order_id);
+      const items = (resp as any)?.data?.result?.details || [];
+      const totalNo = ticket.total_no ?? items.length;
+      const parsed = parseCreatedAtForPdf(ticket?.created_at);
 
-    // Calculate how many items can fit on first page
-    const ITEMS_PER_PAGE_FIRST = 8;
-    const ITEMS_PER_PAGE_NEXT = 10;
-    
-    const pages = [];
-    let currentPageItems = [];
-    
-    // Split items into pages
-    for (let i = 0; i < items.length; i++) {
-      currentPageItems.push(items[i]);
-      
-      // Check if we've reached the limit for current page
-      const isFirstPage = pages.length === 0;
-      const maxItems = isFirstPage ? ITEMS_PER_PAGE_FIRST : ITEMS_PER_PAGE_NEXT;
-      
-      if (currentPageItems.length >= maxItems || i === items.length - 1) {
-        pages.push([...currentPageItems]);
-        currentPageItems = [];
+      // Calculate how many items can fit on first page
+      const ITEMS_PER_PAGE_FIRST = 8;
+      const ITEMS_PER_PAGE_NEXT = 10;
+
+      const pages = [];
+      let currentPageItems = [];
+
+      // Split items into pages
+      for (let i = 0; i < items.length; i++) {
+        currentPageItems.push(items[i]);
+
+        // Check if we've reached the limit for current page
+        const isFirstPage = pages.length === 0;
+        const maxItems = isFirstPage ? ITEMS_PER_PAGE_FIRST : ITEMS_PER_PAGE_NEXT;
+
+        if (currentPageItems.length >= maxItems || i === items.length - 1) {
+          pages.push([...currentPageItems]);
+          currentPageItems = [];
+        }
       }
-    }
 
-    // Generate HTML for each page
-    const pageHtmls = pages.map((pageItems, pageIndex) => {
-      const rows = pageItems.length > 0 ? pageItems
-        .map((item: any) => {
-          const number = item.lottery_number ?? "-";
-          const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
-          const bet = parseFloat(item.bet_amount) || 0;
-          return `
+      // Generate HTML for each page
+      const pageHtmls = pages.map((pageItems, pageIndex) => {
+        const rows = pageItems.length > 0 ? pageItems
+          .map((item: any) => {
+            const number = item.lottery_number ?? "-";
+            const abbreviation = Array.isArray(item.abbreviation) ? item.abbreviation.join(", ") : item.abbreviation || "-";
+            const bet = parseFloat(item.bet_amount) || 0;
+            return `
       <tr>
         <td style="padding:10px;border-bottom:1px solid #E5E7EB;">
           <p style="color:#DC2626;margin:0;font-size:16px;">${abbreviation}</p>
@@ -252,11 +252,11 @@ const Tickets: React.FC = () => {
         <td style="padding:10px;text-align:center;font-size:16px;border-bottom:1px solid #E5E7EB;">${String(number).length} digits</td>
         <td style="padding:10px;text-align:right;font-size:16px;border-bottom:1px solid #E5E7EB;">XCG ${bet.toFixed(2)}</td>
       </tr>`;
-        })
-        .join("") : `<tr><td colspan="3" style="padding:12px;text-align:center;font-size:16px;">No items found.</td></tr>`;
+          })
+          .join("") : `<tr><td colspan="3" style="padding:12px;text-align:center;font-size:16px;">No items found.</td></tr>`;
 
-      // Show totals only on last page
-      const totalsSection = pageIndex === pages.length - 1 ? `
+        // Show totals only on last page
+        const totalsSection = pageIndex === pages.length - 1 ? `
         <tfoot>
           <tr style="border-top:1px solid #9CA3AF;">
             <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:600;">Total Numbers:</td>
@@ -278,8 +278,8 @@ const Tickets: React.FC = () => {
         </tfoot>
       ` : '';
 
-      // Footer only on last page
-      const footerSection = pageIndex === pages.length - 1 ? `
+        // Footer only on last page
+        const footerSection = pageIndex === pages.length - 1 ? `
         <div style="text-align:center;padding:15px 20px;font-size:13px;margin-top:20px;">
           <p style="margin:3px 0;color:#000;font-weight:500;">Korda kontrola bo numbernan ‼️</p>
           <p style="margin:3px 0;color:#000;font-weight:500;">Despues di wega NO ta asepta reklamo ‼️</p>
@@ -290,14 +290,14 @@ const Tickets: React.FC = () => {
         </div>
       ` : '';
 
-      // Page indicator for multi-page tickets
-      const pageIndicator = pages.length > 1 ? `
+        // Page indicator for multi-page tickets
+        const pageIndicator = pages.length > 1 ? `
         <div style="text-align:right;padding:0 20px 5px;font-size:12px;color:#6B7280;">
           Page ${pageIndex + 1} of ${pages.length}
         </div>
       ` : '';
 
-      return `
+        return `
         <div style="font-family: Arial; color:#000; width:190mm; background:#ffffff; margin:0 auto;">
 
           ${pageIndex === 0 ? `
@@ -315,7 +315,7 @@ const Tickets: React.FC = () => {
                   <p style="margin:4px 0;font-size:14px;">Receipt# CW - <span style="font-weight:600;">${ticket.receipt}</span></p>
                   <p style="margin:4px 0;font-size:14px;">Date: <span style="font-weight:700;">${parsed.date} - ${parsed.time}</span></p>
                   <p style="margin:4px 0;font-size:14px;color:#6B7280;font-weight:700;">
-                    Status: <span style="color:${ticket.status==="completed"?"#22C55E":"#EF4444"};font-weight:bold;text-transform:capitalize">${ticket.status}</span>
+                    Status: <span style="color:${ticket.status === "completed" ? "#22C55E" : "#EF4444"};font-weight:bold;text-transform:capitalize">${ticket.status}</span>
                   </p>
                 </div>
               </div>
@@ -376,63 +376,63 @@ const Tickets: React.FC = () => {
            ${pageIndicator}
         </div>
       `;
-    });
-
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '190mm';
-    container.style.backgroundColor = '#ffffff';
-    container.style.padding = '5px 0';
-    container.style.overflow = 'visible';
-
-    container.innerHTML = pageHtmls.join('');
-
-    document.body.appendChild(container);
-
-    await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-    await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-
-    const html2canvas = (window as any).html2canvas;
-    const { jsPDF } = (window as any).jspdf;
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    // Process each page element separately
-    for (let i = 0; i < container.children.length; i++) {
-      if (i > 0) {
-        pdf.addPage();
-      }
-
-      const pageElement = container.children[i] as HTMLElement;
-      const canvas = await html2canvas(pageElement, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
-        useCORS: true,
-        allowTaint: true,
-        width: pageElement.scrollWidth,
-        height: pageElement.scrollHeight
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = 210 - 25;
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '190mm';
+      container.style.backgroundColor = '#ffffff';
+      container.style.padding = '5px 0';
+      container.style.overflow = 'visible';
 
-      // Add with more bottom margin for footer
-      pdf.addImage(imgData, 'PNG', 12, 8, imgWidth, imgHeight, undefined, 'FAST');
+      container.innerHTML = pageHtmls.join('');
+
+      document.body.appendChild(container);
+
+      await ensureScript('html2canvas-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      await ensureScript('jspdf-cdn', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+
+      const html2canvas = (window as any).html2canvas;
+      const { jsPDF } = (window as any).jspdf;
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      // Process each page element separately
+      for (let i = 0; i < container.children.length; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const pageElement = container.children[i] as HTMLElement;
+        const canvas = await html2canvas(pageElement, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          useCORS: true,
+          allowTaint: true,
+          width: pageElement.scrollWidth,
+          height: pageElement.scrollHeight
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = 210 - 25;
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Add with more bottom margin for footer
+        pdf.addImage(imgData, 'PNG', 12, 8, imgWidth, imgHeight, undefined, 'FAST');
+      }
+
+      pdf.save(`Ticket_${ticket.receipt}.pdf`);
+      document.body.removeChild(container);
+
+    } catch (e) {
+      handleApiError(e, 'Failed to generate PDF');
     }
-
-    pdf.save(`Ticket_${ticket.receipt}.pdf`);
-    document.body.removeChild(container);
-
-  } catch (e) {
-    handleApiError(e, 'Failed to generate PDF');
-  }
-};
+  };
 
 
   const reuseTicketNumbers = (ticket: any) => {
@@ -752,7 +752,8 @@ const Tickets: React.FC = () => {
       {paymentOpen && paymentTicket && (
         <StripeCheckout
           amount={Number(paymentTicket.grand_total) || 0}
-          localAmount={Number(paymentTicket.grand_total) || 0}
+          localAmount={Number(paymentTicket.local_total) || Number(paymentTicket.grand_total) || 0}
+          currency={paymentTicket.currency || "XCG"}
           lotteryId={paymentTicket.lottery_id}
           newOrderInfo={{ order_id: paymentTicket.order_id }}
           onClose={closePayment}

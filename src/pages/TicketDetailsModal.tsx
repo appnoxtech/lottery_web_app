@@ -49,8 +49,31 @@ const parseCreatedAt = (value?: string): { date: string; time: string } => {
 const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Array<any>>([]);
+  const [usdValue, setUsdValue] = useState<string>("-");
+const [eurValue, setEurValue] = useState<string>("-");
+
 
   const parsed = useMemo(() => parseCreatedAt(ticket?.created_at), [ticket?.created_at]);
+  useEffect(() => {
+  if (!ticket?.grand_total) return;
+
+  const loadConversion = async () => {
+    try {
+      const amount = Number(ticket.grand_total);
+      const usd = await dollarConversion(amount);
+      const eur = await euroConversion(amount);
+
+      setUsdValue(usd);
+      setEurValue(eur);
+    } catch (err) {
+      setUsdValue("-");
+      setEurValue("-");
+    }
+  };
+
+  loadConversion();
+}, [ticket?.grand_total]);
+
 
   useEffect(() => {
     const load = async () => {
@@ -188,7 +211,7 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
                       <td className="px-3 py-2 text-right">
                         XCG {ticket.grand_total}
                         <div className="text-sm">
-                          (${dollarConversion(Number(ticket.grand_total))} / €{euroConversion(Number(ticket.grand_total))})
+                          (${usdValue} / €{eurValue})
                         </div>
                       </td>
                     </tr>

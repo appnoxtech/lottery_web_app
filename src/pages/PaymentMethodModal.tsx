@@ -7,6 +7,7 @@ interface OrderInfo {
   order_id: number;
   total_price: string;
   local_total: string;
+  currency: string;
   ticket_numbers: number[];
   selected_lotteries: string[];
 }
@@ -59,13 +60,30 @@ Wega Di Number`;
         </div>
 
         {newOrderInfo && (
-          <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
-            <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
-            <div className="text-sm text-gray-300 space-y-1">
-              <div>Total Amount: XCG {newOrderInfo.local_total} </div>
-              <div>Numbers: {newOrderInfo.ticket_numbers.length}</div>
-              <div>Lotteries: {[...new Set(newOrderInfo.selected_lotteries)].join(", ")}</div>
+          <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-[#EDB726]">
+            <h4 className="text-sm font-semibold text-white mb-3">Order Summary</h4>
+            <div className="text-sm text-gray-300 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Local Amount (XCG):</span>
+                <span className="text-white font-medium">ƒ{parseFloat(newOrderInfo.local_total || "0").toFixed(2)}</span>
+              </div>
 
+              <div className="text-lg font-bold text-[#EDB726] pt-3 border-t border-gray-700">
+                <span className="text-white">You will pay:</span>{" "}
+                <span className="text-2xl">
+                  {newOrderInfo.currency === "USD" ? "$" : newOrderInfo.currency === "EUR" ? "€" : "ƒ"}
+                  {newOrderInfo.currency === "USD"
+                    ? dollarConversion(Number(newOrderInfo.local_total))
+                    : newOrderInfo.currency === "EUR"
+                      ? euroConversion(Number(newOrderInfo.local_total))
+                      : parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
+                </span>
+              </div>
+
+              <div className="pt-2 space-y-1 text-xs">
+                <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
+                <div>Lotteries: {[...new Set(newOrderInfo.selected_lotteries)].join(", ")}</div>
+              </div>
             </div>
           </div>
         )}
@@ -106,7 +124,8 @@ Wega Di Number`;
 
           <button
             onClick={() => { handleWhatsappPayment(); onSelect("whatsapp"); }}
-            className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-[#EDB726] transition-colors cursor-pointer"
+            disabled={true}
+            className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-[#EDB726] transition-colors opacity-50 cursor-not-allowed"
           >
             <div className="flex items-center">
               <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">

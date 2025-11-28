@@ -9,6 +9,7 @@ import { orderComplete } from "../utils/services/Order.services";
 interface StripeCheckoutProps {
   amount: number;
   localAmount: number;
+  currency: string;
   lotteryId?: string;
   newOrderInfo: { order_id?: number } | null; // Match the Order interface structure
   onClose: (success: boolean) => void;
@@ -17,6 +18,7 @@ interface StripeCheckoutProps {
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   amount,
   localAmount,
+  currency,
   lotteryId,
   newOrderInfo,
   onClose,
@@ -55,7 +57,8 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
     try {
       const response = await createPaymentIntent({
-        amount: amount * 100, // Ensure amount is in cents
+        amount: amount,
+        currency: currency.toLowerCase(),
         lotteryId,
       });
 
@@ -118,7 +121,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay XCG ${localAmount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
+            {loading ? "Processing..." : `Pay ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "Euro "} ${amount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
           </button>
         </form>
       </div>

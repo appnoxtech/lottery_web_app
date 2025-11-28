@@ -3,6 +3,7 @@ import { post } from "../api.util";
 
 interface PaymentIntentData {
   amount: number;
+  currency:string;
   lotteryId?: string;
 }
 
