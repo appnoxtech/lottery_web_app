@@ -320,11 +320,8 @@ const NewLottery: React.FC = () => {
       return newProcessed;
     });
   };
-  const convertToCurrency = (xcgAmount: number, target: "XCG" | "USD" | "EUR"): number => {
-    if (target === "XCG") return xcgAmount;
-    if (target === "USD") return parseFloat(dollarConversion(xcgAmount));
-    if (target === "EUR") return parseFloat(euroConversion(xcgAmount));
-    return xcgAmount;
+  const convertToCurrency = (amount: number, target: "XCG" | "USD" | "EUR"): number => {
+    return amount; // No conversion — amount is already in selected currency
   };
 
   const handleCreateLottery = async (e: React.FormEvent) => {
@@ -348,8 +345,7 @@ const NewLottery: React.FC = () => {
         setLoading(false);
         return;
       }
-      const localTotalXCG = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
-      const amountInSelectedCurrency = convertToCurrency(localTotalXCG, selectedCurrency);
+      const totalAmount = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
 
       const orderParams = {
         userorder: [
@@ -359,9 +355,9 @@ const NewLottery: React.FC = () => {
             lottery_number: formData.selectedNumbers,
           },
         ],
-        total_price: amountInSelectedCurrency.toFixed(2),
-        local_total: localTotalXCG.toFixed(2),
-        currency: selectedCurrency === "XCG" ? "XCG" : selectedCurrency, // Stripe uses "ANG"
+        total_price: totalAmount.toFixed(2),
+        local_total: totalAmount.toFixed(2),     // Same as total_price now
+        currency: selectedCurrency,              // Direct: XCG, USD, or EUR
         user_id: userData?.id,
       };
       const response = await placeOrder(orderParams);
@@ -369,11 +365,11 @@ const NewLottery: React.FC = () => {
         const { data } = (response as any)?.data;
         setNewOrderInfo({
           ...data,
-          total_price: amountInSelectedCurrency.toFixed(2),
-          local_total: localTotalXCG.toFixed(2),
+          total_price: totalAmount.toFixed(2),
+          local_total: totalAmount.toFixed(2),
           ticket_numbers: formData.selectedNumbers,
           selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
-          currency: selectedCurrency === "XCG" ? "XCG" : selectedCurrency,
+          currency: selectedCurrency,
         });
         setShowPaymentModal(true);
       }
@@ -558,23 +554,21 @@ const NewLottery: React.FC = () => {
                     </div>
 
                     {/* LIVE TOTAL PREVIEW */}
-                    {betAmount && selectedDigits.length > 0 && selectedLotteries.length > 0 && getAllProcessedNumbers().length > 0 && (
+                    {/*{betAmount && selectedDigits.length > 0 && selectedLotteries.length > 0 && getAllProcessedNumbers().length > 0 && (
                       <div className="mt-3 p-4 bg-[#1D1F27] border border-[#EDB726] rounded-lg">
                         <p className="text-sm text-gray-400">You will pay:</p>
                         <p className="text-2xl font-bold text-[#EDB726]">
                           {selectedCurrency === "XCG" && "ƒ"}
                           {selectedCurrency === "USD" && "$"}
                           {selectedCurrency === "EUR" && "€"}
-                          {convertToCurrency(
-                            getAllProcessedNumbers().length * +betAmount * selectedLotteries.length,
-                            selectedCurrency
-                          ).toFixed(2)}
+                          {(getAllProcessedNumbers().length * +betAmount * selectedLotteries.length).toFixed(2)}
                         </p>
                         {/* <p className="text-xs text-gray-500 mt-1">
                           {getAllProcessedNumbers().length} number(s) × ƒ{betAmount} × {selectedLotteries.length} lotter{selectedLotteries.length > 1 ? "ies" : "y"}
-                        </p> */}
+                        </p> 
                       </div>
                     )}
+                    */}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-white mb-2">
@@ -748,10 +742,7 @@ const NewLottery: React.FC = () => {
                         <p className="text-sm text-gray-400">You will pay:</p>
                         <p className="text-2xl font-bold text-[#EDB726]">
                           {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
-                          {convertToCurrency(
-                            getAllProcessedNumbers().length * +betAmount * selectedLotteries.length,
-                            selectedCurrency
-                          ).toFixed(2)}
+                          {(getAllProcessedNumbers().length * +betAmount * selectedLotteries.length).toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -891,7 +882,11 @@ const NewLottery: React.FC = () => {
                                 >
                                   <span className="text-[#EDB726]">{number}</span>
                                   <span className="text-white text-sm">{selectedLotteries.map(l => l.abbreviation).join(', ')}</span>
-                                  <span className="text-[#EDB726] text-right">f {truncateString(betAmount || "0.00")}</span>
+                                  <span className="text-[#EDB726] text-right">
+                                    {selectedCurrency === "XCG" && "ƒ"}
+                                    {selectedCurrency === "USD" && "$"}
+                                    {selectedCurrency === "EUR" && "€"} {truncateString(betAmount || "0.00")}
+                                  </span>
                                   <div className="text-right">
                                     <button
                                       onClick={() => handleRemoveNumber(parseInt(digit), index)}
@@ -932,13 +927,13 @@ const NewLottery: React.FC = () => {
               <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
                 <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
                 <div className="text-sm text-gray-300 space-y-2">
-                  <div>
+                  {/* <div>
                     <span className="text-gray-500">Local Amount (XCG):</span> ƒ{parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
-                  </div>
+                  </div> */}
                   <div className="text-lg font-bold text-[#EDB726] pt-2 border-t border-gray-700">
-                    <span className="text-white">You will pay:</span>{" "}
+                    <span className="text-white">Amount:</span>{" "}
                     {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
-                    {convertToCurrency(parseFloat(newOrderInfo.local_total || "0"), selectedCurrency).toFixed(2)}
+                    {parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
                   </div>
                   <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
@@ -1011,7 +1006,7 @@ const NewLottery: React.FC = () => {
       )}
       {showStripe && (
         <StripeCheckout
-          amount={convertToCurrency(parseFloat(newOrderInfo?.local_total || "0"), selectedCurrency)}
+          amount={parseFloat(newOrderInfo?.local_total || "0")}
           localAmount={parseFloat(newOrderInfo?.local_total || "0")}
           currency={selectedCurrency === "XCG" ? "XCG" : selectedCurrency}
           lotteryId={selectedLotteries.map((l) => l.id).join(",")}

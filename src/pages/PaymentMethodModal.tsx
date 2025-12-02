@@ -63,20 +63,17 @@ Wega Di Number`;
           <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-[#EDB726]">
             <h4 className="text-sm font-semibold text-white mb-3">Order Summary</h4>
             <div className="text-sm text-gray-300 space-y-2">
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="text-gray-500">Local Amount (XCG):</span>
                 <span className="text-white font-medium">ƒ{parseFloat(newOrderInfo.local_total || "0").toFixed(2)}</span>
-              </div>
+              </div> */}
 
               <div className="text-lg font-bold text-[#EDB726] pt-3 border-t border-gray-700">
                 <span className="text-white">You will pay:</span>{" "}
                 <span className="text-2xl">
-                  {newOrderInfo.currency === "USD" ? "$" : newOrderInfo.currency === "EUR" ? "€" : "ƒ"}
-                  {newOrderInfo.currency === "USD"
-                    ? dollarConversion(Number(newOrderInfo.local_total))
-                    : newOrderInfo.currency === "EUR"
-                      ? euroConversion(Number(newOrderInfo.local_total))
-                      : parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
+                  {newOrderInfo.currency === "USD" ? "$" :
+                    newOrderInfo.currency === "EUR" ? "€" : "ƒ"}
+                  {parseFloat(newOrderInfo.total_price || "0").toFixed(2)}
                 </span>
               </div>
 

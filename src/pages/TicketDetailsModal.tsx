@@ -11,9 +11,11 @@ dayjs.extend(utc);
 type Ticket = {
   order_id: number;
   receipt: string;
+  currency: string;
   created_at: string;
   payment_mode: string;
   grand_total: string;
+  transfer_fees: string;
   total_no?: number;
   status: string;
 };
@@ -50,29 +52,33 @@ const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Array<any>>([]);
   const [usdValue, setUsdValue] = useState<string>("-");
-const [eurValue, setEurValue] = useState<string>("-");
+  const [eurValue, setEurValue] = useState<string>("-");
+  const [currency, setCurrency] = useState<string>("XCG");
+  const [transferFees, setTransferFees] = useState<number | string>(0);
+  const [grandTotal, setGrandTotal] = useState<string>("0.00");
+  const [subTotal, setSubTotal] = useState<string>("0.00");
 
 
   const parsed = useMemo(() => parseCreatedAt(ticket?.created_at), [ticket?.created_at]);
   useEffect(() => {
-  if (!ticket?.grand_total) return;
+    if (!ticket?.grand_total) return;
 
-  const loadConversion = async () => {
-    try {
-      const amount = Number(ticket.grand_total);
-      const usd = await dollarConversion(amount);
-      const eur = await euroConversion(amount);
+    const loadConversion = async () => {
+      try {
+        const amount = Number(ticket.grand_total);
+        const usd = await dollarConversion(amount);
+        const eur = await euroConversion(amount);
 
-      setUsdValue(usd);
-      setEurValue(eur);
-    } catch (err) {
-      setUsdValue("-");
-      setEurValue("-");
-    }
-  };
+        setUsdValue(usd);
+        setEurValue(eur);
+      } catch (err) {
+        setUsdValue("-");
+        setEurValue("-");
+      }
+    };
 
-  loadConversion();
-}, [ticket?.grand_total]);
+    loadConversion();
+  }, [ticket?.grand_total]);
 
 
   useEffect(() => {
@@ -81,8 +87,17 @@ const [eurValue, setEurValue] = useState<string>("-");
       setLoading(true);
       try {
         const resp = await getOrderDetails(ticket.order_id);
-        const rows = (resp as any)?.data?.result?.details || [];
-        setItems(Array.isArray(rows) ? rows : []);
+        const result = resp?.data?.result;
+
+        if (result) {
+          setItems(result.details || []);
+
+          // Extract and save currency & fees from the full response
+          setCurrency(result.currency || "XCG");
+          setTransferFees(result.transfer_fees || 0);
+          setGrandTotal(result.grand_total || ticket.grand_total);
+          setSubTotal(result.sub_total || ticket.grand_total);
+        }
       } catch (e) {
         handleApiError(e, "Failed to load order details");
         setItems([]);
@@ -149,7 +164,7 @@ const [eurValue, setEurValue] = useState<string>("-");
                 <tbody>
                   <tr>
                     <td className="px-3 py-2 text-center">{ticket.payment_mode}</td>
-                    <td className="px-3 py-2 text-center">XCG {ticket.grand_total}</td>
+                    <td className="px-3 py-2 text-center">{currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} {grandTotal}</td>
                   </tr>
                 </tbody>
               </table>
@@ -185,7 +200,7 @@ const [eurValue, setEurValue] = useState<string>("-");
                           </td>
                           <td className="px-3 py-2 sm:pl-16 text-center">{String(number).length} digits</td>
                           <td className="px-3 py-2 text-right">
-                            XCG {bet.toFixed(2)}
+                            {currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} {bet.toFixed(2)}
                           </td>
                         </tr>
                       );
@@ -202,17 +217,23 @@ const [eurValue, setEurValue] = useState<string>("-");
                       <td colSpan={2} className="px-3 py-2">
                         Sub Total:
                       </td>
-                      <td className="px-3 py-2 text-right">XCG {ticket.grand_total}</td>
+                      <td className="px-3 py-2 text-right">{currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} {subTotal}</td>
+                    </tr>
+                    <tr className="border-t border-gray-400">
+                      <td colSpan={2} className="px-3 py-2">
+                        Transfer Fee:
+                      </td>
+                      <td className="px-3 py-2 text-right">{currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} {Number(transferFees).toFixed(2)}</td>
                     </tr>
                     <tr className="border-t border-gray-400 font-bold">
                       <td colSpan={2} className="px-3 py-2">
                         Grand Total:
                       </td>
                       <td className="px-3 py-2 text-right">
-                        XCG {ticket.grand_total}
-                        <div className="text-sm">
+                        {currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} {grandTotal}
+                        {/* <div className="text-sm">
                           (${usdValue} / €{eurValue})
-                        </div>
+                        </div> */}
                       </td>
                     </tr>
                   </tfoot>

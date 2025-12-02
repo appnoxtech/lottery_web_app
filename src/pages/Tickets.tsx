@@ -18,6 +18,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import noTicketsIcon from "../assets/Images/noTicketsIcon.png";
 import noTicketHistoyIcon from "../assets/Images/noTicketHistoryIcon.png";
+import { showToast } from "../utils/toast.util";
 
 dayjs.extend(utc);
 
@@ -54,14 +55,26 @@ const Tickets: React.FC = () => {
 
   const openPayment = async (ticket: any) => {
     const resp = await getOrderDetails(ticket.order_id);
-    const items = resp?.data?.result?.details ?? [];
+    const result = resp?.data?.result;
+
+    if (!result) {
+      showToast("Failed to load order details", "error");
+      return;
+    }
+
+    const items = result.details ?? [];
+    const currency = result.currency || "XCG";  // This is the ORIGINAL currency user selected!
+    const grandTotal = result.grand_total || ticket.grand_total;
+
     const orderInfo = {
       order_id: ticket.order_id,
-      total_price: ticket.grand_total,
-      local_total: ticket.grand_total,
+      total_price: grandTotal,                    // Amount in selected currency
+      local_total: grandTotal,                    // Same now (no conversion)
+      currency: currency,                         // ← This is the key!
       ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
-      selected_lotteries: items.map((i: any) => i.abbreviation[0] ?? "-"),
+      selected_lotteries: items.map((i: any) => i.abbreviation?.[0] ?? "-"),
     };
+
     setSelectedPaymentTicket(orderInfo);
     setPaymentMethodOpen(true);
   };
@@ -211,6 +224,11 @@ const Tickets: React.FC = () => {
   const downloadTicketPdf = async (ticket: any) => {
     try {
       const resp = await getOrderDetails(ticket.order_id);
+      const result = resp?.data?.result;
+      const currency = result?.currency || "XCG";
+      const transferFees = result?.transfer_fees || 0;
+      const subTotal = result?.sub_total || ticket.grand_total;
+      const grandTotal = result?.grand_total || ticket.grand_total;
       const items = (resp as any)?.data?.result?.details || [];
       const totalNo = ticket.total_no ?? items.length;
       const parsed = parseCreatedAtForPdf(ticket?.created_at);
@@ -250,7 +268,7 @@ const Tickets: React.FC = () => {
           <p style="font-weight:600;margin:0;font-size:16px;">${number}</p>
         </td>
         <td style="padding:10px;text-align:center;font-size:16px;border-bottom:1px solid #E5E7EB;">${String(number).length} digits</td>
-        <td style="padding:10px;text-align:right;font-size:16px;border-bottom:1px solid #E5E7EB;">XCG ${bet.toFixed(2)}</td>
+        <td style="padding:10px;text-align:right;font-size:16px;border-bottom:1px solid #E5E7EB;">${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${bet.toFixed(2)}</td>
       </tr>`;
           })
           .join("") : `<tr><td colspan="3" style="padding:12px;text-align:center;font-size:16px;">No items found.</td></tr>`;
@@ -264,15 +282,21 @@ const Tickets: React.FC = () => {
           </tr>
           <tr>
             <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:600;">Sub Total:</td>
-            <td style="padding:10px;text-align:right;font-size:16px;font-weight:600;">XCG ${ticket.grand_total}</td>
+            <td style="padding:10px;text-align:right;font-size:16px;font-weight:600;">${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${subTotal}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:600;">Transfer Fee:</td>
+            <td style="padding:10px;text-align:right;font-size:16px;font-weight:600;">
+              ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${Number(transferFees).toFixed(2)}
+            </td>
           </tr>
           <tr style="border-top:1px solid #9CA3AF;">
             <td colspan="2" style="padding:10px;text-align:left;font-size:16px;font-weight:700;">Grand Total:</td>
             <td style="padding:10px;text-align:right;font-size:16px;font-weight:700;">
-              XCG ${ticket.grand_total}
-              <div style="font-size:14px;font-weight:normal;">
-                ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
-              </div>
+              ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${grandTotal}
+              <!-- <div style="font-size:14px;font-weight:normal;">
+              ($${dollarConversion(Number(ticket.grand_total))} / €${euroConversion(Number(ticket.grand_total))})
+              </div> -->
             </td>
           </tr>
         </tfoot>
@@ -333,7 +357,7 @@ const Tickets: React.FC = () => {
                     <tbody>
                       <tr>
                         <td style="padding:8px;text-align:center; padding-bottom: 18px;">${ticket.payment_mode}</td>
-                        <td style="padding:8px;text-align:center; padding-bottom: 18px;">XCG ${ticket.grand_total}</td>
+                        <td style="padding:8px;text-align:center; padding-bottom: 18px;">${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${grandTotal}</td>
                       </tr>
                     </tbody>
                   </table>

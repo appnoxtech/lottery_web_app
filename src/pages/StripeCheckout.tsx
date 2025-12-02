@@ -121,7 +121,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             disabled={!stripe || loading}
             className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
           >
-            {loading ? "Processing..." : `Pay ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "Euro "} ${amount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
+            {loading ? "Processing..." : `Pay ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${amount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
           </button>
         </form>
       </div>
