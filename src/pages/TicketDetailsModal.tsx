@@ -51,8 +51,8 @@ const parseCreatedAt = (value?: string): { date: string; time: string } => {
 const TicketDetailsModal: React.FC<Props> = ({ isOpen, onClose, ticket }) => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Array<any>>([]);
-  const [usdValue, setUsdValue] = useState<string>("-");
-  const [eurValue, setEurValue] = useState<string>("-");
+  const [, setUsdValue] = useState<string>("-");
+  const [, setEurValue] = useState<string>("-");
   const [currency, setCurrency] = useState<string>("XCG");
   const [transferFees, setTransferFees] = useState<number | string>(0);
   const [grandTotal, setGrandTotal] = useState<string>("0.00");

@@ -9,7 +9,7 @@ import { handleApiError } from "../hooks/handleApiError";
 import StripeCheckout from "./StripeCheckout";
 import WhatsAppModal from "./WhatsAppModal";
 import { placeOrder } from "../utils/services/Order.services";
-import { dollarConversion, euroConversion } from "../hooks/utilityFn";
+// import { dollarConversion, euroConversion } from "../hooks/utilityFn";
 import { showToast } from "../utils/toast.util";
 import { getOrderDetails } from "../utils/services/Order.services";
 import { useSearchParams } from "react-router-dom";
@@ -320,9 +320,9 @@ const NewLottery: React.FC = () => {
       return newProcessed;
     });
   };
-  const convertToCurrency = (amount: number, target: "XCG" | "USD" | "EUR"): number => {
-    return amount; // No conversion — amount is already in selected currency
-  };
+  // const convertToCurrency = (amount: number, target: "XCG" | "USD" | "EUR"): number => {
+  //   return amount; // No conversion — amount is already in selected currency
+  // };
 
   const handleCreateLottery = async (e: React.FormEvent) => {
     e.preventDefault();
