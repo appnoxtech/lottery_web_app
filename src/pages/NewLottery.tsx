@@ -31,6 +31,8 @@ interface Order {
   local_total: string;
   ticket_numbers: string[];
   selected_lotteries: string[];
+  subtotal?: string;
+  transfer_fee?: string;
 }
 interface OrderDetailItem {
   lottery_number: string | number;
@@ -345,9 +347,24 @@ const NewLottery: React.FC = () => {
         setLoading(false);
         return;
       }
-      const totalAmount = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+      const subtotal = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
+
+      // TRANSFER FEE: 6.5% of subtotal + €0.40
+      const percentageFee = subtotal * 0.065;
+      const fixedFee = 0.40;
+      const transferFee = percentageFee + fixedFee;
+
+      // FINAL TOTAL
+      const totalAmount = subtotal + transferFee;
+      // const totalAmount = formData.selectedNumbers.length * +formData.betAmount * formData.selectedLotteries.length;
 
       const orderParams = {
+        user_id: userData?.id,
+        currency: selectedCurrency === "XCG" ? "XCG" : selectedCurrency.toLowerCase(),
+        payment_method_type: selectedCurrency === "EUR" ? "ideal" : "card", // ← KEY CHANGE
+        subtotal: subtotal.toFixed(2),
+        transfer_fee: transferFee.toFixed(2),
+        total_price: totalAmount.toFixed(2),
         userorder: [
           {
             bet_amount: formData.betAmount,
@@ -355,10 +372,6 @@ const NewLottery: React.FC = () => {
             lottery_number: formData.selectedNumbers,
           },
         ],
-        total_price: totalAmount.toFixed(2),
-        local_total: totalAmount.toFixed(2),     // Same as total_price now
-        currency: selectedCurrency,              // Direct: XCG, USD, or EUR
-        user_id: userData?.id,
       };
       const response = await placeOrder(orderParams);
       if ((response as any)?.data?.success) {
@@ -367,6 +380,8 @@ const NewLottery: React.FC = () => {
           ...data,
           total_price: totalAmount.toFixed(2),
           local_total: totalAmount.toFixed(2),
+          subtotal: subtotal.toFixed(2),
+          transfer_fee: transferFee.toFixed(2),
           ticket_numbers: formData.selectedNumbers,
           selected_lotteries: formData.selectedLotteries.map((item) => item.abbreviation),
           currency: selectedCurrency,
@@ -913,9 +928,7 @@ const NewLottery: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-white">
-                Choose Payment Method
-              </h3>
+              <h3 className="text-xl font-semibold text-white">Order Summary</h3>
               <button
                 onClick={() => setShowPaymentModal(false)}
                 className="text-gray-400 hover:text-white cursor-pointer"
@@ -923,24 +936,48 @@ const NewLottery: React.FC = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
+
             {newOrderInfo && (
-              <div className="mb-6 p-4 bg-[#1D1F27] rounded-lg border border-gray-600">
-                <h4 className="text-sm font-semibold text-white mb-2">Order Summary</h4>
-                <div className="text-sm text-gray-300 space-y-2">
-                  {/* <div>
-                    <span className="text-gray-500">Local Amount (XCG):</span> ƒ{parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
-                  </div> */}
-                  <div className="text-lg font-bold text-[#EDB726] pt-2 border-t border-gray-700">
-                    <span className="text-white">Amount:</span>{" "}
+              <div className="bg-[#1D1F27] rounded-lg p-5 space-y-4">
+                {/* Lottery Amount */}
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">Lottery Amount</span>
+                  <span className="text-white font-semibold">
+                    {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
+                    {parseFloat(newOrderInfo.subtotal || "0").toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Transfer Fee */}
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">Transfer Fee</span>
+                  <span className="text-white font-semibold">
+                    {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
+                    {parseFloat(newOrderInfo.transfer_fee || "0").toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-600 my-3"></div>
+
+                {/* Total */}
+                <div className="flex justify-between text-2xl font-bold">
+                  <span className="text-[#EDB726]">Total to Pay</span>
+                  <span className="text-[#EDB726]">
                     {selectedCurrency === "XCG" ? "ƒ" : selectedCurrency === "USD" ? "$" : "€"}
                     {parseFloat(newOrderInfo.local_total || "0").toFixed(2)}
-                  </div>
+                  </span>
+                </div>
+
+                {/* Ticket Info */}
+                <div className="text-sm text-gray-400 mt-4 pt-4 border-t border-gray-700">
                   <div>Total Tickets: {newOrderInfo.ticket_numbers.length * newOrderInfo.selected_lotteries.length}</div>
                   <div>Lotteries: {newOrderInfo.selected_lotteries.join(", ")}</div>
                 </div>
               </div>
             )}
-            <div className="space-y-4">
+
+            <div className="space-y-4 pt-4">
               <button
                 onClick={() => handlePaymentMethodSelect("stripe")}
                 className="w-full bg-[#1D1F27] border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-[#EDB726] transition-colors cursor-pointer"
@@ -998,8 +1035,9 @@ const NewLottery: React.FC = () => {
                 </svg>
               </button>
             </div>
-            <p className="text-gray-400 text-sm mt-4 text-center">
-              Select your preferred payment method to complete the lottery creation
+
+            <p className="text-gray-400 text-center text-sm mt-6">
+              Your payment is secure and encrypted
             </p>
           </div>
         </div>
@@ -1007,9 +1045,9 @@ const NewLottery: React.FC = () => {
       {showStripe && (
         <StripeCheckout
           amount={parseFloat(newOrderInfo?.local_total || "0")}
-          localAmount={parseFloat(newOrderInfo?.local_total || "0")}
+          // localAmount={parseFloat(newOrderInfo?.local_total || "0")}
           currency={selectedCurrency === "XCG" ? "XCG" : selectedCurrency}
-          lotteryId={selectedLotteries.map((l) => l.id).join(",")}
+          // lotteryId={selectedLotteries.map((l) => l.id).join(",")}
           newOrderInfo={newOrderInfo}
           onClose={(success: boolean) => {
             setShowStripe(false);

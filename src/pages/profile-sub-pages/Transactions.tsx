@@ -13,6 +13,7 @@ interface Transaction {
   total_price: number;
   status?: string;
   isToday?: boolean;
+  currency: string;
 }
 
 const Transactions: React.FC = () => {
@@ -21,6 +22,7 @@ const Transactions: React.FC = () => {
   const [info, setInfo] = useState<string | null>(null);
   const userID = useSelector((state: any) => state.user.userData?.id);
   const [isMenuOpen, setIsMenuOpen] = useState(false); // State for menu toggle
+  // const [currency, setCurrency] = useState<"XCG" | "USD" | "EUR">("XCG");
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -50,6 +52,7 @@ const Transactions: React.FC = () => {
               payment_mode: tx.payment_mode,
               date: new Date(tx.created_at).toLocaleString(),
               total_price: `${tx.total_price}`,
+              currency: tx.currency,
               status: tx.status,
               isToday: tx.todays_transaction,
             }));
@@ -151,7 +154,7 @@ const Transactions: React.FC = () => {
                           Pending
                         </span>
                       )}
-                      <p className="text-sm sm:text-lg font-bold">XCG {tx.total_price}</p>
+                      <p className="text-sm sm:text-lg font-bold">{tx.currency === "XCG" ? "XCG" : tx.currency === "USD" ? "USD" : "EUR"} {tx.total_price}</p>
                     </div>
                   </div>
                 ))

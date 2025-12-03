@@ -5,6 +5,7 @@ interface PaymentIntentData {
   amount: number;
   currency:string;
   lotteryId?: string;
+  order_id: number;
 }
 
 const createPaymentIntent = async (data: PaymentIntentData): Promise<AxiosResponse | void> => {

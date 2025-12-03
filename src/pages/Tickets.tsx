@@ -19,6 +19,8 @@ import utc from "dayjs/plugin/utc";
 import noTicketsIcon from "../assets/Images/noTicketsIcon.png";
 import noTicketHistoyIcon from "../assets/Images/noTicketHistoryIcon.png";
 import { showToast } from "../utils/toast.util";
+import { orderComplete } from "../utils/services/Order.services";
+import { createPaymentIntent } from "../utils/services/Payment.services";
 
 dayjs.extend(utc);
 
@@ -53,45 +55,115 @@ const Tickets: React.FC = () => {
     return null;
   };
 
+  // Replace the openPayment function in your new Tickets.tsx
   const openPayment = async (ticket: any) => {
+  try {
+    // Fetch order details
     const resp = await getOrderDetails(ticket.order_id);
     const result = resp?.data?.result;
-
+    
     if (!result) {
       showToast("Failed to load order details", "error");
       return;
     }
 
     const items = result.details ?? [];
-    const currency = result.currency || "XCG";  // This is the ORIGINAL currency user selected!
+    const currency = result.currency || "XCG";
     const grandTotal = result.grand_total || ticket.grand_total;
+    const orderId = ticket.order_id;
+
+    // Get lottery IDs from the items
+    const lotteryIds = items
+      .map((item: any) => item.lottery_id)
+      .filter((id: any) => id)
+      .join(",");
+
+    console.log("Creating payment intent for order:", {
+      orderId,
+      amount: Number(grandTotal),
+      lotteryIds,
+      currency
+    });
+
+    // IMPORTANT: Create a new payment intent for this order
+    // Use the same format as the old working version
+    const paymentResponse = await createPaymentIntent({
+      amount: Math.round(Number(grandTotal) * 100), // Convert to cents
+      lotteryId: lotteryIds || undefined, // Pass lotteryId if available
+      order_id: orderId, // Some backends might accept this
+      currency: currency.toLowerCase() === "xcg" ? "ANG" : currency.toLowerCase() // Map XCG to ANG if needed
+    });
+
+    console.log("Payment response:", paymentResponse);
+
+    const clientSecret = paymentResponse?.data?.result?.clientSecret;
+
+    if (!clientSecret) {
+      console.error("No client_secret in response:", paymentResponse);
+      showToast("Failed to initialize payment - no client secret", "error");
+      return;
+    }
 
     const orderInfo = {
-      order_id: ticket.order_id,
-      total_price: grandTotal,                    // Amount in selected currency
-      local_total: grandTotal,                    // Same now (no conversion)
-      currency: currency,                         // ← This is the key!
+      order_id: orderId,
+      total_price: grandTotal,
+      local_total: grandTotal,
+      currency: currency,
+      client_secret: clientSecret,
       ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
       selected_lotteries: items.map((i: any) => i.abbreviation?.[0] ?? "-"),
     };
 
+    console.log("Order info for payment:", orderInfo);
     setSelectedPaymentTicket(orderInfo);
     setPaymentMethodOpen(true);
-  };
+  } catch (error: any) {
+    console.error("Error in openPayment:", error);
+    console.error("Error response:", error.response);
+    handleApiError(error, "Failed to initialize payment");
+    showToast(`Failed to prepare payment: ${error.message || "Unknown error"}`, "error");
+  }
+};
 
+  // Also update the handlePaymentMethodSelect function:
   const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
     if (!selectedPaymentTicket) return;
+
     setPaymentMethodOpen(false);
     if (method === "stripe") {
+      // Now we have client_secret from createPaymentIntent
       setPaymentTicket({
-        ...selectedPaymentTicket,
-        grand_total: selectedPaymentTicket.local_total,
+        order_id: selectedPaymentTicket.order_id,
+        client_secret: selectedPaymentTicket.client_secret,
+        grand_total: selectedPaymentTicket.local_total || selectedPaymentTicket.total_price,
+        currency: selectedPaymentTicket.currency,
       });
       setPaymentOpen(true);
     } else if (method === "whatsapp") {
       setWhatsAppOpen(true);
     }
   };
+
+  // const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
+  //   if (!selectedPaymentTicket) return;
+  // //   if (method === "stripe" && !selectedPaymentTicket.client_secret) {
+  // //   showToast("Payment session expired. Please create aựa new order.", "error");
+  // //   setPaymentMethodOpen(false);
+  // //   return;
+  // // }
+  //   setPaymentMethodOpen(false);
+  //   if (method === "stripe") {
+  //     setPaymentTicket({
+  //       order_id: selectedPaymentTicket.order_id,
+  //       client_secret: selectedPaymentTicket.client_secret!,  // ← THIS WAS MISSING
+  //       grand_total: selectedPaymentTicket.local_total || selectedPaymentTicket.total_price,
+  //       currency: selectedPaymentTicket.currency,
+  //     });
+  //     setPaymentOpen(true);
+  //   } else if (method === "whatsapp") {
+  //     setWhatsAppOpen(true);
+  //   }
+  // };
 
   const closeWhatsApp = () => {
     setWhatsAppOpen(false);
@@ -156,6 +228,41 @@ const Tickets: React.FC = () => {
   useEffect(() => {
     fetchLotteryRecords();
   }, [fetchLotteryRecords, selectedTab]);
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get("payment_intent") && query.get("redirect_status") === "succeeded") {
+      showToast("Payment successful with iDEAL!", "success");
+      fetchLotteryRecords(); // Refresh tickets
+    }
+  }, [location.search]);
+  // ADD THIS useEffect ANYWHERE in your Tickets component (after other useEffects)
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+
+    // iDEAL success redirect redirect
+    if (query.get("ideal_success") === "true") {
+      const orderId = query.get("order_id");
+      if (orderId) {
+        console.log("iDEAL payment successful — completing order:", orderId);
+        showToast("Payment successful with iDEAL!", "success");
+
+        // Mark order as completed
+        orderComplete(parseInt(orderId));
+
+        // Refresh tickets list
+        fetchLotteryRecords();
+
+        // Clean URL
+        window.history.replaceState({}, "", "/tickets");
+      }
+    }
+
+    // Optional: Handle cancelled payments
+    if (query.get("ideal_success") === "false" || query.get("redirect_status") === "failed") {
+      showToast("Payment was cancelled or failed", "error");
+      window.history.replaceState({}, "", "/tickets");
+    }
+  }, [location.search]);
 
   const filteredTickets = useMemo(() => {
     const term = (searchTerm || "").toLowerCase();
@@ -776,10 +883,13 @@ const Tickets: React.FC = () => {
       {paymentOpen && paymentTicket && (
         <StripeCheckout
           amount={Number(paymentTicket.grand_total) || 0}
-          localAmount={Number(paymentTicket.local_total) || Number(paymentTicket.grand_total) || 0}
+          // localAmount={Number(paymentTicket.local_total) || Number(paymentTicket.grand_total) || 0}
           currency={paymentTicket.currency || "XCG"}
-          lotteryId={paymentTicket.lottery_id}
-          newOrderInfo={{ order_id: paymentTicket.order_id }}
+          // lotteryId={paymentTicket.lottery_id}
+          newOrderInfo={{
+            order_id: paymentTicket.order_id,
+            client_secret: paymentTicket.client_secret,
+          }}
           onClose={closePayment}
         />
       )}

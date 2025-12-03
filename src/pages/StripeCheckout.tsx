@@ -1,129 +1,162 @@
+// StripeCheckout.tsx — FULL DEBUG VERSION
 import React, { useState } from "react";
-import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { X } from "lucide-react";
-import { createPaymentIntent } from "../utils/services/Payment.services";
 import { showToast } from "../utils/toast.util";
-import { handleApiError } from "../hooks/handleApiError";
 import { orderComplete } from "../utils/services/Order.services";
 
 interface StripeCheckoutProps {
   amount: number;
-  localAmount: number;
-  currency: string;
-  lotteryId?: string;
-  newOrderInfo: { order_id?: number } | null; // Match the Order interface structure
+  currency: "XCG" | "USD" | "EUR";
+  newOrderInfo: { order_id?: number; client_secret?: string } | null;
   onClose: (success: boolean) => void;
 }
 
 const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   amount,
-  localAmount,
   currency,
-  lotteryId,
   newOrderInfo,
   onClose,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Debug log to verify props
-  console.log("StripeCheckout props:", { amount, localAmount, lotteryId, newOrderInfo });
+  console.log("StripeCheckout DEBUG:", {
+    stripe: !!stripe,
+    client_secret: newOrderInfo?.client_secret,
+    order_id: newOrderInfo?.order_id,
+    currency,
+  });
 
-  const CARD_ELEMENT_OPTIONS = {
-    style: {
-      base: {
-        color: "#ffffff",
-        fontSize: "16px",
-        fontFamily: "'Helvetica Neue', Helvetica, sans-serif",
-        "::placeholder": {
-          color: "#cccccc",
+ const handleIdealPayment = async () => {
+  if (!stripe || !newOrderInfo?.client_secret) {
+    showToast("Stripe not ready", "error");
+    return;
+  }
+
+  console.log("Starting iDEAL payment with client_secret:", newOrderInfo.client_secret);
+
+  setLoading(true);
+  try {
+    const { error, paymentIntent } = await stripe.confirmIdealPayment(
+      newOrderInfo.client_secret,
+      {
+        payment_method: {
+          ideal: {}, // ← REQUIRED: empty ideal object
+          billing_details: {
+            name: "Test Customer",
+            email: "test@example.com",
+          },
         },
-      },
-      invalid: {
-        color: "#fa755a",
-        iconColor: "#fa755a",
-      },
-    },
-  };
+        return_url: `${window.location.origin}/tickets?ideal_success=true&order_id=${newOrderInfo.order_id}`,
+      }
+    );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
+    if (error) {
+      console.error("iDEAL Error:", error);
+      showToast(`iDEAL failed: ${error.message}`, "error");
+    } else {
+      console.log("iDEAL redirecting...", paymentIntent);
+      showToast("Redirecting to your bank...", "info");
+      // Success → Stripe redirects automatically
+    }
+  } catch (err: any) {
+    console.error("iDEAL Exception:", err);
+    showToast(`iDEAL failed: ${err.message || "Unknown error"}`, "error");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleCardPayment = async () => {
+    if (!stripe || !elements || !newOrderInfo?.client_secret) {
+      showToast("Payment setup missing", "error");
+      return;
+    }
 
     setLoading(true);
-    setError(null);
+    console.log("Starting card payment...");
 
-    try {
-      const response = await createPaymentIntent({
-        amount: amount,
-        currency: currency.toLowerCase(),
-        lotteryId,
-      });
+    const result = await stripe.confirmCardPayment(newOrderInfo.client_secret, {
+      payment_method: { card: elements.getElement(CardElement)! },
+    });
 
-      const { clientSecret } = response?.data?.result || {};
+    console.log("Card payment result:", result);
 
-      if (!clientSecret) {
-        throw new Error("Failed to retrieve client secret from server.");
-      }
-
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement)!,
-        },
-      });
-
-      if (result.error) {
-        const errorMessage = result.error.message || "Payment failed.";
-        setError(errorMessage);
-        showToast(errorMessage, "error");
-        onClose(false);
-      } else if (result.paymentIntent?.status === "succeeded") {
-        if (newOrderInfo?.order_id) {
-          await orderComplete(newOrderInfo.order_id);
-        }
-        showToast("Payment Successful!", "success");
-        onClose(true);
-      }
-    } catch (err: any) {
-      console.error("Payment error:", err);
-      const errorMessage =
-        err.response?.data?.message || "Failed to process payment.";
-      setError(errorMessage);
-      handleApiError(err, errorMessage);
-      showToast(errorMessage, "error");
+    if (result.error) {
+      showToast(`Card failed: ${result.error.message}`, "error");
       onClose(false);
-    } finally {
-      setLoading(false);
+    } else {
+      await orderComplete(newOrderInfo.order_id!);
+      showToast("Card payment successful!", "success");
+      onClose(true);
     }
+    setLoading(false);
   };
 
+  const symbol = currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€";
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-white">Pay with Stripe</h3>
-          <button onClick={() => onClose(false)} className="text-gray-400 hover:text-white cursor-pointer">
-            <X className="w-6 h-6" />
+    <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#1A1C23] w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+        <div className="bg-gradient-to-b from-[#1A1C23] to-[#14151A] p-4 text-center relative">
+          <button onClick={() => onClose(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white">
+            <X className="w-5 h-5" />
           </button>
+          <h2 className="text-xl font-bold text-white mb-3">Complete Payment</h2>
+          <p className="text-3xl font-bold text-[#EDB726]">
+            {symbol}{amount.toFixed(2)}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-[#1D1F27] p-3 rounded-lg border border-gray-600">
-            <CardElement options={CARD_ELEMENT_OPTIONS} className="text-white" />
+        {/* iDEAL BUTTON — ONLY FOR EUR */}
+        {currency === "EUR" && (
+          <div className="px-6 pt-4">
+            <button
+              onClick={handleIdealPayment}
+              disabled={loading}
+              className="w-full bg-[#00AA4F] hover:bg-[#008837] text-white font-bold text-xl py-3 rounded-2xl transition-all disabled:opacity-70 shadow-lg flex items-center justify-center gap-3"
+            >
+              <span>iDEAL</span>
+            </button>
+            <p className="text-center text-sm text-gray-400 mt-3">
+              Pay instantly with your Dutch bank
+            </p>
+          </div>
+        )}
+
+        {currency === "EUR" && (
+          <div className="px-6 my-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-4 bg-[#1A1C23] text-gray-500 text-sm">or pay with card</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 pb-8">
+          <div className="bg-[#2A2D36] rounded-2xl p-4 border border-[#3A3D46]">
+            <CardElement options={{
+              style: {
+                base: { color: "#fff", fontSize: "18px", "::placeholder": { color: "#888" } },
+                invalid: { color: "#fa755a" },
+              },
+            }} />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
           <button
-            type="submit"
-            disabled={!stripe || loading}
-            className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-3 px-6 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer"
+            onClick={handleCardPayment}
+            disabled={loading}
+            className="w-full mt-6 bg-[#EDB726] hover:bg-[#d4a422] text-black font-bold text-xl py-3 rounded-2xl transition-all disabled:opacity-70 shadow-lg"
           >
-            {loading ? "Processing..." : `Pay ${currency === "XCG" ? "ƒ" : currency === "USD" ? "$" : "€"} ${amount.toFixed(2)}`} {/* Use localAmount with 2 decimal places */}
+            {loading ? "Processing..." : `Pay ${symbol}${amount.toFixed(2)}`}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
