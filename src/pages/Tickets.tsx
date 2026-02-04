@@ -57,73 +57,65 @@ const Tickets: React.FC = () => {
 
   // Replace the openPayment function in your new Tickets.tsx
   const openPayment = async (ticket: any) => {
-  try {
-    // Fetch order details
-    const resp = await getOrderDetails(ticket.order_id);
-    const result = resp?.data?.result;
-    
-    if (!result) {
-      showToast("Failed to load order details", "error");
-      return;
+    try {
+      // Fetch order details
+      const resp = await getOrderDetails(ticket.order_id);
+      const result = resp?.data?.result;
+
+      if (!result) {
+        showToast("Failed to load order details", "error");
+        return;
+      }
+
+      const items = result.details ?? [];
+      const currency = result.currency || "XCG";
+      const grandTotal = result.grand_total || ticket.grand_total;
+      const orderId = ticket.order_id;
+
+      // Get lottery IDs from the items
+      const lotteryIds = items
+        .map((item: any) => item.lottery_id)
+        .filter((id: any) => id)
+        .join(",");
+
+      // IMPORTANT: Create a new payment intent for this order
+      // Use the same format as the old working version
+      const paymentResponse = await createPaymentIntent({
+        amount: Math.round(Number(grandTotal) * 100), // Convert to cents
+        lotteryId: lotteryIds || undefined, // Pass lotteryId if available
+        order_id: orderId, // Some backends might accept this
+        currency: currency.toLowerCase() === "xcg" ? "xcg" : currency.toLowerCase() // Map XCG to ANG if needed
+      });
+
+
+      const clientSecret = paymentResponse?.data?.result?.clientSecret;
+
+      if (!clientSecret) {
+        console.error("No client_secret in response:", paymentResponse);
+        showToast("Failed to initialize payment - no client secret", "error");
+        return;
+      }
+
+      const orderInfo = {
+        order_id: orderId,
+        total_price: grandTotal,
+        local_total: grandTotal,
+        currency: currency,
+        client_secret: clientSecret,
+        ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
+        selected_lotteries: items.map((i: any) => i.abbreviation?.[0] ?? "-"),
+      };
+
+      console.log("Order info for payment:", orderInfo);
+      setSelectedPaymentTicket(orderInfo);
+      setPaymentMethodOpen(true);
+    } catch (error: any) {
+      console.error("Error in openPayment:", error);
+      console.error("Error response:", error.response);
+      handleApiError(error, "Failed to initialize payment");
+      showToast(`Failed to prepare payment: ${error.message || "Unknown error"}`, "error");
     }
-
-    const items = result.details ?? [];
-    const currency = result.currency || "XCG";
-    const grandTotal = result.grand_total || ticket.grand_total;
-    const orderId = ticket.order_id;
-
-    // Get lottery IDs from the items
-    const lotteryIds = items
-      .map((item: any) => item.lottery_id)
-      .filter((id: any) => id)
-      .join(",");
-
-    console.log("Creating payment intent for order:", {
-      orderId,
-      amount: Number(grandTotal),
-      lotteryIds,
-      currency
-    });
-
-    // IMPORTANT: Create a new payment intent for this order
-    // Use the same format as the old working version
-    const paymentResponse = await createPaymentIntent({
-      amount: Math.round(Number(grandTotal) * 100), // Convert to cents
-      lotteryId: lotteryIds || undefined, // Pass lotteryId if available
-      order_id: orderId, // Some backends might accept this
-      currency: currency.toLowerCase() === "xcg" ? "ANG" : currency.toLowerCase() // Map XCG to ANG if needed
-    });
-
-    console.log("Payment response:", paymentResponse);
-
-    const clientSecret = paymentResponse?.data?.result?.clientSecret;
-
-    if (!clientSecret) {
-      console.error("No client_secret in response:", paymentResponse);
-      showToast("Failed to initialize payment - no client secret", "error");
-      return;
-    }
-
-    const orderInfo = {
-      order_id: orderId,
-      total_price: grandTotal,
-      local_total: grandTotal,
-      currency: currency,
-      client_secret: clientSecret,
-      ticket_numbers: items.map((i: any) => i.lottery_number ?? 0),
-      selected_lotteries: items.map((i: any) => i.abbreviation?.[0] ?? "-"),
-    };
-
-    console.log("Order info for payment:", orderInfo);
-    setSelectedPaymentTicket(orderInfo);
-    setPaymentMethodOpen(true);
-  } catch (error: any) {
-    console.error("Error in openPayment:", error);
-    console.error("Error response:", error.response);
-    handleApiError(error, "Failed to initialize payment");
-    showToast(`Failed to prepare payment: ${error.message || "Unknown error"}`, "error");
-  }
-};
+  };
 
   // Also update the handlePaymentMethodSelect function:
   const handlePaymentMethodSelect = (method: "stripe" | "whatsapp") => {
