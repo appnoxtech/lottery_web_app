@@ -1,163 +1,154 @@
-import React, { useState } from "react";
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { api, ApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { prettyPhone } from "../lib/phone";
+import { fmtCountdown, fmtTime } from "../lib/time";
+import { useServerClock } from "../lib/useServerClock";
+import type { Customer, GameInfo } from "../lib/types";
 
-const Home: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+export default function Home() {
+  const { session, signOut, setCustomer, isNew } = useAuth();
+  const now = useServerClock();
+  const [games, setGames] = useState<GameInfo[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setGames(await api.get<GameInfo[]>("games"));
+      setError(null);
+    } catch (e) {
+      setError((e as ApiError).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const customer = session!.customer;
 
   return (
-    <div className="h-screen bg-[#1D1F27] text-white flex overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar />
+    <div className="mx-auto min-h-screen max-w-md pb-10">
+      <header className="flex items-center justify-between bg-brand px-5 pb-6 pt-8 text-white">
+        <h1 className="text-2xl font-extrabold">
+          Hopi<span className="text-accent">Suerte</span>
+        </h1>
+        <div className="text-right text-sm">
+          <div className="font-semibold">{customer.name ?? prettyPhone(customer.phone)}</div>
+          <button onClick={() => void signOut()} className="text-white/80 underline">
+            Sign out
+          </button>
+        </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64">
-        {/* Header */}
-        <Header
-          isMenuOpen={isMenuOpen}
-          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
-        />
+      <main className="grid gap-5 px-5 pt-5">
+        {!customer.name && <NamePrompt onSaved={setCustomer} welcome={isNew} />}
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Welcome to Lottery Dashboard
-              </h1>
-              <p className="text-gray-300">
-                Manage your lottery system from this dashboard
-              </p>
-            </div>
+        <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-dark">
+          Buying tickets arrives in the next update. For now you can see which games are open and when they close. All times are Curaçao time.
+        </p>
 
-            {/* Dashboard Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* New Lottery Card */}
-
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 hover:border-[#EDB726] transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">
-                    New Lottery
-                  </h3>
-                  <div className="w-12 h-12 bg-[#EDB726] rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-[#1D1F27]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-gray-400 mb-4">
-                  Create and manage new lottery draws
-                </p>
-                <Link to="/new-lottery">
-                  <button className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-2 px-4 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer">
-                    Create Lottery
-                  </button>
-                </Link>
-              </div>
-
-              {/* Tickets Card */}
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 hover:border-[#EDB726] transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Tickets</h3>
-                  <div className="w-12 h-12 bg-[#EDB726] rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-[#1D1F27]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-gray-400 mb-4">
-                  View and manage lottery tickets
-                </p>
-                <Link to="/tickets">
-                  <button className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-2 px-4 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer">
-                    View Tickets
-                  </button>
-                </Link>
-              </div>
-
-              {/* Winners Card */}
-              <div className="bg-[#2A2D36] rounded-lg p-6 border border-gray-700 hover:border-[#EDB726] transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Winners</h3>
-                  <div className="w-12 h-12 bg-[#EDB726] rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-[#1D1F27]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 3l14 9-14 9V3z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-gray-400 mb-4">
-                  View lottery winners and results
-                </p>
-                <Link to="/winners">
-                  <button className="w-full bg-[#EDB726] text-[#1D1F27] font-semibold py-2 px-4 rounded-lg hover:bg-[#d4a422] transition-colors cursor-pointer">
-                    View Winners
-                  </button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Stats Section */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Quick Stats
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                  <div className="text-2xl font-bold text-[#EDB726]">24</div>
-                  <div className="text-sm text-gray-400">Active Lotteries</div>
-                </div>
-                <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                  <div className="text-2xl font-bold text-[#EDB726]">1,234</div>
-                  <div className="text-sm text-gray-400">Total Tickets</div>
-                </div>
-                <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                  <div className="text-2xl font-bold text-[#EDB726]">56</div>
-                  <div className="text-sm text-gray-400">
-                    Winners This Month
-                  </div>
-                </div>
-                <div className="bg-[#2A2D36] rounded-lg p-4 border border-gray-700">
-                  <div className="text-2xl font-bold text-[#EDB726]">2.5L</div>
-                  <div className="text-sm text-gray-400">Total Prizes</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
+        <section aria-label="Games" className="grid gap-3">
+          <h2 className="text-lg font-bold">Today&apos;s games</h2>
+          {error && (
+            <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
+              {error}
+            </p>
+          )}
+          {games === null && !error && <p className="text-muted">Loading…</p>}
+          {games?.map((game) => (
+            <GameCard key={game.id} game={game} now={now} onRefresh={load} />
+          ))}
+        </section>
+      </main>
     </div>
   );
-};
+}
 
-export default Home;
+function GameCard({ game, now, onRefresh }: { game: GameInfo; now: number | null; onRefresh: () => void }) {
+  const draw = game.draw;
+  const opens = draw ? new Date(draw.opens_at).getTime() : 0;
+  const closes = draw ? new Date(draw.closes_at).getTime() : 0;
+
+  // Decided from the exact instants and the server clock, the same rule the server uses for purchases.
+  const state: "open" | "soon" | "closed" = !draw || now === null ? (game.sales === "open" ? "open" : game.sales === "not_open_yet" ? "soon" : "closed") : now >= closes ? "closed" : now >= opens ? "open" : "soon";
+
+  // When the countdown reaches zero, ask the server what comes next.
+  useEffect(() => {
+    if (now !== null && draw && state === "open" && now >= closes) onRefresh();
+  }, [now, draw, state, closes, onRefresh]);
+
+  return (
+    <article className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-sm" data-state={state}>
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand text-lg font-extrabold text-white">{game.code}</span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-bold">{game.name}</div>
+        {state === "open" && draw && now !== null && (
+          <div className="text-sm text-muted">
+            Closes at <b className="text-ink">{fmtTime(draw.closes_at, now)}</b> · {fmtCountdown((closes - now) / 1000)} left
+          </div>
+        )}
+        {state === "soon" && draw && now !== null && <div className="text-sm text-muted">Opens {fmtTime(draw.opens_at, now)}</div>}
+        {state === "closed" && <div className="text-sm text-muted">Closed for now</div>}
+      </div>
+      <span
+        className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+          state === "open" ? "bg-green-100 text-green-800" : state === "soon" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
+        }`}
+      >
+        {state === "open" ? "Open" : state === "soon" ? "Soon" : "Closed"}
+      </span>
+    </article>
+  );
+}
+
+function NamePrompt({ onSaved, welcome }: { onSaved: (c: Customer) => void; welcome: boolean }) {
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hidden, setHidden] = useState(false);
+
+  if (hidden) return null;
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (saving || name.trim().length < 2) return;
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(await api.patch<Customer>("me", { name: name.trim() }));
+    } catch (err) {
+      setError((err as ApiError).field("name") ?? (err as ApiError).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={save} className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+      <div>
+        <div className="font-bold">{welcome ? "Welcome to HopiSuerte!" : "Add your name"}</div>
+        <div className="text-sm text-muted">What should we call you? (optional)</div>
+      </div>
+      <input
+        aria-label="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={100}
+        placeholder="Your name"
+        className="h-12 rounded-xl border-2 border-line px-4 outline-none focus:border-brand"
+      />
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="flex gap-3">
+        <button type="submit" disabled={saving || name.trim().length < 2} className="h-11 flex-1 rounded-xl bg-brand font-bold text-white disabled:opacity-50">
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button type="button" onClick={() => setHidden(true)} className="h-11 rounded-xl px-4 text-muted">
+          Skip
+        </button>
+      </div>
+    </form>
+  );
+}

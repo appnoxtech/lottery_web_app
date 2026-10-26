@@ -1,178 +1,206 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { loginSchema } from '../utils/validationSchemas';
-import { userSignIn } from '../utils/services/Registration.services';
-import { showToast } from '../utils/toast.util';
-import { Input, Button, PhoneInput } from '../components/common';
-// import { User, Lock } from 'lucide-react';
-import { setUser } from '../store/slicer/userSlice';
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import CodeInput from "../components/CodeInput";
+import { api, ApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { isValidPhone, prettyPhone } from "../lib/phone";
+import type { Customer } from "../lib/types";
 
-interface LoginFormData {
-  phoneNumber: string;
-  password: string;
-}
+type Step = "phone" | "code";
 
-const Login: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+export default function Login() {
+  const { signIn, notice, clearNotice } = useAuth();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: yupResolver(loginSchema),
-    defaultValues: {
-      phoneNumber: '',
-      password: '',
-    },
-  });
+  const [step, setStep] = useState<Step>("phone");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [phone, setPhone] = useState(""); // E.164, as the server understood it
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [codeInvalid, setCodeInvalid] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const submitting = useRef(false); // blocks a double tap before React re-renders
 
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const phoneOk = isValidPhone(phoneInput);
+  const phoneError = phoneTouched && !phoneOk ? (phoneInput.trim() ? "Enter a valid phone number, like 9 518 1234 or +599 9 518 1234" : "Enter your phone number") : null;
+
+  const requestCode = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (submitting.current || !phoneOk) {
+      setPhoneTouched(true);
+      return;
+    }
+    submitting.current = true;
+    setLoading(true);
+    setError(null);
+    clearNotice();
     try {
-      const response = await userSignIn({
-        phone_number: `+${data.phoneNumber}`,
-        password: data.password,
-      });
-
-      console.log('Login response:', response); // Debug log
-
-      if (response?.data?.success && response?.data?.result) {
-        showToast(response.data.message || 'Login successful!', 'success');
-        
-        // Extract token and user data from the correct response structure
-        const token = response.data.result.token;
-        const userData = response.data.result.data;
-        
-        // Store token and user data in localStorage
-        localStorage.setItem('userToken', token);
-        localStorage.setItem('userData', JSON.stringify(userData));
-        
-        // Dispatch user data to Redux store
-        dispatch(setUser({
-          userData: userData as Record<string, string>,
-          token: token
-        }));
-        // Debug log
-        console.log('User data stored:', userData); // Debug log
-        
-        // Small delay to ensure data is stored before navigation
-        setTimeout(() => {
-          navigate('/new-lottery', { replace: true });
-        }, 100);
+      const result = await api.post<{ phone: string; resend_after_seconds: number }>("auth/otp/request", { phone: phoneInput.trim() });
+      setPhone(result.phone);
+      setCode("");
+      setCodeInvalid(false);
+      setCooldown(result.resend_after_seconds);
+      setStep("code");
+    } catch (err) {
+      const apiError = err as ApiError;
+      if (apiError.code === "otp_too_soon") {
+        // A code was sent a moment ago: carry on with that one.
+        setPhone(phoneInput.trim());
+        setCooldown(apiError.retryAfter ?? 30);
+        setStep("code");
+        setError("A code was sent a moment ago. Enter it below.");
       } else {
-        showToast('Login response invalid. Please try again.', 'error');
+        setError(apiError.field("phone") ?? apiError.message);
       }
-    } catch (error: unknown) {
-      console.error('Login error:', error); // Debug log
-      let errorMessage = 'Login failed. Please try again.';
-      if (typeof error === 'object' && error !== null && 'response' in error && typeof error.response === 'object' && error.response !== null && 'data' in error.response && typeof error.response.data === 'object' && error.response.data !== null && 'message' in error.response.data) {
-        errorMessage = (error.response.data as { message: string }).message;
-      }
-      showToast(errorMessage, 'error');
     } finally {
-      setIsLoading(false);
+      submitting.current = false;
+      setLoading(false);
     }
   };
 
+  const verify = async (value: string) => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setLoading(true);
+    setError(null);
+    setCodeInvalid(false);
+    try {
+      const result = await api.post<{ token: string; customer: Customer; is_new: boolean }>("auth/otp/verify", { phone, code: value });
+      // Signing in is enough: the guest-only route then moves the customer to the home screen.
+      signIn({ token: result.token, customer: result.customer }, result.is_new);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setCode("");
+      if (apiError.code === "invalid_code") {
+        setCodeInvalid(true);
+        setError("That code is not right, or it has expired. Check the message and try again.");
+      } else if (apiError.code.startsWith("account_")) {
+        setError(apiError.message);
+        setStep("phone");
+      } else {
+        setError(apiError.message);
+      }
+    } finally {
+      submitting.current = false;
+      setLoading(false);
+    }
+  };
+
+  const onCodeChange = (value: string) => {
+    setCode(value);
+    setCodeInvalid(false);
+    if (value.length === 4) void verify(value);
+  };
+
+  const changeNumber = () => {
+    setStep("phone");
+    setError(null);
+    setCode("");
+    setCooldown(0);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1D1F27] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          
-
-          {/* Logo Image Instead of UserPlus */}
-          <div className="mx-auto mt-6  h-16 w-16 flex items-center justify-center rounded-full  shadow-lg overflow-hidden">
-            <img
-              src="/image.png" // ✅ public folder image
-              alt="Logo"
-              className="h-14 w-14 object-contain"
-            />
+    <div className="mx-auto flex min-h-screen max-w-md flex-col">
+      <header className="bg-brand px-6 pb-10 pt-12 text-white">
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-accent text-2xl text-brand" aria-hidden="true">
+            ☘
+          </span>
+          <div>
+            <h1 className="text-3xl font-extrabold leading-none">
+              Hopi<span className="text-accent">Suerte</span>
+            </h1>
+            <p className="mt-1 text-sm italic text-white/80">Tú suerte, nuestro compromiso</p>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-8">
-            Wega di Number <span className="block text-[#EDB726] tracking-[0.8em] text-semibold text-lg">online</span>
-          </h1>
-
-          {/* Subtitle */}
-          <h3 className="mt-6 text-center text-2xl font-medium text-white sm:text-3xl">
-            Welcome back! <span className="text-[#EDB726]">login</span>
-          </h3>
         </div>
+      </header>
 
-        <div className="bg-[#2A2D36] py-8 px-6 shadow-xl rounded-xl border border-gray-700">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <Controller
-                name="phoneNumber"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    // label="Phone Number"
-                    value={field.value}
-                    onChange={field.onChange}
-                    error={errors.phoneNumber?.message}
-                    placeholder="Phone Number"
-                  />
-                )}
-              />
-            </div>
-
-            <div>
-              <Controller
-                name="password"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    // label="Password"
-                    isPassword={true}
-                    placeholder="Password"
-                    error={errors.password?.message}
-                    // icon={<Lock className="h-5 w-5" />}
-                  />
-                )}
-              />
-            </div>
-
-            <div className="flex float-right">
-              <Link
-                to="/forgot-password"
-                className="text-sm font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-
-            <div>
-              <Button
-                type="submit"
-                className="w-full py-3 text-base font-bold shadow-lg hover:shadow-xl"
-                isLoading={isLoading}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' :'Login'}
-              </Button>
-            </div>
-          </form>
-        </div>
-        <p className="mt-2 text-center text-sm text-gray-300">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="underline font-medium text-[#EDB726] hover:text-[#d4a422] transition-colors duration-200 hover:underline"
-            >
-              Signup
-            </Link>
+      <main className="-mt-5 flex-1 rounded-t-3xl bg-white px-6 pb-10 pt-8 shadow-lg">
+        {notice && (
+          <p role="alert" className="mb-5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {notice}
           </p>
-        
-      </div>
+        )}
+
+        {step === "phone" ? (
+          <form onSubmit={requestCode} noValidate className="grid gap-5">
+            <div>
+              <h2 className="text-2xl font-bold">Sign in</h2>
+              <p className="mt-1 text-muted">Enter your phone number. We send you a 4-digit code.</p>
+            </div>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold">Phone number</span>
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="9 518 1234"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                onBlur={() => setPhoneTouched(true)}
+                aria-invalid={!!phoneError || undefined}
+                className={`h-14 rounded-xl border-2 px-4 text-lg outline-none focus:border-brand ${phoneError ? "border-danger" : "border-line"}`}
+              />
+              <span className={`min-h-5 text-sm ${phoneError ? "text-danger" : "text-muted"}`}>
+                {phoneError ?? "Curaçao numbers work as they are. For another country start with +."}
+              </span>
+            </label>
+
+            {error && (
+              <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !phoneOk}
+              className="h-14 rounded-xl bg-ok text-lg font-bold text-white transition enabled:active:bg-ok-dark disabled:opacity-50"
+            >
+              {loading ? "Sending…" : "Send me the code"}
+            </button>
+          </form>
+        ) : (
+          <div className="grid gap-6">
+            <div>
+              <h2 className="text-2xl font-bold">Enter the code</h2>
+              <p className="mt-1 text-muted">
+                We sent a 4-digit code to <b className="text-ink">{prettyPhone(phone)}</b>.
+              </p>
+            </div>
+
+            <CodeInput value={code} onChange={onCodeChange} disabled={loading} invalid={codeInvalid} />
+
+            {error && (
+              <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-danger">
+                {error}
+              </p>
+            )}
+            {loading && <p className="text-center text-sm text-muted">Checking…</p>}
+
+            <div className="grid gap-3 text-center text-sm">
+              <button
+                type="button"
+                onClick={() => void requestCode()}
+                disabled={cooldown > 0 || loading}
+                className="font-semibold text-brand disabled:text-muted"
+              >
+                {cooldown > 0 ? `Send a new code in ${cooldown}s` : "Send a new code"}
+              </button>
+              <button type="button" onClick={changeNumber} className="text-muted underline">
+                Use a different number
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
-};
-
-export default Login;
+}

@@ -1,69 +1,30 @@
-# React + TypeScript + Vite
+# HopiSuerte – customer web app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + Tailwind. Phone-first (works from 360 px up). English only.
 
-Currently, two official plugins are available:
+Branch `redesign/main` is a clean rebuild; the previous Stripe/Redux prototype is in git history on `development`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Run it
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+npm install
+npm run dev        # http://localhost:5173 and http://<PC-IP>:5173 for phones on the same Wi-Fi
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server forwards `/api` to the Laravel API (default `http://127.0.0.1:3002`, change with `VITE_API_PROXY`, see `.env.example`). Start the API first: `php artisan serve --host=0.0.0.0 --port=3002` in `lottery_app_backend`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## What is here (Phase 2)
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Sign in with a phone number and a 4-digit code (no password, no separate registration). Numbers typed the local Curaçao way work.
+- Home: today's games with the closing time and a countdown driven by the **server clock** (`GET /api/v1/time`), always in Curaçao time whatever the phone is set to.
+- The session is kept in `localStorage` (30 days, revoked by the server when an account is suspended or blocked).
+
+Buying tickets, balance, tickets and results arrive in the next phases.
+
+## Checks
+
+`npx tsc -b` · `npx eslint .` · `npm run build`
+
+## Login codes in development
+
+The API's `log` OTP driver writes codes to `lottery_app_backend/storage/logs/otp.log`. From the backend folder: `php artisan otp:latest 5181234`.
