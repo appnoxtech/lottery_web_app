@@ -14,6 +14,11 @@ export function fmtTime(iso: string, nowMs: number): string {
   return ymd.format(when) === ymd.format(new Date(nowMs)) ? clock.format(when) : dayAndClock.format(when);
 }
 
+const dateAndClock = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+
+/** "27 Oct 2026, 3:05 pm" in Curaçao time. */
+export const fmtDateTime = (iso: string): string => dateAndClock.format(new Date(iso));
+
 export function fmtCountdown(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
   const h = Math.floor(s / 3600);

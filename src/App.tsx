@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
+import AppShell from "./components/AppShell";
+import Balance from "./pages/Balance";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 
@@ -25,7 +27,10 @@ export default function App() {
             <Route path="/login" element={<Login />} />
           </Route>
           <Route element={<RequireSession />}>
-            <Route path="/" element={<Home />} />
+            <Route element={<AppShell />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/balance" element={<Balance />} />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

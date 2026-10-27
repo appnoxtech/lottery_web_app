@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { prettyPhone } from "../lib/phone";
 import { fmtCountdown, fmtTime } from "../lib/time";
 import { useServerClock } from "../lib/useServerClock";
 import type { Customer, GameInfo } from "../lib/types";
 
 export default function Home() {
-  const { session, signOut, setCustomer, isNew } = useAuth();
+  const { session, setCustomer, isNew } = useAuth();
+  const customer = session!.customer;
   const now = useServerClock();
   const [games, setGames] = useState<GameInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,27 +27,13 @@ export default function Home() {
     return () => clearInterval(t);
   }, [load]);
 
-  const customer = session!.customer;
-
   return (
-    <div className="mx-auto min-h-screen max-w-md pb-10">
-      <header className="flex items-center justify-between bg-brand px-5 pb-6 pt-8 text-white">
-        <h1 className="text-2xl font-extrabold">
-          Hopi<span className="text-accent">Suerte</span>
-        </h1>
-        <div className="text-right text-sm">
-          <div className="font-semibold">{customer.name ?? prettyPhone(customer.phone)}</div>
-          <button onClick={() => void signOut()} className="text-white/80 underline">
-            Sign out
-          </button>
-        </div>
-      </header>
-
+    <>
       <main className="grid gap-5 px-5 pt-5">
         {!customer.name && <NamePrompt onSaved={setCustomer} welcome={isNew} />}
 
         <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-dark">
-          Buying tickets arrives in the next update. For now you can see which games are open and when they close. All times are Curaçao time.
+          Buying tickets arrives in the next update. For now you can see which games are open and when they close, and top up your balance. All times are Curaçao time.
         </p>
 
         <section aria-label="Games" className="grid gap-3">
@@ -63,7 +49,7 @@ export default function Home() {
           ))}
         </section>
       </main>
-    </div>
+    </>
   );
 }
 

@@ -31,6 +31,27 @@ export interface GameInfo {
   draw: DrawInfo | null;
 }
 
+export interface Wallet {
+  balance_cents: number;
+  balance: string; // "125.50"
+  currency: string; // XCG
+}
+
+export interface LedgerEntry {
+  id: number;
+  type: "topup" | "purchase" | "prize" | "adjustment";
+  amount_cents: number;
+  balance_after_cents: number;
+  created_at: string;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  per_page: number;
+  total: number;
+}
+
 export interface ServerTime {
   server_time_utc: string;
   timezone: string;
