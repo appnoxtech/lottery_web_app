@@ -102,6 +102,8 @@ export interface TicketEntry {
   number: string;
   stake_cents: number;
   stake: string;
+  result?: [string, string, string] | null; // the draw's published numbers, null until then
+  prizes?: TicketPrize[];
 }
 
 export interface Ticket {
@@ -113,5 +115,36 @@ export interface Ticket {
   entries_count: number;
   created_at: string;
   entries?: TicketEntry[];
+  qr?: string;
   replayed?: boolean;
+}
+
+export interface TicketPrize {
+  rank: 1 | 2 | 3;
+  amount: string;
+  status: "pending" | "credited" | "paid_out";
+}
+
+export interface ResultItem {
+  draw_id: number;
+  game_code: string;
+  game_name: string;
+  draw_date: string;
+  draw_at: string;
+  numbers: [string, string, string];
+  corrected: boolean;
+  published_at: string | null;
+}
+
+export interface MyPrize {
+  id: number;
+  rank: 1 | 2 | 3;
+  amount: string;
+  currency: string;
+  status: "pending" | "credited" | "paid_out";
+  ticket_serial: string;
+  game_code: string;
+  draw_date: string;
+  digits: number;
+  number: string;
 }

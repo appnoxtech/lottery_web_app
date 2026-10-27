@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import TicketSheet from "../components/TicketSheet";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -38,6 +38,17 @@ export default function Home() {
   const [rejected, setRejected] = useState<Set<string>>(new Set());
   const [ticket, setTicket] = useState<Ticket | null>(null);
 
+  // "Repeat" on a ticket sends the old games and numbers here. The customer reviews them; nothing is bought.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [repeat, setRepeat] = useState<{ games: string[]; digits: DigitType[]; text: string } | null>(
+    (location.state as { repeat?: { games: string[]; digits: DigitType[]; text: string } } | null)?.repeat ?? null,
+  );
+  const [repeatNote, setRepeatNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (location.state) navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
+
   const loadRules = useCallback(async () => {
     try {
       const r = await api.get<PurchaseRules>("purchase/rules");
@@ -49,6 +60,22 @@ export default function Home() {
       setLoadError((e as ApiError).message);
     }
   }, []);
+
+  useEffect(() => {
+    if (!repeat || !rules) return;
+    const open = repeat.games.filter((c) => rules.games.find((g) => g.code === c)?.is_open);
+    setGames(new Set(open));
+    setDigits(new Set(repeat.digits));
+    setText(repeat.text);
+    setRepeatNote(
+      open.length === repeat.games.length
+        ? "Your earlier numbers are filled in. Check them, then confirm."
+        : open.length
+          ? `Your earlier numbers are filled in. ${repeat.games.filter((c) => !open.includes(c)).join(", ")} is closed right now.`
+          : "Your earlier numbers are filled in, but none of those games is open right now. Choose another game.",
+    );
+    setRepeat(null);
+  }, [repeat, rules]);
 
   useEffect(() => {
     void loadRules();
@@ -172,6 +199,12 @@ export default function Home() {
     <>
       <main className="grid gap-5 px-5 pb-40 pt-5 lg:px-0 lg:pb-32 lg:pt-0">
         {!customer.name && <NamePrompt onSaved={setCustomer} welcome={isNew} />}
+
+        {repeatNote && (
+          <p role="status" data-testid="repeat-note" className="rounded-xl bg-brand-soft px-4 py-3 text-sm">
+            {repeatNote}
+          </p>
+        )}
 
         {loadError && (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
@@ -396,7 +429,7 @@ export default function Home() {
         </div>
       )}
 
-      {ticket && <TicketSheet ticket={ticket} onClose={() => setTicket(null)} />}
+      {ticket && <TicketSheet ticket={ticket} justBought onClose={() => setTicket(null)} />}
     </>
   );
 }

@@ -34,6 +34,9 @@ function Shell() {
           <NavLink to="/tickets" className={side}>
             My tickets
           </NavLink>
+          <NavLink to="/results" className={side}>
+            Results
+          </NavLink>
           <NavLink to="/balance" className={side}>
             Balance
           </NavLink>
@@ -72,6 +75,9 @@ function Shell() {
             </NavLink>
             <NavLink to="/tickets" className={tab}>
               Tickets
+            </NavLink>
+            <NavLink to="/results" className={tab}>
+              Results
             </NavLink>
             <NavLink to="/balance" className={tab}>
               Balance

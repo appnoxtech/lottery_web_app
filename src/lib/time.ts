@@ -27,3 +27,7 @@ export function fmtCountdown(totalSeconds: number): string {
   if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
   return `${m}m ${String(sec).padStart(2, "0")}s`;
 }
+
+/** "2026-10-26" -> "Mon 26 Oct 2026". A business date: no timezone shifting. */
+export const fmtBusinessDate = (date: string): string =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${date}T12:00:00Z`));
