@@ -48,7 +48,7 @@ export default function Balance() {
   };
 
   return (
-    <main className="grid gap-5 px-5 pt-5">
+    <main className="grid gap-5 px-5 pt-5 lg:grid-cols-[360px_1fr] lg:items-start lg:px-0 lg:pt-0">
       <section className="grid gap-3 rounded-2xl border border-line bg-white p-5 text-center shadow-sm">
         <div className="text-sm text-muted">Your balance</div>
         <div className="text-4xl font-extrabold" data-testid="balance">

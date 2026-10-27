@@ -29,15 +29,15 @@ export default function Home() {
 
   return (
     <>
-      <main className="grid gap-5 px-5 pt-5">
+      <main className="grid gap-5 px-5 pt-5 lg:px-0 lg:pt-0">
         {!customer.name && <NamePrompt onSaved={setCustomer} welcome={isNew} />}
 
         <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-dark">
           Buying tickets arrives in the next update. For now you can see which games are open and when they close, and top up your balance. All times are Curaçao time.
         </p>
 
-        <section aria-label="Games" className="grid gap-3">
-          <h2 className="text-lg font-bold">Today&apos;s games</h2>
+        <section aria-label="Games" className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <h2 className="text-lg font-bold lg:col-span-full">Today&apos;s games</h2>
           {error && (
             <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
               {error}
@@ -113,7 +113,7 @@ function NamePrompt({ onSaved, welcome }: { onSaved: (c: Customer) => void; welc
   };
 
   return (
-    <form onSubmit={save} className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+    <form onSubmit={save} className="grid gap-3 lg:max-w-md rounded-2xl border border-line bg-white p-4 shadow-sm">
       <div>
         <div className="font-bold">{welcome ? "Welcome to HopiSuerte!" : "Add your name"}</div>
         <div className="text-sm text-muted">What should we call you? (optional)</div>

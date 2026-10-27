@@ -106,7 +106,7 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col lg:my-10 lg:min-h-0 lg:max-w-lg lg:overflow-hidden lg:rounded-3xl lg:shadow-xl">
       <header className="bg-brand px-6 pb-10 pt-12 text-white">
         <div className="flex items-center gap-3">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-accent text-2xl text-brand" aria-hidden="true">
