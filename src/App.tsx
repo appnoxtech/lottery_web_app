@@ -4,6 +4,7 @@ import AppShell from "./components/AppShell";
 import Balance from "./pages/Balance";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Tickets from "./pages/Tickets";
 
 /** Signed-in customers only; a stored session is confirmed with the server before anything is shown. */
 function RequireSession() {
@@ -29,6 +30,7 @@ export default function App() {
           <Route element={<RequireSession />}>
             <Route element={<AppShell />}>
               <Route path="/" element={<Home />} />
+              <Route path="/tickets" element={<Tickets />} />
               <Route path="/balance" element={<Balance />} />
             </Route>
           </Route>

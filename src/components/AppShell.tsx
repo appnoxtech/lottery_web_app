@@ -31,6 +31,9 @@ function Shell() {
           <NavLink to="/" end className={side}>
             Games
           </NavLink>
+          <NavLink to="/tickets" className={side}>
+            My tickets
+          </NavLink>
           <NavLink to="/balance" className={side}>
             Balance
           </NavLink>
@@ -66,6 +69,9 @@ function Shell() {
           <nav className="mt-3 flex" aria-label="Main">
             <NavLink to="/" end className={tab}>
               Games
+            </NavLink>
+            <NavLink to="/tickets" className={tab}>
+              Tickets
             </NavLink>
             <NavLink to="/balance" className={tab}>
               Balance

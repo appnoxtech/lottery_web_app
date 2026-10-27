@@ -58,3 +58,60 @@ export interface ServerTime {
   utc_offset: string;
   business_date: string;
 }
+
+export interface GameRules {
+  code: string;
+  name: string;
+  is_open: boolean;
+  draw: DrawInfo | null;
+  stakes: Record<string, { min: string; step: string }>; // by digits "4" | "3" | "2"
+}
+
+export interface PurchaseRules {
+  currency: string;
+  digits: number[];
+  max_lines: number;
+  games: GameRules[];
+}
+
+export interface PreviewLine {
+  number: string;
+  digits: number;
+  stake: string;
+  stake_cents: number;
+  problem: "stake_invalid" | "not_accepted" | null;
+  message: string | null;
+}
+
+export interface Preview {
+  lines: PreviewLine[];
+  closed_games: string[];
+  entries_count: number;
+  total_cents: number;
+  total: string;
+  balance_cents: number;
+  enough_balance: boolean;
+  can_purchase: boolean;
+}
+
+export interface TicketEntry {
+  game_code: string;
+  draw_date: string | null;
+  draw_at: string | null;
+  digits: number;
+  number: string;
+  stake_cents: number;
+  stake: string;
+}
+
+export interface Ticket {
+  serial: string;
+  status: string;
+  total_cents: number;
+  total: string;
+  currency: string;
+  entries_count: number;
+  created_at: string;
+  entries?: TicketEntry[];
+  replayed?: boolean;
+}
