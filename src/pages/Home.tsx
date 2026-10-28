@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { CheckIcon, ClockIcon, CloseIcon, Spinner } from "../components/Icons";
 import TicketSheet from "../components/TicketSheet";
+import { ErrorNote, Loading, PageTitle, Sheet } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { DIGIT_TYPES, deriveLines, isValidStake, newIdempotencyKey, parseEntries, type DigitType } from "../lib/entry";
@@ -197,181 +199,224 @@ export default function Home() {
 
   return (
     <>
-      <main className="grid gap-5 px-5 pb-40 pt-5 lg:px-0 lg:pb-32 lg:pt-0">
-        {!customer.name && <NamePrompt onSaved={setCustomer} welcome={isNew} />}
+      <main className="grid gap-4 px-4 pt-5 pb-40 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:gap-5 lg:px-0 lg:pt-0 lg:pb-24 lg:short:gap-4">
+        <div className="lg:col-span-2">
+          <PageTitle
+            title="Play"
+            subtitle={
+              earliest && now !== null ? (
+                <span data-testid="closing-note" className="inline-flex flex-wrap items-center gap-x-1.5">
+                  <ClockIcon size={16} className="text-brand" />
+                  Earliest closing: <b className="text-ink">{fmtTime(earliest.closes_at, now)}</b> ·{" "}
+                  <b className="text-ink">{fmtCountdown((new Date(earliest.closes_at).getTime() - now) / 1000)}</b> left (Curaçao time)
+                </span>
+              ) : (
+                "Choose games, pick the digits and type your numbers."
+              )
+            }
+          />
+        </div>
+
+        {!customer.name && (
+          <div className="lg:col-span-2 empty:hidden">
+            <NamePrompt onSaved={setCustomer} welcome={isNew} />
+          </div>
+        )}
 
         {repeatNote && (
-          <p role="status" data-testid="repeat-note" className="rounded-xl bg-brand-soft px-4 py-3 text-sm">
+          <p role="status" data-testid="repeat-note" className="alert-info lg:col-span-2">
             {repeatNote}
           </p>
         )}
 
         {loadError && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-            {loadError}
-          </p>
+          <div className="lg:col-span-2 empty:hidden">
+            <ErrorNote>{loadError}</ErrorNote>
+          </div>
         )}
 
-        {/* 1. Games */}
-        <section aria-label="Games" className="grid gap-2">
-          <h2 className="text-lg font-bold">1. Choose games</h2>
-          {rules === null && !loadError && <p className="text-muted">Loading…</p>}
-          <div className="flex flex-wrap gap-2">
-            {rules?.games.map((g) => {
-              const on = games.has(g.code);
-              return (
+        <div className="grid gap-4 lg:gap-5 lg:short:gap-4">
+          {/* 1. Games */}
+          <section aria-label="Games" className="card grid gap-3 p-4 sm:p-5 lg:short:p-4">
+            <StepTitle n={1} title="Choose games" />
+            {rules === null && !loadError && <Loading label="Loading games…" />}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+              {rules?.games.map((g) => {
+                const on = games.has(g.code);
+                return (
+                  <button
+                    key={g.code}
+                    type="button"
+                    disabled={!g.is_open}
+                    aria-pressed={on}
+                    title={g.name}
+                    data-testid={`game-${g.code}`}
+                    onClick={() => setGames(toggle(games, g.code))}
+                    className={`relative flex min-h-[72px] flex-col lg:min-h-[64px] lg:short:min-h-[56px] lg:short:py-1.5 items-start justify-center rounded-[14px] border-2 px-3 py-2 text-left transition ${
+                      on ? "border-brand bg-brand-50 shadow-sm" : "border-line bg-white enabled:hover:border-brand-200"
+                    } disabled:border-dashed disabled:bg-ink-100`}
+                  >
+                    <span className={`font-display text-lg leading-tight font-extrabold ${on ? "text-brand" : g.is_open ? "text-ink" : "text-ink-400"}`}>{g.code}</span>
+                    <span className={`w-full truncate pr-5 text-xs font-medium ${g.is_open ? "text-ink-700" : "text-ink-400"}`}>{g.name}</span>
+                    {!g.is_open ? (
+                      <span className="mt-0.5 text-[11px] font-bold tracking-wide text-ink-400 uppercase">closed</span>
+                    ) : (
+                      g.draw && now !== null && <span className="mt-0.5 text-[11px] font-semibold text-muted">closes {fmtTime(g.draw.closes_at, now)}</span>
+                    )}
+                    {on && (
+                      <span className="absolute top-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-brand text-white" aria-hidden="true">
+                        <CheckIcon size={13} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {rules && openGames.length === 0 && <p className="text-sm text-muted">No game is open for sales right now. Opening times are in Curaçao time.</p>}
+          </section>
+
+          {/* 2. Digits */}
+          <section aria-label="Digits" className="card grid gap-3 p-4 sm:p-5 lg:short:p-4">
+            <StepTitle n={2} title="How many digits?" />
+            <div className="grid grid-cols-3 gap-1 rounded-[14px] bg-ink-100 p-1">
+              {DIGIT_TYPES.map((d) => (
                 <button
-                  key={g.code}
+                  key={d}
                   type="button"
-                  disabled={!g.is_open}
-                  aria-pressed={on}
-                  title={g.name}
-                  data-testid={`game-${g.code}`}
-                  onClick={() => setGames(toggle(games, g.code))}
-                  className={`h-14 min-w-14 rounded-xl border-2 px-4 text-lg font-extrabold ${on ? "border-brand bg-brand text-white" : "border-line bg-white text-ink"} disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400`}
+                  aria-pressed={digits.has(d)}
+                  data-testid={`digits-${d}`}
+                  onClick={() => {
+                    const next = toggle(digits, d);
+                    if (next.size) setDigits(next);
+                  }}
+                  className={`flex h-12 items-center justify-center gap-1.5 rounded-[10px] font-bold lg:h-11 lg:short:h-10 transition ${digits.has(d) ? "bg-brand text-white shadow-sm" : "text-ink-700 hover:bg-white/70"}`}
                 >
-                  {g.code}
-                  {!g.is_open && <span className="block text-[10px] font-semibold uppercase">closed</span>}
+                  {digits.has(d) && <CheckIcon size={16} />}
+                  {d} digits
                 </button>
-              );
-            })}
-          </div>
-          {rules && openGames.length === 0 && <p className="text-sm text-muted">No game is open for sales right now. Opening times are in Curaçao time.</p>}
-          {earliest && now !== null && (
-            <p className="text-sm text-muted" data-testid="closing-note">
-              Earliest closing: <b className="text-ink">{fmtTime(earliest.closes_at, now)}</b> · {fmtCountdown((new Date(earliest.closes_at).getTime() - now) / 1000)} left (Curaçao time)
-            </p>
-          )}
-        </section>
+              ))}
+            </div>
+            <p className="text-sm text-muted">Pick 4, 3 and 2 to play a 4-digit number on its last 3 and last 2 digits too.</p>
+          </section>
+        </div>
 
-        {/* 2. Digits */}
-        <section aria-label="Digits" className="grid gap-2">
-          <h2 className="text-lg font-bold">2. How many digits?</h2>
-          <div className="flex gap-2">
-            {DIGIT_TYPES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={digits.has(d)}
-                data-testid={`digits-${d}`}
-                onClick={() => {
-                  const next = toggle(digits, d);
-                  if (next.size) setDigits(next);
-                }}
-                className={`h-12 flex-1 rounded-xl border-2 font-bold lg:max-w-32 ${digits.has(d) ? "border-brand bg-brand text-white" : "border-line bg-white"}`}
-              >
-                {d} digits
-              </button>
-            ))}
-          </div>
-          <p className="text-sm text-muted">Pick 4, 3 and 2 to play a 4-digit number on its last 3 and last 2 digits too.</p>
-        </section>
-
-        {/* 3. Numbers */}
-        <section aria-label="Numbers" className="grid gap-2">
-          <h2 className="text-lg font-bold">3. Type your numbers</h2>
-          <textarea
-            aria-label="Numbers and amounts"
-            data-testid="entry"
-            value={text}
-            onChange={(e) => onTextChange(e.target.value)}
-            rows={3}
-            inputMode="text"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            placeholder="1234x2  5678x1  0042"
-            className="rounded-xl border-2 border-line bg-white p-3 font-mono text-lg tracking-wide outline-none focus:border-brand"
-          />
-          <div className="flex items-center gap-3">
-            <label htmlFor="default-stake" className="text-sm text-muted">
-              Amount when you do not type one (x2):
-            </label>
-            <input
-              id="default-stake"
-              data-testid="default-stake"
-              inputMode="decimal"
-              value={defaultStake}
-              onChange={(e) => setDefaultStake(e.target.value.replace(",", "."))}
-              className={`h-10 w-24 rounded-lg border-2 px-3 text-right outline-none focus:border-brand ${isValidStake(defaultStake) ? "border-line" : "border-danger"}`}
+        <div className="grid gap-4 lg:gap-5 lg:short:gap-4">
+          {/* 3. Numbers */}
+          <section aria-label="Numbers" className="card grid gap-3 p-4 sm:p-5 lg:short:p-4">
+            <StepTitle n={3} title="Type your numbers" />
+            <textarea
+              aria-label="Numbers and amounts"
+              data-testid="entry"
+              value={text}
+              onChange={(e) => onTextChange(e.target.value)}
+              rows={3}
+              inputMode="text"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="1234x2  5678x1  0042"
+              aria-invalid={unreadable.length > 0 || undefined}
+              className="field resize-y py-3 font-mono text-lg tracking-wide"
             />
-          </div>
-          {unreadable.length > 0 && <p className="text-sm text-danger">Cannot read: {unreadable.join(", ")}. Use 2 to 4 digits, optionally followed by x and an amount, like 1234x2.</p>}
-          {derived.ignored.length > 0 && <p className="text-sm text-amber-700">Not used with the digits selected: {derived.ignored.join(", ")}.</p>}
-        </section>
+            <p className="text-xs text-muted">
+              Separate numbers with spaces. Add <b className="font-mono text-ink">x</b> and an amount to change it: <span className="font-mono text-ink">1234x2</span> plays XCG 2.
+            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-ink-100 px-3 py-2">
+              <label htmlFor="default-stake" className="text-sm text-ink-700">
+                Amount when you do not type one (x2):
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-muted">XCG</span>
+                <input
+                  id="default-stake"
+                  data-testid="default-stake"
+                  inputMode="decimal"
+                  value={defaultStake}
+                  onChange={(e) => setDefaultStake(e.target.value.replace(",", "."))}
+                  aria-invalid={!isValidStake(defaultStake) || undefined}
+                  className="field h-11 w-32 pl-12 text-right font-semibold"
+                />
+              </div>
+            </div>
+            {unreadable.length > 0 && <p className="text-sm text-danger">Cannot read: {unreadable.join(", ")}. Use 2 to 4 digits, optionally followed by x and an amount, like 1234x2.</p>}
+            {derived.ignored.length > 0 && <p className="text-sm text-warn-ink">Not used with the digits selected: {derived.ignored.join(", ")}.</p>}
+          </section>
 
-        {/* 4. Lines */}
-        {lines.length > 0 && (
-          <section aria-label="Your numbers" className="grid gap-2">
-            <h2 className="text-lg font-bold">Your numbers</h2>
-            <div className="overflow-hidden rounded-2xl border border-line bg-white">
+          {/* 4. Lines */}
+          {lines.length > 0 && (
+            <section aria-label="Your numbers" className="card overflow-hidden">
+              <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5">
+                <h2 className="section-title">Your numbers</h2>
+                <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700">{lines.length}</span>
+              </div>
               {lines.map((l) => {
                 const server = problemOf(l.number);
                 const message = !isValidStake(l.stake) ? "Enter an amount, for example 1 or 0.50." : rejected.has(l.number) ? "This number cannot take that amount. Lower the amount or remove it." : server?.message;
                 return (
-                  <div key={l.number} data-testid="line" className="border-b border-line px-4 py-3 last:border-b-0">
+                  <div key={l.number} data-testid="line" className={`border-b border-line px-4 py-3 last:border-b-0 sm:px-5 ${message ? "bg-danger-soft/50" : ""}`}>
                     <div className="flex items-center gap-3">
-                      <span className="w-20 font-mono text-xl font-extrabold tracking-widest">{l.number}</span>
-                      <span className="w-14 text-xs text-muted">{l.digits} digits</span>
-                      <input
-                        aria-label={`Amount for ${l.number}`}
-                        inputMode="decimal"
-                        value={l.stake}
-                        onChange={(e) => {
-                          setOverrides({ ...overrides, [l.number]: e.target.value.replace(",", ".") });
-                          setRejected(new Set());
-                        }}
-                        className={`h-10 min-w-0 flex-1 rounded-lg border-2 px-3 text-right outline-none focus:border-brand ${message ? "border-danger" : "border-line"}`}
-                      />
-                      <button type="button" aria-label={`Remove ${l.number}`} onClick={() => setRemoved(new Set(removed).add(l.number))} className="h-10 w-10 rounded-lg text-xl text-muted hover:bg-slate-100">
-                        ×
+                      <span className="min-w-[4.5rem] rounded-[10px] bg-brand-50 px-2 py-1.5 text-center font-mono text-xl font-extrabold tracking-widest text-brand-800">{l.number}</span>
+                      <span className="w-12 text-xs leading-tight text-muted">{l.digits} digits</span>
+                      <div className="relative min-w-0 flex-1">
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-muted">XCG</span>
+                        <input
+                          aria-label={`Amount for ${l.number}`}
+                          inputMode="decimal"
+                          value={l.stake}
+                          onChange={(e) => {
+                            setOverrides({ ...overrides, [l.number]: e.target.value.replace(",", ".") });
+                            setRejected(new Set());
+                          }}
+                          aria-invalid={!!message || undefined}
+                          className="field h-11 w-full pl-12 text-right font-semibold"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${l.number}`}
+                        onClick={() => setRemoved(new Set(removed).add(l.number))}
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] text-muted hover:bg-danger-soft hover:text-danger"
+                      >
+                        <CloseIcon />
                       </button>
                     </div>
                     {message && (
-                      <p role="alert" className="mt-1 text-sm text-danger" data-testid="line-error">
+                      <p role="alert" className="mt-1.5 text-sm text-danger" data-testid="line-error">
                         {message}
                       </p>
                     )}
                   </div>
                 );
               })}
-            </div>
-          </section>
-        )}
+            </section>
+          )}
 
-        {previewError && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-            {previewError}
-          </p>
-        )}
-        {preview && preview.closed_games.length > 0 && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-            Sales just closed for {preview.closed_games.join(", ")}. Unselect it to continue.
-          </p>
-        )}
-        {buyError && !confirming && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger" data-testid="buy-error">
-            {buyError.message}
-            {buyError.code === "insufficient_balance" && (
-              <>
-                {" "}
-                <Link to="/balance" className="font-bold underline">
-                  Top up
-                </Link>
-              </>
-            )}
-          </p>
-        )}
+          {previewError && <ErrorNote>{previewError}</ErrorNote>}
+          {preview && preview.closed_games.length > 0 && <ErrorNote>Sales just closed for {preview.closed_games.join(", ")}. Unselect it to continue.</ErrorNote>}
+          {buyError && !confirming && (
+            <ErrorNote testId="buy-error">
+              {buyError.message}
+              {buyError.code === "insufficient_balance" && (
+                <>
+                  {" "}
+                  <Link to="/balance" className="font-bold underline">
+                    Top up
+                  </Link>
+                </>
+              )}
+            </ErrorNote>
+          )}
+        </div>
       </main>
 
-      {/* Sticky total and Confirm */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white px-5 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] lg:left-64">
-        <div className="mx-auto flex max-w-md items-center gap-4 lg:max-w-6xl lg:px-8">
+      {/* Sticky total and Confirm. On phones it sits on top of the tab bar. */}
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(20,33,61,0.08)] backdrop-blur lg:bottom-0 lg:left-64">
+        <div className="mx-auto flex max-w-md items-center gap-4 lg:max-w-[1400px] lg:px-8">
           <div className="min-w-0 flex-1">
-            <div className="text-xs text-muted">
+            <div className="truncate text-xs text-muted">
               {games.size === 0 ? "Pick a game" : lines.length === 0 ? "Type a number" : `${games.size} ${games.size === 1 ? "game" : "games"} × ${lines.length} ${lines.length === 1 ? "number" : "numbers"}`}
             </div>
-            <div className="text-2xl font-extrabold" data-testid="total">
+            <div className="font-display text-2xl font-extrabold tracking-tight" data-testid="total">
               {previewing ? "…" : preview ? `XCG ${preview.total}` : "XCG 0.00"}
             </div>
             {preview && !preview.enough_balance && !previewing && (
@@ -383,54 +428,68 @@ export default function Home() {
               </div>
             )}
           </div>
-          <button type="button" data-testid="confirm" disabled={!canConfirm} onClick={openConfirm} className="h-14 rounded-xl bg-ok px-6 text-lg font-extrabold text-white disabled:opacity-40">
+          <button type="button" data-testid="confirm" disabled={!canConfirm} onClick={openConfirm} className="btn-buy h-14 shrink-0 px-5 text-base sm:px-7 sm:text-lg">
             Confirm Purchase
           </button>
         </div>
       </div>
 
       {confirming && preview && (
-        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/50 lg:items-center" role="dialog" aria-modal="true" aria-label="Confirm purchase">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-5 lg:rounded-3xl">
-            <h2 className="text-xl font-extrabold">Confirm your purchase</h2>
-            <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 text-sm">
-              <dt className="text-muted">Games</dt>
-              <dd className="font-semibold">{[...games].sort().join(", ")}</dd>
-              <dt className="text-muted">Numbers</dt>
-              <dd className="font-semibold">{lines.length}</dd>
-              <dt className="text-muted">Entries ({games.size} × {lines.length})</dt>
-              <dd className="font-semibold">{preview.entries_count}</dd>
-              <dt className="text-muted">Balance now</dt>
-              <dd className="font-semibold">{fmtXcg(preview.balance_cents)}</dd>
-              <dt className="text-muted">Balance after</dt>
-              <dd className="font-semibold">{fmtXcg(preview.balance_cents - preview.total_cents)}</dd>
-            </dl>
-            <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
-              <span className="text-muted">Total to pay</span>
-              <span className="text-2xl font-extrabold" data-testid="confirm-total">
-                XCG {preview.total}
-              </span>
-            </div>
-            {buyError && (
-              <p role="alert" className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-danger" data-testid="confirm-error">
-                {buyError.message}
-                {buyError.code === "network_error" && " Tap Pay again: you will not be charged twice."}
-              </p>
-            )}
-            <div className="mt-4 flex gap-3">
-              <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="h-12 rounded-xl px-5 font-bold text-muted">
-                Back
-              </button>
-              <button type="button" data-testid="pay" onClick={() => void buy()} disabled={busy} className="h-12 flex-1 rounded-xl bg-ok font-extrabold text-white disabled:opacity-60">
-                {busy ? "Paying…" : `Pay XCG ${preview.total}`}
-              </button>
-            </div>
+        <Sheet label="Confirm purchase" onClose={() => !busy && setConfirming(false)}>
+          <h2 className="font-display text-xl font-bold">Confirm your purchase</h2>
+          <dl className="mt-4 grid grid-cols-[1fr_auto] gap-y-2 rounded-[14px] bg-ink-100 p-4 text-sm">
+            <dt className="text-muted">Games</dt>
+            <dd className="text-right font-semibold">{[...games].sort().join(", ")}</dd>
+            <dt className="text-muted">Numbers</dt>
+            <dd className="text-right font-semibold">{lines.length}</dd>
+            <dt className="text-muted">Entries ({games.size} × {lines.length})</dt>
+            <dd className="text-right font-semibold">{preview.entries_count}</dd>
+            <dt className="text-muted">Balance now</dt>
+            <dd className="text-right font-semibold">{fmtXcg(preview.balance_cents)}</dd>
+            <dt className="text-muted">Balance after</dt>
+            <dd className="text-right font-semibold">{fmtXcg(preview.balance_cents - preview.total_cents)}</dd>
+          </dl>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-muted">Total to pay</span>
+            <span className="font-display text-3xl font-extrabold tracking-tight" data-testid="confirm-total">
+              XCG {preview.total}
+            </span>
           </div>
-        </div>
+          {buyError && (
+            <p role="alert" className="alert-error mt-3" data-testid="confirm-error">
+              {buyError.message}
+              {buyError.code === "network_error" && " Tap Pay again: you will not be charged twice."}
+            </p>
+          )}
+          <div className="mt-5 flex gap-3">
+            <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="btn-secondary h-14 px-5">
+              Back
+            </button>
+            <button type="button" data-testid="pay" onClick={() => void buy()} disabled={busy} className="btn-buy h-14 flex-1 text-lg">
+              {busy && <Spinner />}
+              {busy ? "Paying…" : `Pay XCG ${preview.total}`}
+            </button>
+          </div>
+        </Sheet>
       )}
 
       {ticket && <TicketSheet ticket={ticket} justBought onClose={() => setTicket(null)} />}
     </>
+  );
+}
+
+/** Numbered step heading; screen readers hear "1. Choose games". */
+function StepTitle({ n, title }: { n: number; title: string }) {
+  return (
+    <h2 className="section-title flex items-center gap-2.5">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-extrabold text-brand-800" aria-hidden="true">
+        {n}
+      </span>
+      <span>
+        <span className="sr-only">{n}. </span>
+        {title}
+      </span>
+    </h2>
   );
 }
 
@@ -457,9 +516,9 @@ function NamePrompt({ onSaved, welcome }: { onSaved: (c: Customer) => void; welc
   };
 
   return (
-    <form onSubmit={save} className="grid gap-3 lg:max-w-md rounded-2xl border border-line bg-white p-4 shadow-sm">
+    <form onSubmit={save} className="card grid gap-3 border-gold-400/50 bg-gradient-to-br from-gold-100 to-white p-4 sm:p-5 lg:max-w-xl">
       <div>
-        <div className="font-bold">{welcome ? "Welcome to HopiSuerte!" : "Add your name"}</div>
+        <div className="font-display font-bold">{welcome ? "Welcome to HopiSuerte!" : "Add your name"}</div>
         <div className="text-sm text-muted">What should we call you? (optional)</div>
       </div>
       <input
@@ -468,14 +527,14 @@ function NamePrompt({ onSaved, welcome }: { onSaved: (c: Customer) => void; welc
         onChange={(e) => setName(e.target.value)}
         maxLength={100}
         placeholder="Your name"
-        className="h-12 rounded-xl border-2 border-line px-4 outline-none focus:border-brand"
+        className="field h-12"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex gap-3">
-        <button type="submit" disabled={saving || name.trim().length < 2} className="h-11 flex-1 rounded-xl bg-brand font-bold text-white disabled:opacity-50">
+        <button type="submit" disabled={saving || name.trim().length < 2} className="btn-primary h-12 flex-1">
           {saving ? "Saving…" : "Save"}
         </button>
-        <button type="button" onClick={() => setHidden(true)} className="h-11 rounded-xl px-4 text-muted">
+        <button type="button" onClick={() => setHidden(true)} className="btn-ghost h-12 px-5">
           Skip
         </button>
       </div>

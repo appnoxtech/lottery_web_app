@@ -1,0 +1,397 @@
+/*
+ * Sign-in stage (pages/Login.tsx + components/AuthBackdrop.tsx). Plain CSS: keyframes, glass and the
+ * responsive layout (phone: stage on top + card as a bottom sheet; tablet: centred card; desktop: two
+ * columns). Motion uses transform and opacity only, and is switched off for reduced-motion users.
+ */
+.auth-stage {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  background: linear-gradient(155deg, #0b3fa8 0%, #082c78 45%, #04173f 100%);
+}
+
+.auth-glow {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+.auth-glow--gold {
+  width: 70vmax;
+  height: 70vmax;
+  top: -30vmax;
+  left: -20vmax;
+  background: radial-gradient(circle, rgba(246, 194, 27, 0.18) 0%, rgba(246, 194, 27, 0) 62%);
+  animation: auth-drift-a 20s ease-in-out infinite alternate;
+}
+.auth-glow--blue {
+  width: 80vmax;
+  height: 80vmax;
+  bottom: -42vmax;
+  right: -30vmax;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(59, 130, 246, 0) 60%);
+  animation: auth-drift-b 22s ease-in-out infinite alternate;
+}
+.auth-dots {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.2px, transparent 1.6px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 70% 60% at 30% 45%, #000 15%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 45%, #000 15%, transparent 75%);
+}
+
+/* Lottery balls */
+.auth-ball {
+  position: absolute;
+  z-index: -1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  pointer-events: none;
+  /* Phone position first (--m-*), the wide-screen one (--*) from 1024px */
+  top: var(--m-top, var(--top));
+  right: var(--m-right, var(--right));
+  bottom: var(--m-bottom, var(--bottom));
+  left: var(--m-left, var(--left));
+  width: var(--m-size, var(--size));
+  height: var(--m-size, var(--size));
+  font-size: calc(var(--m-size, var(--size)) * 0.26);
+  animation: auth-float var(--dur, 12s) ease-in-out var(--delay, 0s) infinite alternate;
+  will-change: transform;
+}
+.auth-ball--gold {
+  color: #4a3500;
+  background: radial-gradient(circle at 32% 28%, #fff6c9 0%, #ffd84a 22%, #f6c21b 52%, #c99700 100%);
+  box-shadow: inset -6px -8px 16px rgba(120, 80, 0, 0.35), 0 18px 40px rgba(2, 10, 40, 0.45);
+}
+.auth-ball--glass {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 40px rgba(2, 10, 40, 0.3);
+}
+.auth-ball > span {
+  display: grid;
+  place-items: center;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+}
+.auth-ball--gold > span {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 -2px 4px rgba(120, 80, 0, 0.18);
+}
+
+.auth-ball--wide {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .auth-ball--wide {
+    display: grid;
+  }
+  .auth-ball {
+    top: var(--top);
+    right: var(--right);
+    bottom: var(--bottom);
+    left: var(--left);
+    width: var(--size);
+    height: var(--size);
+    font-size: calc(var(--size) * 0.26);
+  }
+}
+
+/* Glass surfaces on the stage */
+.auth-glass {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.auth-ticket {
+  transform: rotate(-6deg);
+  animation: auth-ticket 14s ease-in-out 0.6s infinite alternate;
+  will-change: transform;
+}
+
+/* Logo coin: entrance and a single shine sweep */
+.auth-coin {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 6px rgba(246, 194, 27, 0.12), 0 10px 30px rgba(246, 194, 27, 0.25);
+  animation: auth-coin-in 640ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.auth-coin::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.75) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: auth-shine 1.1s ease-out 0.7s 1 both;
+  pointer-events: none;
+}
+
+/* Staggered entrance; --i is the step (0, 1, 2...) */
+.auth-rise {
+  animation: auth-rise 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.auth-card-in {
+  animation: auth-rise 380ms cubic-bezier(0.2, 0.8, 0.2, 1) 80ms both;
+}
+
+/* Form card */
+.auth-card {
+  position: relative;
+  background: #fff;
+  color: var(--color-ink);
+  box-shadow: 0 40px 80px -20px rgba(2, 10, 40, 0.55), 0 12px 30px rgba(2, 10, 40, 0.25);
+}
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 32px;
+  height: 4px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, #f6c21b, #16a34a);
+}
+
+/* Inputs */
+.auth-field {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  border: 1.5px solid #c3cbd9;
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.auth-field:hover {
+  border-color: #8592a8;
+}
+.auth-field:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 4px rgba(11, 63, 168, 0.12);
+}
+.auth-field[data-invalid="true"] {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+.auth-field-icon {
+  color: #8592a8;
+  transition: color 150ms;
+}
+.auth-field:focus-within .auth-field-icon {
+  color: var(--color-brand);
+}
+.auth-field[data-invalid="true"] .auth-field-icon {
+  color: var(--color-danger);
+}
+.auth-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 1.125rem;
+  letter-spacing: 0.02em;
+}
+.auth-field input::placeholder {
+  color: #a3adbf;
+}
+.auth-field input:focus-visible {
+  outline: none;
+}
+
+/* Primary button */
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  background: linear-gradient(180deg, #1cb255 0%, #16a34a 45%, #15803d 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px -6px rgba(22, 163, 74, 0.55);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.auth-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 14px 28px -8px rgba(22, 163, 74, 0.65);
+}
+.auth-btn:not(:disabled):active {
+  transform: scale(0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px -4px rgba(22, 163, 74, 0.5);
+}
+.auth-btn:disabled {
+  cursor: progress;
+}
+.auth-arrow {
+  transition: transform 180ms ease;
+}
+.auth-btn:not(:disabled):hover .auth-arrow {
+  transform: translateX(3px);
+}
+
+/* Layout: phone first (stage on top, card as a bottom sheet) */
+.auth-layout {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.auth-brand {
+  position: relative;
+  padding: max(2.25rem, env(safe-area-inset-top)) 1.5rem 2.75rem;
+  min-height: 34vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.auth-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.auth-panel > .auth-card {
+  flex: 1;
+  border-radius: 28px 28px 0 0;
+  padding: 2.25rem 1.5rem max(2rem, env(safe-area-inset-bottom));
+}
+/* On phones the accent becomes a sheet handle */
+.auth-panel > .auth-card::before {
+  left: 50%;
+  right: auto;
+  width: 44px;
+  top: 10px;
+  height: 5px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: #e3e8f2;
+}
+
+@media (min-width: 640px) {
+  .auth-layout {
+    justify-content: center;
+  }
+  .auth-brand {
+    padding: 3rem 2.5rem 2.5rem;
+    min-height: 0;
+    align-items: center;
+    text-align: center;
+  }
+  .auth-panel {
+    flex: none;
+    padding: 0 1.5rem 3rem;
+    align-items: center;
+  }
+  .auth-panel > .auth-card {
+    flex: none;
+    width: 100%;
+    max-width: 460px;
+    border-radius: 24px;
+    padding: 2.5rem;
+  }
+  .auth-panel > .auth-card::before {
+    left: 32px;
+    right: 32px;
+    width: auto;
+    top: 0;
+    height: 4px;
+    border-radius: 0 0 4px 4px;
+    transform: none;
+    background: linear-gradient(90deg, #f6c21b, #16a34a);
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 2.5rem 3.5rem;
+    gap: 3rem;
+  }
+  .auth-brand {
+    padding: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .auth-panel {
+    padding: 0;
+  }
+}
+
+@keyframes auth-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(12vmax, 8vmax, 0) scale(1.12); }
+}
+@keyframes auth-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to { transform: translate3d(-10vmax, -6vmax, 0) scale(0.95); }
+}
+@keyframes auth-float {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(var(--dx, 10px), var(--dy, -16px), 0) rotate(var(--rot, 6deg)); }
+}
+@keyframes auth-ticket {
+  from { transform: rotate(-6deg) translate3d(0, 0, 0); }
+  to { transform: rotate(-3deg) translate3d(0, -12px, 0); }
+}
+@keyframes auth-coin-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes auth-shine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduced motion: nothing floats, drifts or shines; content is there at once. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-glow,
+  .auth-ball,
+  .auth-ticket,
+  .auth-coin,
+  .auth-rise,
+  .auth-card-in {
+    animation: none !important;
+  }
+  .auth-coin::after {
+    display: none;
+  }
+  .auth-btn,
+  .auth-arrow {
+    transition: none;
+  }
+}

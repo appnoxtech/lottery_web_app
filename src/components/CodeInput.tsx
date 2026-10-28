@@ -35,7 +35,7 @@ export default function CodeInput({ value, onChange, disabled, invalid }: Props)
   };
 
   return (
-    <div className="flex justify-center gap-3" role="group" aria-label="Login code">
+    <div className={`flex justify-center gap-3 ${invalid ? "animate-shake" : ""}`} role="group" aria-label="Login code">
       {digits.map((digit, i) => (
         <input
           key={i}
@@ -57,8 +57,12 @@ export default function CodeInput({ value, onChange, disabled, invalid }: Props)
             }
           }}
           onFocus={(e) => e.currentTarget.select()}
-          className={`h-16 w-14 rounded-xl border-2 bg-white text-center text-3xl font-bold outline-none transition focus:border-brand disabled:opacity-50 ${
-            invalid ? "border-danger" : "border-line"
+          className={`h-[60px] w-[56px] rounded-[14px] border-[1.5px] text-center font-display text-[1.75rem] font-bold text-ink caret-brand outline-none transition duration-150 focus-visible:outline-none focus:-translate-y-0.5 focus:border-brand focus:shadow-[0_0_0_4px_rgba(11,63,168,0.12),0_8px_18px_-8px_rgba(11,63,168,0.45)] disabled:bg-ink-100 disabled:text-muted motion-reduce:focus:translate-y-0 sm:h-16 sm:w-[60px] ${
+            invalid
+              ? "border-danger bg-danger-soft focus:border-danger focus:shadow-[0_0_0_4px_rgba(220,38,38,0.12)]"
+              : digit
+                ? "border-brand/50 bg-brand-50 text-brand-700"
+                : "border-ink-300 bg-white hover:border-ink-400"
           }`}
         />
       ))}

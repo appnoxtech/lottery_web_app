@@ -1,20 +1,87 @@
 @import "tailwindcss";
 
+/*
+ * HopiSuerte design tokens. Same values as the admin panel (src/theme/tokens.ts there) and the mobile app
+ * (src/lib/theme.ts); see docs/DESIGN_SYSTEM.md. Change a colour in all three, or the products drift.
+ */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* HopiSuerte palette: deep blue header, sunny yellow accent, green for confirm. */
+  /* Brand blue */
+  --color-brand-50: #eef3ff;
+  --color-brand-100: #dbe6fe;
+  --color-brand-200: #b7cbfb;
+  --color-brand-500: #0b3fa8;
+  --color-brand-600: #09358f;
+  --color-brand-700: #082c78;
+  --color-brand-800: #06215a;
+  --color-brand-900: #04173f;
   --color-brand: #0b3fa8;
-  --color-brand-dark: #082f80;
-  --color-brand-soft: #e8f0fe;
+  --color-brand-dark: #082c78;
+  --color-brand-soft: #eef3ff;
+
+  /* Gold accent (luck, prizes, active tab) */
+  --color-gold-100: #fff4cc;
+  --color-gold-400: #f6c21b;
+  --color-gold-600: #d9a300;
+  --color-gold-ink: #6b4f00;
   --color-accent: #f6c21b;
+
+  /* Text and lines */
+  --color-ink: #14213d;
+  --color-ink-700: #33415c;
+  --color-muted: #5b6b86;
+  --color-ink-400: #8592a8;
+  --color-ink-300: #c3cbd9;
+  --color-line: #e3e8f2;
+  --color-ink-100: #eef2f8;
+  --color-page: #f4f6fb;
+
+  /* Status. Green is also the buy / confirm colour. */
   --color-ok: #16a34a;
   --color-ok-dark: #128a3f;
-  --color-ink: #14213d;
-  --color-muted: #5b6b86;
-  --color-line: #d5deee;
-  --color-danger: #c62828;
+  --color-ok-soft: #e7f6ec;
+  --color-ok-ink: #11702f;
+  --color-warn: #d97706;
+  --color-warn-soft: #fff4e0;
+  --color-warn-ink: #8a4b00;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fdecec;
+  --color-danger-ink: #a11a1a;
+  --color-info-soft: #e4f3fb;
+  --color-info-ink: #075985;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-card: 0 1px 2px rgba(20, 33, 61, 0.06), 0 1px 3px rgba(20, 33, 61, 0.04);
+  --shadow-raised: 0 4px 12px rgba(20, 33, 61, 0.08), 0 2px 4px rgba(20, 33, 61, 0.04);
+  --shadow-overlay: 0 18px 48px rgba(20, 33, 61, 0.18), 0 4px 12px rgba(20, 33, 61, 0.08);
+
+  --animate-shake: shake 0.35s ease-in-out;
+  --animate-sheet: sheet-up 0.22s ease-out;
+  --animate-fade: fade-in 0.18s ease-out;
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+  @keyframes sheet-up {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
+
+/* Laptop-height windows: pages tighten their spacing so the Play screen fits without scrolling */
+@custom-variant short (@media (max-height: 760px));
 
 html,
 body,
@@ -24,14 +91,97 @@ body,
 
 body {
   margin: 0;
-  background: #f4f7fd;
+  background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Thin scrollbars everywhere (page, sheets, lists), the same as the admin panel */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c3cad8 transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #c3cad8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #8592a8;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Big, readable controls: this app is used on phones, often outdoors. */
 button,
-input {
+input,
+textarea {
   font: inherit;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+/* One visible focus ring for keyboard users everywhere. */
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-brand) 45%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shared building blocks (Tailwind utilities, so they take hover:, lg: and so on); pages combine them with plain utilities. */
+@utility card {
+  @apply rounded-[14px] border border-line bg-white shadow-card;
+}
+@utility field {
+  @apply rounded-[10px] border-2 border-line bg-white px-4 text-ink outline-none transition placeholder:text-ink-400 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:bg-ink-100 disabled:text-muted;
+  /* Mark a wrong value with aria-invalid: screen readers hear it and the border turns red. */
+  @apply aria-invalid:border-danger aria-invalid:focus:border-danger aria-invalid:focus:ring-danger/10;
+}
+@utility btn {
+  @apply cursor-pointer disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center gap-2 rounded-[10px] font-bold transition select-none;
+}
+@utility btn-buy {
+  @apply btn bg-ok text-white shadow-sm enabled:hover:bg-ok-dark enabled:active:bg-ok-dark disabled:bg-line disabled:text-muted disabled:shadow-none;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white enabled:hover:bg-brand-600 enabled:active:bg-brand-700 disabled:bg-line disabled:text-muted;
+}
+@utility btn-secondary {
+  @apply btn border border-ink-300 bg-white text-ink enabled:hover:bg-ink-100 disabled:text-ink-400;
+}
+@utility btn-ghost {
+  @apply btn text-muted enabled:hover:bg-ink-100 enabled:hover:text-ink;
+}
+@utility alert-error {
+  @apply rounded-[10px] border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger-ink;
+}
+@utility alert-info {
+  @apply rounded-[10px] border border-brand/15 bg-brand-50 px-4 py-3 text-sm text-brand-700;
+}
+@utility section-title {
+  @apply font-display text-lg font-bold text-ink;
 }

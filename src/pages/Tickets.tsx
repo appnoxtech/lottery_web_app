@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronRightIcon, TicketIcon } from "../components/Icons";
 import TicketSheet from "../components/TicketSheet";
+import { Empty, ErrorNote, Loading, PageTitle } from "../components/ui";
 import { prettySerial } from "../lib/ticket";
 import { api, ApiError } from "../lib/api";
 import { fmtDateTime } from "../lib/time";
@@ -38,30 +41,47 @@ export default function Tickets() {
   };
 
   return (
-    <main className="grid gap-3 px-5 pt-5 lg:px-0 lg:pt-0">
-      <h2 className="text-lg font-bold">My tickets</h2>
-      {error && (
-        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
+    <main className="grid gap-4 px-4 pt-5 lg:px-0 lg:pt-0">
+      <PageTitle title="My tickets" subtitle={items && items.length > 0 ? `${total} ${total === 1 ? "ticket" : "tickets"}, newest first` : undefined} />
+      {error && <ErrorNote>{error}</ErrorNote>}
+      {items === null && !error && <Loading label="Loading your tickets…" />}
+      {items?.length === 0 && (
+        <Empty
+          icon={<TicketIcon size={26} />}
+          title="No tickets yet"
+          text="Buy your first numbers on the Games tab."
+          action={
+            <Link to="/" className="btn-buy h-12 px-6">
+              Play now
+            </Link>
+          }
+        />
       )}
-      {items === null && !error && <p className="text-muted">Loading…</p>}
-      {items?.length === 0 && <p className="rounded-2xl border border-line bg-white p-5 text-center text-muted">No tickets yet. Buy your first numbers on the Games tab.</p>}
-      <div className="grid gap-2 lg:grid-cols-2">
+      <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">
         {items?.map((t) => (
-          <button key={t.serial} type="button" onClick={() => void show(t.serial)} data-testid="ticket-row" className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 text-left shadow-sm">
-            <div>
-              <div className="font-extrabold tracking-wider">{prettySerial(t.serial)}</div>
-              <div className="text-sm text-muted">
+          <button
+            key={t.serial}
+            type="button"
+            onClick={() => void show(t.serial)}
+            data-testid="ticket-row"
+            className="card flex min-h-[72px] items-center gap-3 p-4 text-left transition hover:border-brand-200 hover:shadow-raised"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand">
+              <TicketIcon size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-mono font-extrabold tracking-wider">{prettySerial(t.serial)}</span>
+              <span className="block text-sm text-muted">
                 {fmtDateTime(t.created_at)} · {t.entries_count} entries
-              </div>
-            </div>
-            <div className="font-bold">XCG {t.total}</div>
+              </span>
+            </span>
+            <span className="font-display font-bold whitespace-nowrap">XCG {t.total}</span>
+            <ChevronRightIcon size={18} className="text-ink-400" />
           </button>
         ))}
       </div>
       {items && items.length < total && (
-        <button type="button" onClick={() => void load(page + 1)} className="h-11 rounded-xl border border-line bg-white font-bold">
+        <button type="button" onClick={() => void load(page + 1)} className="btn-secondary h-12">
           Show more
         </button>
       )}

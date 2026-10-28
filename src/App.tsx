@@ -6,17 +6,32 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Tickets from "./pages/Tickets";
+import { LogoMark } from "./components/Logo";
+import { Spinner } from "./components/Icons";
+
+/** Shown while a stored session is being checked with the server. */
+function Splash() {
+  return (
+    <div role="status" aria-live="polite" className="grid min-h-screen place-content-center justify-items-center gap-4 text-muted">
+      <LogoMark size={64} />
+      <span className="flex items-center gap-2 text-sm">
+        <Spinner className="text-brand" />
+        Loading…
+      </span>
+    </div>
+  );
+}
 
 /** Signed-in customers only; a stored session is confirmed with the server before anything is shown. */
 function RequireSession() {
   const { session, checking } = useAuth();
-  if (checking) return <div className="grid min-h-screen place-items-center text-muted">Loading…</div>;
+  if (checking) return <Splash />;
   return session ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 function GuestOnly() {
   const { session, checking } = useAuth();
-  if (checking) return <div className="grid min-h-screen place-items-center text-muted">Loading…</div>;
+  if (checking) return <Splash />;
   return session ? <Navigate to="/" replace /> : <Outlet />;
 }
 

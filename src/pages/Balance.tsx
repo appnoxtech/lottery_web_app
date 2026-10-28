@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { ChatIcon, PlusIcon, Spinner, TicketIcon, TrophyIcon, WalletIcon } from "../components/Icons";
+import { LogoMark } from "../components/Logo";
+import { Empty, ErrorNote, Loading } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { fmtXcg } from "../lib/money";
 import { fmtDateTime } from "../lib/time";
@@ -6,6 +9,12 @@ import { useWallet } from "../lib/wallet";
 import type { LedgerEntry, Paginated } from "../lib/types";
 
 const LABEL: Record<LedgerEntry["type"], string> = { topup: "Top-up", purchase: "Ticket purchase", prize: "Prize", adjustment: "Adjustment" };
+const ICON: Record<LedgerEntry["type"], { icon: typeof WalletIcon; style: string }> = {
+  topup: { icon: PlusIcon, style: "bg-ok-soft text-ok-ink" },
+  purchase: { icon: TicketIcon, style: "bg-brand-50 text-brand" },
+  prize: { icon: TrophyIcon, style: "bg-gold-100 text-gold-ink" },
+  adjustment: { icon: WalletIcon, style: "bg-ink-100 text-ink-700" },
+};
 
 export default function Balance() {
   const { wallet, refresh } = useWallet();
@@ -48,49 +57,66 @@ export default function Balance() {
   };
 
   return (
-    <main className="grid gap-5 px-5 pt-5 lg:grid-cols-[360px_1fr] lg:items-start lg:px-0 lg:pt-0">
-      <section className="grid gap-3 rounded-2xl border border-line bg-white p-5 text-center shadow-sm">
-        <div className="text-sm text-muted">Your balance</div>
-        <div className="text-4xl font-extrabold" data-testid="balance">
-          {wallet ? fmtXcg(wallet.balance_cents) : "…"}
+    <main className="grid gap-6 px-4 pt-5 lg:grid-cols-[380px_1fr] lg:items-start lg:px-0 lg:pt-0">
+      <section className="grid gap-3 lg:sticky lg:top-24">
+        {/* Balance card */}
+        <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-brand-500 to-brand-800 p-5 text-white shadow-raised">
+          <div aria-hidden="true" className="absolute -top-10 -right-10 h-36 w-36 rounded-full border-[22px] border-gold-400 opacity-20" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-white/75">Your balance</span>
+            <LogoMark size={28} />
+          </div>
+          <div className="mt-2 font-display text-4xl font-extrabold tracking-tight" data-testid="balance">
+            {wallet ? fmtXcg(wallet.balance_cents) : "…"}
+          </div>
+          <button onClick={() => void topUp()} disabled={opening} className="btn-buy mt-5 h-12 w-full">
+            {opening ? <Spinner /> : <ChatIcon size={18} />}
+            {opening ? "Opening WhatsApp…" : "Top Up on WhatsApp"}
+          </button>
         </div>
-        <button onClick={() => void topUp()} disabled={opening} className="h-12 rounded-xl bg-ok font-bold text-white disabled:opacity-60">
-          {opening ? "Opening WhatsApp…" : "Top Up on WhatsApp"}
-        </button>
-        {topupError && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-            {topupError}
-          </p>
-        )}
-        <p className="text-xs text-muted">Send your payment details on WhatsApp. Your balance is updated here as soon as we approve your payment.</p>
+        {topupError && <ErrorNote>{topupError}</ErrorNote>}
+        <ol className="card grid gap-3 p-4 text-sm text-ink-700">
+          {["Tap Top Up and send your payment details on WhatsApp.", "We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
+            <li key={step} className="flex gap-3">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand">{i + 1}</span>
+              {step}
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section aria-label="History" className="grid gap-3">
-        <h2 className="text-lg font-bold">History</h2>
-        {error && (
-          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">
-            {error}
-          </p>
+        <h2 className="section-title">History</h2>
+        {error && <ErrorNote>{error}</ErrorNote>}
+        {items === null && !error && <Loading label="Loading your history…" />}
+        {items?.length === 0 && <Empty icon={<WalletIcon size={26} />} title="Nothing here yet" text="Your top-ups and tickets will show up in this list." />}
+        {items && items.length > 0 && (
+          <div className="card divide-y divide-line overflow-hidden">
+            {items.map((e) => {
+              const { icon: Icon, style } = ICON[e.type];
+              return (
+                <article key={e.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${style}`}>
+                    <Icon size={18} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold">{LABEL[e.type]}</div>
+                    <div className="text-xs text-muted">{fmtDateTime(e.created_at)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-bold whitespace-nowrap ${e.amount_cents < 0 ? "text-danger" : "text-ok-ink"}`}>
+                      {e.amount_cents < 0 ? "−" : "+"}
+                      {fmtXcg(Math.abs(e.amount_cents))}
+                    </div>
+                    <div className="text-xs whitespace-nowrap text-muted">Balance {fmtXcg(e.balance_after_cents)}</div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         )}
-        {items === null && !error && <p className="text-muted">Loading…</p>}
-        {items?.length === 0 && <p className="text-muted">Nothing here yet. Your top-ups and tickets will show up in this list.</p>}
-        {items?.map((e) => (
-          <article key={e.id} className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-sm">
-            <div>
-              <div className="font-bold">{LABEL[e.type]}</div>
-              <div className="text-xs text-muted">{fmtDateTime(e.created_at)}</div>
-            </div>
-            <div className="text-right">
-              <div className={`font-extrabold ${e.amount_cents < 0 ? "text-danger" : "text-ok-dark"}`}>
-                {e.amount_cents < 0 ? "−" : "+"}
-                {fmtXcg(Math.abs(e.amount_cents))}
-              </div>
-              <div className="text-xs text-muted">Balance {fmtXcg(e.balance_after_cents)}</div>
-            </div>
-          </article>
-        ))}
         {items && items.length < total && (
-          <button onClick={() => void load(page + 1)} className="h-11 rounded-xl border-2 border-line font-semibold">
+          <button onClick={() => void load(page + 1)} className="btn-secondary h-12">
             Show more
           </button>
         )}

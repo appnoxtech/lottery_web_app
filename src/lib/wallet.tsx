@@ -35,6 +35,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   return <WalletContext.Provider value={{ wallet, refresh }}>{children}</WalletContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- the hook belongs with its provider
 export function useWallet(): WalletState {
   const ctx = useContext(WalletContext);
   if (!ctx) throw new Error("useWallet must be used inside WalletProvider");
