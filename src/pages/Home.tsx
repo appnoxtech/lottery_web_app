@@ -351,7 +351,7 @@ export default function Home() {
               </div>
               {lines.map((l) => {
                 const server = problemOf(l.number);
-                const message = !isValidStake(l.stake) ? "Enter an amount, for example 1 or 0.50." : rejected.has(l.number) ? "This number cannot take that amount. Lower the amount or remove it." : server?.message;
+                const message = !isValidStake(l.stake) ? "Enter an amount, for example 1 or 0.50." : rejected.has(l.number) ? `The number ${l.number} is sold out.` : server?.message;
                 return (
                   <div key={l.number} data-testid="line" className={`border-b border-line px-4 py-3 last:border-b-0 sm:px-5 ${message ? "bg-danger-soft/50" : ""}`}>
                     <div className="flex items-center gap-3">

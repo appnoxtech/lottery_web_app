@@ -102,7 +102,7 @@ export interface TicketEntry {
   number: string;
   stake_cents: number;
   stake: string;
-  result?: [string, string, string] | null; // the draw's published numbers, null until then
+  result?: string[] | null; // the draw's published numbers (three, or one for a one-prize game), null until then
   prizes?: TicketPrize[];
 }
 
@@ -131,7 +131,7 @@ export interface ResultItem {
   game_name: string;
   draw_date: string;
   draw_at: string;
-  numbers: [string, string, string];
+  numbers: string[]; // three winning numbers, or one for a game that pays one prize
   corrected: boolean;
   published_at: string | null;
 }
