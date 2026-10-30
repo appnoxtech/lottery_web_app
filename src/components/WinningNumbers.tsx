@@ -1,8 +1,11 @@
 const ORDINAL = ["1st", "2nd", "3rd"];
 
-/** The three winning numbers as lottery balls: 1st prize gold, 2nd blue, 3rd light blue. */
+/** Medal colours by prize: 1st gold, 2nd silver, 3rd bronze. Index 0 = 1st prize. */
+export const MEDAL = ["bg-gold-400 text-brand-800 ring-gold-600/30", "bg-silver-300 text-silver-ink ring-silver-500/60", "bg-bronze-300 text-bronze-ink ring-bronze-600/50"];
+
+/** The three winning numbers as lottery balls in medal colours: 1st gold, 2nd silver, 3rd bronze. */
 export function WinningNumbers({ numbers, size = "md" }: { numbers: string[]; size?: "sm" | "md" }) {
-  const ball = ["bg-gold-400 text-brand-800 ring-gold-600/30", "bg-brand text-white ring-brand-700/30", "bg-brand-100 text-brand-800 ring-brand-200"];
+  const ball = MEDAL;
   return (
     <div className={`flex ${size === "sm" ? "gap-1.5" : "gap-2"}`}>
       {numbers.map((n, i) => (

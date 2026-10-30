@@ -7,7 +7,7 @@ import type { Ticket } from "../lib/types";
 import { CheckIcon, DownloadIcon, RepeatIcon, ShareIcon, TrophyIcon } from "./Icons";
 import { LogoMark } from "./Logo";
 import { Sheet } from "./ui";
-import { WinningNumbers } from "./WinningNumbers";
+import { MEDAL, WinningNumbers } from "./WinningNumbers";
 
 const PRIZE_STATUS = { pending: "being paid", credited: "added to your balance", paid_out: "paid out" } as const;
 const ORDINAL = ["1st", "2nd", "3rd"];
@@ -56,6 +56,12 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
         <div className="mb-3 flex items-center justify-center gap-2 rounded-[10px] bg-ok-soft py-2 text-sm font-semibold text-ok-ink">
           <CheckIcon size={18} />
           Purchase confirmed
+        </div>
+      )}
+
+      {ticket.status === "corrected" && (
+        <div className="mb-3 rounded-[10px] bg-warn-soft py-2 text-center text-sm font-semibold text-warn-ink" role="status">
+          This ticket was corrected. The amount was returned to your balance.
         </div>
       )}
 
@@ -112,7 +118,7 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="font-mono text-base font-bold tracking-widest">{e.number}</span>
                           {e.prizes?.map((p) => (
-                            <span key={p.rank} className="inline-flex items-center gap-1 rounded-full bg-gold-400 px-2 py-0.5 text-xs font-bold text-brand-800" data-testid="prize-badge">
+                            <span key={p.rank} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${MEDAL[p.rank - 1] ?? MEDAL[0]}`} data-testid="prize-badge">
                               <TrophyIcon size={12} />
                               {ORDINAL[p.rank - 1]} prize XCG {p.amount} · {PRIZE_STATUS[p.status]}
                             </span>
