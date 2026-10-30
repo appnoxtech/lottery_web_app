@@ -253,18 +253,18 @@ export default function Home() {
                     data-testid={`game-${g.code}`}
                     onClick={() => setGames(toggle(games, g.code))}
                     className={`relative flex min-h-[72px] flex-col lg:min-h-[64px] lg:short:min-h-[56px] lg:short:py-1.5 items-start justify-center rounded-[14px] border-2 px-3 py-2 text-left transition ${
-                      on ? "border-brand bg-brand-50 shadow-sm" : "border-line bg-white enabled:hover:border-brand-200"
+                      on ? "border-brand bg-brand bg-gradient-to-br from-brand-500 to-brand-700 shadow-sm" : "border-line bg-white enabled:hover:border-brand-200"
                     } disabled:border-dashed disabled:bg-ink-100`}
                   >
-                    <span className={`font-display text-lg leading-tight font-extrabold ${on ? "text-brand" : g.is_open ? "text-ink" : "text-ink-400"}`}>{g.code}</span>
-                    <span className={`w-full truncate pr-5 text-xs font-medium ${g.is_open ? "text-ink-700" : "text-ink-400"}`}>{g.name}</span>
+                    <span className={`font-display text-lg leading-tight font-extrabold ${on ? "text-gold-400" : g.is_open ? "text-ink" : "text-ink-400"}`}>{g.code}</span>
+                    <span className={`w-full truncate pr-5 text-xs font-medium ${on ? "text-white" : g.is_open ? "text-ink-700" : "text-ink-400"}`}>{g.name}</span>
                     {!g.is_open ? (
                       <span className="mt-0.5 text-[11px] font-bold tracking-wide text-ink-400 uppercase">closed</span>
                     ) : (
-                      g.draw && now !== null && <span className="mt-0.5 text-[11px] font-semibold text-muted">closes {fmtTime(g.draw.closes_at, now)}</span>
+                      g.draw && now !== null && <span className={`mt-0.5 text-[11px] font-semibold ${on ? "text-white/80" : "text-muted"}`}>closes {fmtTime(g.draw.closes_at, now)}</span>
                     )}
                     {on && (
-                      <span className="absolute top-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-brand text-white" aria-hidden="true">
+                      <span className="absolute top-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-white text-brand" aria-hidden="true">
                         <CheckIcon size={13} />
                       </span>
                     )}

@@ -172,11 +172,12 @@ button:not(:disabled) {
   @apply cursor-pointer disabled:cursor-not-allowed;
   @apply inline-flex items-center justify-center gap-2 rounded-[10px] font-bold transition select-none;
 }
+/* Main buttons: a soft top-to-bottom gradient at rest (same as the mobile app); hover, press and disabled turn solid. */
 @utility btn-buy {
-  @apply btn bg-ok text-white shadow-sm enabled:hover:bg-ok-dark enabled:active:bg-ok-dark disabled:bg-line disabled:text-muted disabled:shadow-none;
+  @apply btn bg-ok bg-linear-to-b from-[#1cb255] via-ok to-[#15803d] text-white shadow-sm enabled:hover:bg-none enabled:hover:bg-ok-dark enabled:active:bg-none enabled:active:bg-ok-dark disabled:bg-none disabled:bg-line disabled:text-muted disabled:shadow-none;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white enabled:hover:bg-brand-600 enabled:active:bg-brand-700 disabled:bg-line disabled:text-muted;
+  @apply btn bg-brand bg-linear-to-b from-[#1550c4] via-brand to-brand-600 text-white enabled:hover:bg-none enabled:hover:bg-brand-600 enabled:active:bg-none enabled:active:bg-brand-700 disabled:bg-none disabled:bg-line disabled:text-muted;
 }
 @utility btn-secondary {
   @apply btn border border-ink-300 bg-white text-ink enabled:hover:bg-ink-100 disabled:text-ink-400;

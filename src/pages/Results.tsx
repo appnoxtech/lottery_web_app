@@ -53,7 +53,7 @@ export default function Results() {
         <h2 className="section-title">My winnings</h2>
         {prizes === null && <Loading />}
         {prizes?.length === 0 && (
-          <div className="card flex items-center gap-3 p-4 text-sm text-muted">
+          <div className="card flex items-center gap-3 border-gold-400/40 bg-gradient-to-br from-gold-100 to-white p-4 text-sm text-gold-ink">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-100 text-gold-ink">
               <TrophyIcon size={20} />
             </span>
