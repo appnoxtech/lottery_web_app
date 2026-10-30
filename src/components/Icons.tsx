@@ -94,6 +94,15 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Side menu toggle: a panel with an arrow pointing the way it will move (left = collapse, right = expand). */
+export const SidebarIcon = ({ open, ...p }: IconProps & { open: boolean }) => (
+  <Svg {...p}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <path d="M9 4v16" />
+    <path d={open ? "m15.5 10-2 2 2 2" : "m13.5 10 2 2-2 2"} />
+  </Svg>
+);
+
 export const ArrowLeftIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M19 12H5M12 19l-7-7 7-7" />

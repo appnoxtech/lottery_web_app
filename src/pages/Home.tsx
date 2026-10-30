@@ -410,7 +410,7 @@ export default function Home() {
       </main>
 
       {/* Sticky total and Confirm. On phones it sits on top of the tab bar. */}
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(20,33,61,0.08)] backdrop-blur lg:bottom-0 lg:left-64">
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(20,33,61,0.08)] backdrop-blur lg:bottom-0 lg:left-(--side-menu-w) lg:transition-[left] lg:duration-200">
         <div className="mx-auto flex max-w-md items-center gap-4 lg:max-w-[1400px] lg:px-8">
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs text-muted">

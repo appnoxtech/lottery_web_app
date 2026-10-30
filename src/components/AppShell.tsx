@@ -1,10 +1,38 @@
+import { useState, type CSSProperties } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { fmtXcg } from "../lib/money";
 import { prettyPhone } from "../lib/phone";
 import { WalletProvider, useWallet } from "../lib/wallet";
-import { GamesIcon, LogoutIcon, PlusIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
-import Logo from "./Logo";
+import { GamesIcon, LogoutIcon, PlusIcon, SidebarIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
+import Logo, { LogoMark } from "./Logo";
+
+/** Remembers in this browser whether the wide-screen side menu is collapsed. */
+const MENU_KEY = "hs_side_menu";
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(MENU_KEY) === "collapsed";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hover / keyboard-focus label, styled like the admin panel's tooltips (dark ink pill, no arrow).
+ * Put it inside an element with `group relative`. Screen readers skip it: that element carries the aria-label.
+ */
+function Tip({ label, side = "right" }: { label: string; side?: "right" | "bottom" }) {
+  const place = side === "right" ? "left-full top-1/2 ml-3.5 -translate-y-1/2" : "top-full left-1/2 mt-2 -translate-x-1/2";
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute z-50 rounded-[4px] bg-ink px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:delay-100 group-focus-visible:opacity-100 ${place}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 const NAV = [
   { to: "/", label: "Games", wide: "Games", icon: GamesIcon, end: true },
@@ -25,42 +53,81 @@ function Shell() {
   const balance = wallet ? fmtXcg(wallet.balance_cents) : "…";
   const initials = (customer.name ?? "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("") || customer.phone.replace(/\D/g, "").slice(-2);
 
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const toggleMenu = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem(MENU_KEY, next ? "collapsed" : "expanded");
+    } catch {
+      // Storage blocked (private window): the choice just lasts until the page reloads.
+    }
+  };
+  const menuLabel = collapsed ? "Expand menu" : "Collapse menu";
+
+  // Collapsed: icons only, centred; the label moves to a tooltip and stays readable by screen readers.
   const side = ({ isActive }: { isActive: boolean }) =>
-    `flex h-12 items-center gap-3 rounded-[10px] px-4 font-semibold transition ${isActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"}`;
+    `group relative flex h-12 items-center gap-3 rounded-[10px] font-semibold transition ${collapsed ? "justify-center px-0" : "px-4"} ${isActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"}`;
   const tab = ({ isActive }: { isActive: boolean }) =>
     `relative flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold transition ${isActive ? "text-brand" : "text-muted"}`;
 
   return (
-    <div className="min-h-screen lg:flex">
-      {/* Side menu: wide screens only */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-gradient-to-b from-brand-700 to-brand-900 p-5 text-white lg:flex">
-        <Link to="/" className="mb-8 rounded-[10px] px-1" aria-label="HopiSuerte, games">
-          <Logo size={40} as="h1" />
+    // --side-menu-w: the side menu's current width, for anything fixed to the screen that must start right of it (e.g. the purchase bar).
+    <div className="min-h-screen lg:flex" style={{ "--side-menu-w": collapsed ? "5rem" : "16rem" } as CSSProperties}>
+      {/* Side menu: wide screens only. Collapses to an icon rail; the choice is remembered in this browser. */}
+      {/* Open: overflow is clipped so the labels never spill out while the menu widens. Collapsed: visible, so the tooltips can stick out to the right. */}
+      <aside
+        id="side-menu"
+        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col bg-gradient-to-b from-brand-700 to-brand-900 py-5 text-white transition-[width] duration-200 lg:flex ${collapsed ? "w-20 px-3" : "w-64 overflow-hidden px-5"}`}
+      >
+        <Link to="/" className={`mb-8 rounded-[10px] ${collapsed ? "self-center" : "px-1"}`} aria-label="HopiSuerte, games">
+          {collapsed ? <LogoMark size={40} /> : <Logo size={40} as="h1" />}
         </Link>
         <nav aria-label="Main" className="grid gap-1">
           {NAV.map(({ to, wide, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className={side}>
+            <NavLink key={to} to={to} end={end} className={side} aria-label={collapsed ? wide : undefined}>
               {({ isActive }) => (
                 <>
                   <Icon className={isActive ? "text-gold-400" : ""} />
-                  {wide}
+                  {collapsed ? <Tip label={wide} /> : wide}
                 </>
               )}
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto flex items-center gap-3 rounded-[14px] bg-white/10 p-3">
+        <div className={`group relative mt-auto flex items-center gap-3 rounded-[14px] bg-white/10 ${collapsed ? "justify-center p-2" : "p-3"}`}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-800" aria-hidden="true">
             {initials}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{who}</div>
-            {customer.name && <div className="truncate text-xs text-white/60">{prettyPhone(customer.phone)}</div>}
-          </div>
+          {collapsed ? (
+            <>
+              <span className="sr-only">{who}</span>
+              <Tip label={who} />
+            </>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">{who}</div>
+              {customer.name && <div className="truncate text-xs text-white/60">{prettyPhone(customer.phone)}</div>}
+            </div>
+          )}
         </div>
-        <button onClick={() => void signOut()} className="mt-2 flex h-11 items-center gap-3 rounded-[10px] px-4 text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white">
+        <button
+          onClick={() => void signOut()}
+          aria-label="Sign out"
+          className={`group relative mt-2 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "px-4"}`}
+        >
           <LogoutIcon size={18} />
-          Sign out
+          {collapsed ? <Tip label="Sign out" /> : "Sign out"}
+        </button>
+        <button
+          onClick={toggleMenu}
+          aria-label={menuLabel}
+          aria-controls="side-menu"
+          aria-expanded={!collapsed}
+          className={`group relative mt-1 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "px-4"}`}
+        >
+          <SidebarIcon size={18} open={!collapsed} />
+          {collapsed ? <Tip label={menuLabel} /> : "Collapse menu"}
         </button>
       </aside>
 
@@ -92,6 +159,16 @@ function Shell() {
 
         {/* Wide-screen top bar */}
         <div className="sticky top-0 z-10 hidden items-center justify-end gap-3 border-b border-line bg-white/90 px-8 py-3 backdrop-blur lg:flex">
+          <button
+            onClick={toggleMenu}
+            aria-label={menuLabel}
+            aria-controls="side-menu"
+            aria-expanded={!collapsed}
+            className="group relative mr-auto -ml-3 grid h-10 w-10 place-items-center rounded-[10px] text-ink-700 hover:bg-ink-100"
+          >
+            <SidebarIcon size={22} open={!collapsed} />
+            <Tip label={menuLabel} side="bottom" />
+          </button>
           <span className="text-sm text-muted">Balance</span>
           <span className="rounded-full bg-brand-50 px-4 py-1.5 text-lg font-extrabold text-brand-700" data-testid="header-balance-wide">
             {balance}
