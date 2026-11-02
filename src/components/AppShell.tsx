@@ -1,11 +1,11 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useHasUnread } from "../lib/announcements";
 import { useAuth } from "../lib/auth";
 import { fmtXcg } from "../lib/money";
 import { prettyPhone } from "../lib/phone";
 import { WalletProvider, useWallet } from "../lib/wallet";
-import { BellIcon, GamesIcon, LogoutIcon, PlusIcon, SidebarIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
+import { BellIcon, ChevronRightIcon, GamesIcon, LogoutIcon, PlusIcon, SidebarIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
 import Logo, { LogoMark } from "./Logo";
 
 /** Remembers in this browser whether the wide-screen side menu is collapsed. */
@@ -41,6 +41,80 @@ const NAV = [
   { to: "/results", label: "Results", wide: "Results", icon: TrophyIcon },
   { to: "/balance", label: "Balance", wide: "Balance", icon: WalletIcon },
 ];
+
+/**
+ * The signed-in customer at the foot of the side menu (the usual place: Slack, Linear, the admin panel's account menu).
+ * Click opens a small menu with who is signed in and "Sign out", so signing out is never one stray click away.
+ */
+function AccountMenu({ who, phone, initials, collapsed, onSignOut }: { who: string; phone: string | null; initials: string; collapsed: boolean; onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", outside);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", outside);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  // Collapsed rail: the menu opens to the right of the avatar; open: above the card.
+  const place = collapsed ? "bottom-0 left-full ml-3" : "bottom-full left-0 right-0 mb-2";
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account, ${who}`}
+        className={`group relative flex w-full items-center gap-3 rounded-[14px] bg-white/70 text-left ring-1 ring-white transition hover:bg-white ${collapsed ? "justify-center p-2" : "p-3"} ${open ? "bg-white" : ""}`}
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-800" aria-hidden="true">
+          {initials}
+        </span>
+        {collapsed ? (
+          !open && <Tip label={who} />
+        ) : (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{who}</span>
+              {phone && <span className="block truncate text-xs text-muted">{phone}</span>}
+            </span>
+            <ChevronRightIcon size={16} className={`text-ink-400 transition ${open ? "rotate-90" : "-rotate-90"}`} />
+          </>
+        )}
+      </button>
+      {open && (
+        <div role="menu" aria-label="Account" className={`absolute z-50 min-w-56 overflow-hidden rounded-[12px] bg-white py-1 shadow-raised ring-1 ring-line ${place}`}>
+          <div className="border-b border-line px-4 py-2.5">
+            <div className="truncate text-sm font-semibold text-ink">{who}</div>
+            {phone && <div className="truncate text-xs text-muted">{phone}</div>}
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
+            className="flex h-11 w-full items-center gap-3 px-4 text-sm font-semibold text-danger hover:bg-danger-soft"
+          >
+            <LogoutIcon size={18} />
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Red dot for an unread message, on the corner of the bell. */
 function UnreadDot({ className }: { className: string }) {
@@ -115,40 +189,18 @@ function Shell() {
             )}
           </NavLink>
         </nav>
-        <div className={`group relative mt-auto flex items-center gap-3 rounded-[14px] bg-white/70 ring-1 ring-white ${collapsed ? "justify-center p-2" : "p-3"}`}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-800" aria-hidden="true">
-            {initials}
-          </span>
-          {collapsed ? (
-            <>
-              <span className="sr-only">{who}</span>
-              <Tip label={who} />
-            </>
-          ) : (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold">{who}</div>
-              {customer.name && <div className="truncate text-xs text-muted">{prettyPhone(customer.phone)}</div>}
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => void signOut()}
-          aria-label="Sign out"
-          className={`group relative mt-2 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-ink-700 hover:bg-white/60 hover:text-ink ${collapsed ? "justify-center" : "px-4"}`}
-        >
-          <LogoutIcon size={18} />
-          {collapsed ? <Tip label="Sign out" /> : "Sign out"}
-        </button>
+        {/* Foot of the menu: the collapse control, then the signed-in account last (Sign out is inside its menu). */}
         <button
           onClick={toggleMenu}
           aria-label={menuLabel}
           aria-controls="side-menu"
           aria-expanded={!collapsed}
-          className={`group relative mt-1 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-muted hover:bg-white/60 hover:text-ink ${collapsed ? "justify-center" : "px-4"}`}
+          className={`group relative mt-auto mb-2 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-muted hover:bg-white/60 hover:text-ink ${collapsed ? "justify-center" : "px-4"}`}
         >
           <SidebarIcon size={18} open={!collapsed} />
           {collapsed ? <Tip label={menuLabel} /> : "Collapse menu"}
         </button>
+        <AccountMenu who={who} phone={customer.name ? prettyPhone(customer.phone) : null} initials={initials} collapsed={collapsed} onSignOut={() => void signOut()} />
       </aside>
 
       <div className="min-w-0 flex-1">
