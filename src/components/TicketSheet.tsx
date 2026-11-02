@@ -69,10 +69,10 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
       <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-5">
         {/* Ticket stub: blue header with the serial, white body with the QR */}
         <div className="overflow-hidden rounded-[14px] border border-line">
-          <div className="flex items-center gap-3 bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-3 text-white">
+          <div className="flex items-center gap-3 bg-hero px-4 py-3 text-white">
             <LogoMark size={32} />
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold tracking-widest text-white/70 uppercase">Ticket</div>
+              <div className="text-[11px] font-semibold tracking-widest text-white/90 uppercase">Ticket</div>
               <div className="truncate font-mono text-xl font-extrabold tracking-wider" data-testid="ticket-serial">
                 {prettySerial(ticket.serial)}
               </div>

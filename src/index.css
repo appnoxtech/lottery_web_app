@@ -99,7 +99,8 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-page);
+  /* Pastel canvas behind every screen (light blue to sky to mint), like PipeClose; cards stay white on top */
+  background: var(--color-page) linear-gradient(135deg, #dbeafe 0%, #f0f9ff 50%, #ccfbf1 100%) fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
@@ -172,12 +173,22 @@ button:not(:disabled) {
   @apply cursor-pointer disabled:cursor-not-allowed;
   @apply inline-flex items-center justify-center gap-2 rounded-[10px] font-bold transition select-none;
 }
-/* Main buttons: a soft top-to-bottom gradient at rest (same as the mobile app); hover, press and disabled turn solid. */
+/* Main buttons: a bright sky-to-blue (or green-to-teal) gradient, same as the mobile app; hover and press dim it a touch, disabled turns flat grey. */
 @utility btn-buy {
-  @apply btn bg-ok bg-linear-to-b from-[#1cb255] via-ok to-[#15803d] text-white shadow-sm enabled:hover:bg-none enabled:hover:bg-ok-dark enabled:active:bg-none enabled:active:bg-ok-dark disabled:bg-none disabled:bg-line disabled:text-muted disabled:shadow-none;
+  @apply btn bg-ok bg-linear-to-br from-ok to-teal-600 text-white shadow-sm enabled:hover:brightness-95 enabled:active:brightness-90 disabled:bg-none disabled:bg-line disabled:text-muted disabled:shadow-none;
 }
 @utility btn-primary {
-  @apply btn bg-brand bg-linear-to-b from-[#1550c4] via-brand to-brand-600 text-white enabled:hover:bg-none enabled:hover:bg-brand-600 enabled:active:bg-none enabled:active:bg-brand-700 disabled:bg-none disabled:bg-line disabled:text-muted;
+  @apply btn bg-brand bg-linear-to-br from-sky-600 to-blue-600 text-white enabled:hover:brightness-95 enabled:active:brightness-90 disabled:bg-none disabled:bg-line disabled:text-muted;
+}
+/* Brand surfaces (header, balance card, selected game, splash): bright sky to blue, light enough to feel fresh, dark enough for white text */
+@utility bg-hero {
+  background-color: #2563eb;
+  background-image: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+}
+/* Pastel canvas (page background, side menu) */
+@utility bg-canvas {
+  background-color: #f0f9ff;
+  background-image: linear-gradient(180deg, #dbeafe 0%, #f0f9ff 50%, #ccfbf1 100%);
 }
 @utility btn-secondary {
   @apply btn border border-ink-300 bg-white text-ink enabled:hover:bg-ink-100 disabled:text-ink-400;

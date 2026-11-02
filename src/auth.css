@@ -10,7 +10,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #fff;
-  background: linear-gradient(155deg, #0b3fa8 0%, #082c78 45%, #04173f 100%);
+  background: linear-gradient(155deg, #0284c7 0%, #2563eb 55%, #1d4ed8 100%);
 }
 
 .auth-glow {

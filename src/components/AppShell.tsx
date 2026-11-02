@@ -67,7 +67,7 @@ function Shell() {
 
   // Collapsed: icons only, centred; the label moves to a tooltip and stays readable by screen readers.
   const side = ({ isActive }: { isActive: boolean }) =>
-    `group relative flex h-12 items-center gap-3 rounded-[10px] font-semibold transition ${collapsed ? "justify-center px-0" : "px-4"} ${isActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"}`;
+    `group relative flex h-12 items-center gap-3 rounded-[10px] font-semibold transition ${collapsed ? "justify-center px-0" : "px-4"} ${isActive ? "bg-white text-brand shadow-sm" : "text-ink-700 hover:bg-white/60 hover:text-ink"}`;
   const tab = ({ isActive }: { isActive: boolean }) =>
     `relative flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold transition ${isActive ? "text-brand" : "text-muted"}`;
 
@@ -78,24 +78,24 @@ function Shell() {
       {/* Open: overflow is clipped so the labels never spill out while the menu widens. Collapsed: visible, so the tooltips can stick out to the right. */}
       <aside
         id="side-menu"
-        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col bg-gradient-to-b from-brand-700 to-brand-900 py-5 text-white transition-[width] duration-200 lg:flex ${collapsed ? "w-20 px-3" : "w-64 overflow-hidden px-5"}`}
+        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-white/70 bg-canvas py-5 text-ink transition-[width] duration-200 lg:flex ${collapsed ? "w-20 px-3" : "w-64 overflow-hidden px-5"}`}
       >
         <Link to="/" className={`mb-8 rounded-[10px] ${collapsed ? "self-center" : "px-1"}`} aria-label="HopiSuerte, games">
-          {collapsed ? <LogoMark size={40} /> : <Logo size={40} as="h1" />}
+          {collapsed ? <LogoMark size={40} /> : <Logo size={40} tone="dark" as="h1" />}
         </Link>
         <nav aria-label="Main" className="grid gap-1">
           {NAV.map(({ to, wide, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={side} aria-label={collapsed ? wide : undefined}>
               {({ isActive }) => (
                 <>
-                  <Icon className={isActive ? "text-gold-400" : ""} />
+                  <Icon className={isActive ? "text-blue-600" : "text-ink-500"} />
                   {collapsed ? <Tip label={wide} /> : wide}
                 </>
               )}
             </NavLink>
           ))}
         </nav>
-        <div className={`group relative mt-auto flex items-center gap-3 rounded-[14px] bg-white/10 ${collapsed ? "justify-center p-2" : "p-3"}`}>
+        <div className={`group relative mt-auto flex items-center gap-3 rounded-[14px] bg-white/70 ring-1 ring-white ${collapsed ? "justify-center p-2" : "p-3"}`}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-800" aria-hidden="true">
             {initials}
           </span>
@@ -107,14 +107,14 @@ function Shell() {
           ) : (
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{who}</div>
-              {customer.name && <div className="truncate text-xs text-white/60">{prettyPhone(customer.phone)}</div>}
+              {customer.name && <div className="truncate text-xs text-muted">{prettyPhone(customer.phone)}</div>}
             </div>
           )}
         </div>
         <button
           onClick={() => void signOut()}
           aria-label="Sign out"
-          className={`group relative mt-2 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "px-4"}`}
+          className={`group relative mt-2 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-ink-700 hover:bg-white/60 hover:text-ink ${collapsed ? "justify-center" : "px-4"}`}
         >
           <LogoutIcon size={18} />
           {collapsed ? <Tip label="Sign out" /> : "Sign out"}
@@ -124,7 +124,7 @@ function Shell() {
           aria-label={menuLabel}
           aria-controls="side-menu"
           aria-expanded={!collapsed}
-          className={`group relative mt-1 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "px-4"}`}
+          className={`group relative mt-1 flex h-11 items-center gap-3 rounded-[10px] text-sm font-semibold text-muted hover:bg-white/60 hover:text-ink ${collapsed ? "justify-center" : "px-4"}`}
         >
           <SidebarIcon size={18} open={!collapsed} />
           {collapsed ? <Tip label={menuLabel} /> : "Collapse menu"}
@@ -133,21 +133,21 @@ function Shell() {
 
       <div className="min-w-0 flex-1">
         {/* Phone header */}
-        <header className="bg-gradient-to-br from-brand-500 to-brand-700 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-white lg:hidden">
+        <header className="border-b border-white/70 bg-canvas px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-ink lg:hidden">
           <div className="flex items-center justify-between gap-3">
-            <Logo size={34} as="h1" />
-            <button onClick={() => void signOut()} className="flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-white/85 active:bg-white/10">
+            <Logo size={34} tone="dark" as="h1" />
+            <button onClick={() => void signOut()} className="flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-ink-700 active:bg-white/60">
               <LogoutIcon size={18} />
               Sign out
             </button>
           </div>
-          <Link to="/balance" className="mt-4 flex items-center justify-between rounded-[14px] bg-white/12 px-4 py-3 ring-1 ring-white/15 active:bg-white/20">
-            <span className="flex items-center gap-2 text-sm text-white/80">
+          <Link to="/balance" className="mt-4 flex items-center justify-between rounded-[14px] bg-white px-4 py-3 shadow-sm ring-1 ring-white active:bg-brand-50">
+            <span className="flex items-center gap-2 text-sm text-muted">
               <WalletIcon size={18} />
               Balance
             </span>
             <span className="flex items-center gap-3">
-              <span className="text-xl font-extrabold" data-testid="header-balance">
+              <span className="text-xl font-extrabold text-ink" data-testid="header-balance">
                 {balance}
               </span>
               <span className="grid h-7 w-7 place-items-center rounded-full bg-gold-400 text-brand-800" aria-hidden="true">
@@ -158,7 +158,7 @@ function Shell() {
         </header>
 
         {/* Wide-screen top bar */}
-        <div className="sticky top-0 z-10 hidden items-center justify-end gap-3 border-b border-line bg-white/90 px-8 py-3 backdrop-blur lg:flex">
+        <div className="sticky top-0 z-10 hidden items-center justify-end gap-3 border-b border-white/70 bg-white/60 px-8 py-3 backdrop-blur lg:flex">
           <button
             onClick={toggleMenu}
             aria-label={menuLabel}

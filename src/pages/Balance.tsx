@@ -60,10 +60,10 @@ export default function Balance() {
     <main className="grid gap-6 px-4 pt-5 lg:grid-cols-[380px_1fr] lg:items-start lg:px-0 lg:pt-0">
       <section className="grid gap-3 lg:sticky lg:top-24">
         {/* Balance card */}
-        <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-brand-500 to-brand-800 p-5 text-white shadow-raised">
+        <div className="relative overflow-hidden rounded-[20px] bg-hero p-5 text-white shadow-raised">
           <div aria-hidden="true" className="absolute -top-10 -right-10 h-36 w-36 rounded-full border-[22px] border-gold-400 opacity-20" />
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-white/75">Your balance</span>
+            <span className="text-sm font-medium text-white/90">Your balance</span>
             <LogoMark size={28} />
           </div>
           <div className="mt-2 font-display text-4xl font-extrabold tracking-tight" data-testid="balance">

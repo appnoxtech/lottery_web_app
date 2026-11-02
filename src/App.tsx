@@ -12,7 +12,7 @@ import { Spinner } from "./components/Icons";
 /** Shown while a stored session is being checked with the server. */
 function Splash() {
   return (
-    <div role="status" aria-live="polite" className="grid min-h-screen place-content-center justify-items-center gap-4 bg-gradient-to-br from-brand-500 to-brand-700 text-white/75">
+    <div role="status" aria-live="polite" className="grid min-h-screen place-content-center justify-items-center gap-4 bg-hero text-white">
       <LogoMark size={64} />
       <span className="flex items-center gap-2 text-sm">
         <Spinner className="text-gold-400" />
