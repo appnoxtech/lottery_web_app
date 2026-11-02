@@ -4,6 +4,7 @@ import AppShell from "./components/AppShell";
 import Balance from "./pages/Balance";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Messages from "./pages/Messages";
 import Results from "./pages/Results";
 import Tickets from "./pages/Tickets";
 import { LogoMark } from "./components/Logo";
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/results" element={<Results />} />
               <Route path="/balance" element={<Balance />} />
+              <Route path="/messages" element={<Messages />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

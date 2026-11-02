@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../lib/api";
+import { prettyPhone } from "../lib/phone";
 import { fmtDateTime } from "../lib/time";
-import { prettySerial, qrDataUrl, repeatToForm, saveTicket, shareTicket, type RepeatData } from "../lib/ticket";
+import { prettySerial, qrDataUrl, repeatToForm, saveTicket, shareTicket, ticketStatus, type RepeatData } from "../lib/ticket";
 import type { Ticket } from "../lib/types";
 import { CheckIcon, DownloadIcon, RepeatIcon, ShareIcon, TrophyIcon } from "./Icons";
 import { LogoMark } from "./Logo";
@@ -12,7 +13,7 @@ import { MEDAL, WinningNumbers } from "./WinningNumbers";
 const PRIZE_STATUS = { pending: "being paid", credited: "added to your balance", paid_out: "paid out" } as const;
 const ORDINAL = ["1st", "2nd", "3rd"];
 
-/** The ticket: QR, serial, numbers with their result and prizes, and save, share and repeat. */
+/** The ticket (PDF section 8): QR, serial, customer, reference, status, numbers with their result and prizes, and save, share and repeat. */
 export default function TicketSheet({ ticket, onClose, justBought = false }: { ticket: Ticket; onClose: () => void; justBought?: boolean }) {
   const navigate = useNavigate();
   const [qr, setQr] = useState<string | null>(null);
@@ -84,7 +85,25 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
             ) : (
               <div className="h-32 w-32 animate-pulse rounded-[10px] bg-ink-100 lg:h-44 lg:w-44" aria-hidden="true" />
             )}
-            <div className="text-sm text-muted">{fmtDateTime(ticket.created_at)} · Curaçao time</div>
+            <dl className="mt-1 grid w-full grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-left text-sm" data-testid="ticket-details">
+              {ticket.phone && (
+                <>
+                  <dt className="text-muted">Customer</dt>
+                  <dd className="text-right font-medium text-ink">{prettyPhone(ticket.phone)}</dd>
+                </>
+              )}
+              <dt className="text-muted">Purchased</dt>
+              <dd className="text-right font-medium text-ink">{fmtDateTime(ticket.created_at)}</dd>
+              {ticket.reference && (
+                <>
+                  <dt className="text-muted">Reference</dt>
+                  <dd className="text-right font-mono font-medium text-ink">{ticket.reference}</dd>
+                </>
+              )}
+              <dt className="text-muted">Status</dt>
+              <dd className={`text-right font-semibold ${ticket.status === "corrected" ? "text-warn-ink" : "text-ok-ink"}`}>{ticketStatus(ticket.status)}</dd>
+            </dl>
+            <div className="text-xs text-ink-400">Times are Curaçao time</div>
             <div className="hidden text-xs text-ink-400 lg:block">Show this code if you need help with your ticket.</div>
           </div>
         </div>
@@ -96,9 +115,16 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
               return (
                 <div key={code} className="rounded-[14px] border border-line p-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="grid h-7 min-w-8 place-items-center rounded-md bg-brand-50 px-1.5 text-xs font-bold text-brand-700">{code}</span>
-                      {entries[0].draw_date && <span className="text-xs text-muted">draw {entries[0].draw_date}</span>}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="grid h-7 min-w-8 shrink-0 place-items-center rounded-md bg-brand-50 px-1.5 text-xs font-bold text-brand-700">{code}</span>
+                      <span className="min-w-0 leading-tight">
+                        {entries[0].game_name && <span className="block truncate text-sm font-semibold text-ink">{entries[0].game_name}</span>}
+                        {entries[0].draw_at ? (
+                          <span className="block text-xs text-muted">draw {fmtDateTime(entries[0].draw_at)}</span>
+                        ) : (
+                          entries[0].draw_date && <span className="block text-xs text-muted">draw {entries[0].draw_date}</span>
+                        )}
+                      </span>
                     </span>
                     <span className="text-xs font-medium text-muted">{entries.length} numbers</span>
                   </div>
@@ -117,6 +143,7 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
                       <div key={`${e.digits}-${e.number}`} className="contents">
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="font-mono text-base font-bold tracking-widest">{e.number}</span>
+                          <span className="text-xs text-muted">{e.digits} digits</span>
                           {e.prizes?.map((p) => (
                             <span key={p.rank} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${MEDAL[p.rank - 1] ?? MEDAL[0]}`} data-testid="prize-badge">
                               <TrophyIcon size={12} />

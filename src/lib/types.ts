@@ -96,6 +96,7 @@ export interface Preview {
 
 export interface TicketEntry {
   game_code: string;
+  game_name?: string | null;
   draw_date: string | null;
   draw_at: string | null;
   digits: number;
@@ -114,6 +115,8 @@ export interface Ticket {
   currency: string;
   entries_count: number;
   created_at: string;
+  phone?: string; // as it was at purchase
+  reference?: string | null; // transaction reference of the payment, "TX-00000123"
   entries?: TicketEntry[];
   qr?: string;
   replayed?: boolean;
@@ -147,4 +150,12 @@ export interface MyPrize {
   draw_date: string;
   digits: number;
   number: string;
+}
+
+/** A message the HopiSuerte team sent to every customer (also sent as a push to the phone app). */
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  created_at: string;
 }

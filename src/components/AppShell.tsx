@@ -1,10 +1,11 @@
 import { useState, type CSSProperties } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { useHasUnread } from "../lib/announcements";
 import { useAuth } from "../lib/auth";
 import { fmtXcg } from "../lib/money";
 import { prettyPhone } from "../lib/phone";
 import { WalletProvider, useWallet } from "../lib/wallet";
-import { GamesIcon, LogoutIcon, PlusIcon, SidebarIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
+import { BellIcon, GamesIcon, LogoutIcon, PlusIcon, SidebarIcon, TicketIcon, TrophyIcon, WalletIcon } from "./Icons";
 import Logo, { LogoMark } from "./Logo";
 
 /** Remembers in this browser whether the wide-screen side menu is collapsed. */
@@ -41,6 +42,11 @@ const NAV = [
   { to: "/balance", label: "Balance", wide: "Balance", icon: WalletIcon },
 ];
 
+/** Red dot for an unread message, on the corner of the bell. */
+function UnreadDot({ className }: { className: string }) {
+  return <span className={`absolute h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-white ${className}`} aria-hidden="true" />;
+}
+
 /**
  * Phones: a compact blue header (logo + balance) and a tab bar at the bottom, where the thumb is.
  * Wide screens (lg and up): a side menu on the left, a top bar with the balance, and a wide content area.
@@ -53,6 +59,8 @@ function Shell() {
   const balance = wallet ? fmtXcg(wallet.balance_cents) : "…";
   const initials = (customer.name ?? "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("") || customer.phone.replace(/\D/g, "").slice(-2);
 
+  const unread = useHasUnread();
+  const messagesLabel = unread ? "Messages, new message" : "Messages";
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggleMenu = () => {
     const next = !collapsed;
@@ -94,6 +102,18 @@ function Shell() {
               )}
             </NavLink>
           ))}
+          {/* Messages sit in the side menu on wide screens; on phones they are the bell in the header, so the tab bar keeps four tabs. */}
+          <NavLink to="/messages" className={side} aria-label={collapsed || unread ? messagesLabel : undefined}>
+            {({ isActive }) => (
+              <>
+                <span className="relative">
+                  <BellIcon className={isActive ? "text-blue-600" : "text-ink-500"} />
+                  {unread && <UnreadDot className="-top-1 -right-1" />}
+                </span>
+                {collapsed ? <Tip label="Messages" /> : "Messages"}
+              </>
+            )}
+          </NavLink>
         </nav>
         <div className={`group relative mt-auto flex items-center gap-3 rounded-[14px] bg-white/70 ring-1 ring-white ${collapsed ? "justify-center p-2" : "p-3"}`}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-800" aria-hidden="true">
@@ -136,10 +156,20 @@ function Shell() {
         <header className="border-b border-white/70 bg-canvas px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-ink lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Logo size={34} tone="dark" as="h1" />
-            <button onClick={() => void signOut()} className="flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-ink-700 active:bg-white/60">
-              <LogoutIcon size={18} />
-              Sign out
-            </button>
+            <div className="flex items-center gap-1">
+              <NavLink
+                to="/messages"
+                aria-label={messagesLabel}
+                className={({ isActive }) => `relative grid h-11 w-11 place-items-center rounded-[10px] active:bg-white/60 ${isActive ? "bg-white text-brand" : "text-ink-700"}`}
+              >
+                <BellIcon size={20} />
+                {unread && <UnreadDot className="top-2 right-2" />}
+              </NavLink>
+              <button onClick={() => void signOut()} className="flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-ink-700 active:bg-white/60">
+                <LogoutIcon size={18} />
+                Sign out
+              </button>
+            </div>
           </div>
           <Link to="/balance" className="mt-4 flex items-center justify-between rounded-[14px] bg-white px-4 py-3 shadow-sm ring-1 ring-white active:bg-brand-50">
             <span className="flex items-center gap-2 text-sm text-muted">

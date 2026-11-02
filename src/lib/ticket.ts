@@ -1,10 +1,14 @@
 import QRCode from "qrcode";
 import { DIGIT_TYPES, type DigitType } from "./entry";
+import { prettyPhone } from "./phone";
 import { fmtDateTime } from "./time";
 import type { Ticket } from "./types";
 
 /** Serial as shown to people: HS-XXXXX-XXXXX. */
 export const prettySerial = (serial: string): string => `HS-${serial.slice(0, 5)}-${serial.slice(5)}`;
+
+/** Purchase status as printed on the ticket (PDF section 8). */
+export const ticketStatus = (status: string): string => (status === "corrected" ? "Corrected" : status === "confirmed" ? "Confirmed" : status);
 
 /** The QR code holds only the serial: nothing private is in it. */
 export const qrDataUrl = (serial: string): Promise<string> => QRCode.toDataURL(serial, { margin: 1, width: 240, errorCorrectionLevel: "M" });
@@ -26,12 +30,12 @@ export function repeatToForm(data: RepeatData): { games: string[]; digits: Digit
   return { games: data.games, digits, text: keep.map((l) => `${l.number}x${l.stake}`).join(" ") };
 }
 
-/** A picture of the ticket (serial, QR, numbers, total) to save or share. Drawn locally, nothing is uploaded. */
+/** A picture of the ticket (serial, QR, customer, reference, numbers, total, status) to save or share. Drawn locally, nothing is uploaded. */
 export async function ticketImage(ticket: Ticket): Promise<Blob> {
   const entries = ticket.entries ?? [];
   const W = 600;
   const rowH = 30;
-  const H = 470 + entries.length * rowH + 60;
+  const H = 580 + entries.length * rowH + 100;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -61,12 +65,20 @@ export async function ticketImage(ticket: Ticket): Promise<Blob> {
   });
   c.drawImage(qr, (W - 240) / 2, 200, 240, 240);
 
-  let y = 480;
-  c.textAlign = "left";
   c.fillStyle = "#14213d";
+  c.font = "20px sans-serif";
+  if (ticket.phone) c.fillText(`Customer: ${prettyPhone(ticket.phone)}`, W / 2, 472);
+  if (ticket.reference) c.fillText(`Reference: ${ticket.reference}`, W / 2, 500);
+
+  let y = 560;
+  c.textAlign = "left";
   for (const e of entries) {
     c.font = "bold 22px monospace";
     c.fillText(`${e.game_code}  ${e.number}`, 40, y);
+    c.font = "16px sans-serif";
+    c.fillStyle = "#5b6b86";
+    c.fillText(`${e.digits} digits`, 250, y);
+    c.fillStyle = "#14213d";
     c.font = "22px sans-serif";
     c.textAlign = "right";
     c.fillText(e.stake, W - 40, y);
@@ -79,6 +91,9 @@ export async function ticketImage(ticket: Ticket): Promise<Blob> {
   c.fillText("Total", 40, y + 28);
   c.textAlign = "right";
   c.fillText(`XCG ${ticket.total}`, W - 40, y + 28);
+  c.font = "20px sans-serif";
+  c.textAlign = "left";
+  c.fillText(`Status: ${ticketStatus(ticket.status)}`, 40, y + 66);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not draw the ticket."))), "image/png"));
 }
