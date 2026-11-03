@@ -3,6 +3,8 @@ export interface Customer {
   phone: string; // E.164, for example +59995181234
   name: string | null;
   status: "active" | "suspended" | "blocked";
+  /** Set when the customer asked to delete their account and the team has not deleted it yet. */
+  deletion_requested_at?: string | null;
 }
 
 export interface Session {

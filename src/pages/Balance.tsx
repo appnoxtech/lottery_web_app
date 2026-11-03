@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChatIcon, PlusIcon, Spinner, TicketIcon, TrophyIcon, WalletIcon } from "../components/Icons";
+import DeleteAccount from "../components/DeleteAccount";
 import { LogoMark } from "../components/Logo";
 import { Empty, ErrorNote, Loading } from "../components/ui";
 import { api, ApiError } from "../lib/api";
@@ -83,6 +84,7 @@ export default function Balance() {
             </li>
           ))}
         </ol>
+        <DeleteAccount />
       </section>
 
       <section aria-label="History" className="grid gap-3">
