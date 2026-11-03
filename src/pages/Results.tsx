@@ -18,6 +18,8 @@ export default function Results() {
   const [prizes, setPrizes] = useState<MyPrize[] | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [prizePage, setPrizePage] = useState(1);
+  const [prizeTotal, setPrizeTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Ticket | null>(null);
 
@@ -33,10 +35,21 @@ export default function Results() {
     }
   }, []);
 
+  const loadPrizes = useCallback(async (pageToLoad: number) => {
+    try {
+      const res = await api.get<Paginated<MyPrize>>(`results/mine?per_page=10&page=${pageToLoad}`);
+      setPrizes((prev) => (pageToLoad === 1 ? res.items : [...(prev ?? []), ...res.items]));
+      setPrizeTotal(res.total);
+      setPrizePage(pageToLoad);
+    } catch {
+      setPrizes((prev) => prev ?? []);
+    }
+  }, []);
+
   useEffect(() => {
     void load(1);
-    api.get<Paginated<MyPrize>>("results/mine").then((r) => setPrizes(r.items)).catch(() => setPrizes([]));
-  }, [load]);
+    void loadPrizes(1);
+  }, [load, loadPrizes]);
 
   const showTicket = async (serial: string) => {
     try {
@@ -77,6 +90,11 @@ export default function Results() {
             </span>
           </button>
         ))}
+        {prizes && prizes.length < prizeTotal && (
+          <button type="button" onClick={() => void loadPrizes(prizePage + 1)} className="btn-secondary h-12">
+            Show more
+          </button>
+        )}
       </section>
 
       <section className="grid gap-3 lg:order-1">
