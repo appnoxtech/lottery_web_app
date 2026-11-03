@@ -28,7 +28,7 @@ export function markAnnouncementsSeen(items: Announcement[]): void {
   listeners.forEach((l) => l());
 }
 
-/** True when there is a message newer than the last one the customer opened. Checked when the app opens. */
+/** True when there is a message newer than the last one the customer opened. Checked when the app opens, when the tab comes back and every two minutes. */
 export function useHasUnread(): boolean {
   const [newest, setNewest] = useState(0);
   const [seen, setSeen] = useState(readSeen);
@@ -37,16 +37,23 @@ export function useHasUnread(): boolean {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAnnouncements()
-      .then((items) => {
-        if (!cancelled) setNewest(items[0]?.id ?? 0);
-      })
-      .catch(() => {
-        /* offline: no dot rather than a wrong one */
-      });
+    const load = () =>
+      fetchAnnouncements()
+        .then((items) => {
+          if (!cancelled) setNewest(items[0]?.id ?? 0);
+        })
+        .catch(() => {
+          /* offline: no dot rather than a wrong one */
+        });
+    const onVisible = () => document.visibilityState === "visible" && void load();
+    void load();
+    const timer = setInterval(() => document.visibilityState === "visible" && void load(), 120_000);
+    document.addEventListener("visibilitychange", onVisible);
     listeners.add(refresh);
     return () => {
       cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
       listeners.delete(refresh);
     };
   }, [refresh]);
