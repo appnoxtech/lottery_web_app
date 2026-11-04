@@ -7,7 +7,9 @@ import { LogoMark } from "../components/Logo";
 import { ErrorNote } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { isValidPhone, prettyPhone } from "../lib/phone";
+import CountrySelect from "../components/CountrySelect";
+import { cleanPhoneInput, COUNTRIES, DEFAULT_COUNTRY, examplePhone, hasTooManyDigits, isValidPhone, prettyPhone, toE164 } from "../lib/phone";
+import type { CountryCode } from "libphonenumber-js/min";
 import type { Customer } from "../lib/types";
 
 type Step = "phone" | "code";
@@ -23,6 +25,7 @@ export default function Login() {
 
   const [step, setStep] = useState<Step>("phone");
   const [phoneInput, setPhoneInput] = useState("");
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [phone, setPhone] = useState(""); // E.164, as the server understood it
   const [code, setCode] = useState("");
@@ -38,10 +41,18 @@ export default function Login() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  const phoneOk = isValidPhone(phoneInput);
-  // The +599 segment is only a hint; it hides once the customer types a country code of their own.
+  const phoneOk = isValidPhone(phoneInput, country);
+  // The country selector hides once the customer types a country code of their own (+91 ...).
   const international = phoneInput.trim().startsWith("+");
-  const phoneError = phoneTouched && !phoneOk ? (phoneInput.trim() ? "Enter a valid phone number, like 9 518 1234 or +599 9 518 1234" : "Enter your phone number") : null;
+  const countryName = COUNTRIES.find((c) => c.code === country)?.name ?? "";
+  const phoneError =
+    phoneTouched && !phoneOk
+      ? phoneInput.trim()
+        ? international
+          ? "Enter a valid international number, like +599 9 518 1234"
+          : `Enter a valid ${countryName} number, like ${examplePhone(country)}`
+        : "Enter your phone number"
+      : null;
 
   const requestCode = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -54,7 +65,7 @@ export default function Login() {
     setError(null);
     clearNotice();
     try {
-      const result = await api.post<{ phone: string; resend_after_seconds: number }>("auth/otp/request", { phone: phoneInput.trim() });
+      const result = await api.post<{ phone: string; resend_after_seconds: number }>("auth/otp/request", { phone: toE164(phoneInput, country) ?? phoneInput.trim() });
       setPhone(result.phone);
       setCode("");
       setCodeInvalid(false);
@@ -64,7 +75,7 @@ export default function Login() {
       const apiError = err as ApiError;
       if (apiError.code === "otp_too_soon") {
         // A code was sent a moment ago: carry on with that one.
-        setPhone(phoneInput.trim());
+        setPhone(toE164(phoneInput, country) ?? phoneInput.trim());
         setCooldown(apiError.retryAfter ?? 30);
         setStep("code");
         setError("A code was sent a moment ago. Enter it below.");
@@ -206,22 +217,19 @@ export default function Login() {
                     Phone number
                   </label>
                   <div className="auth-field" data-invalid={!!phoneError}>
-                    {international ? (
-                      <PhoneIcon className="auth-field-icon mx-4 shrink-0" />
-                    ) : (
-                      <span className="mx-2 flex h-10 shrink-0 items-center gap-1.5 rounded-[10px] bg-ink-100 px-2.5 text-sm font-semibold text-ink-700">
-                        <PhoneIcon size={16} className="auth-field-icon" />
-                        +599
-                      </span>
-                    )}
+                    {international ? <PhoneIcon className="auth-field-icon mx-4 shrink-0" /> : <CountrySelect value={country} onChange={setCountry} />}
                     <input
                       id="phone"
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
-                      placeholder="9 518 1234"
+                      placeholder={international ? "+599 9 518 1234" : examplePhone(country) || "Phone number"}
                       value={phoneInput}
-                      onChange={(e) => setPhoneInput(e.target.value)}
+                      onChange={(e) => {
+                        const next = cleanPhoneInput(e.target.value);
+                        // Digits past the country's number length (India 10, Curaçao 8...) are simply not typed (deleting always works).
+                        if (next.length <= phoneInput.length || !hasTooManyDigits(next, country)) setPhoneInput(next);
+                      }}
                       onBlur={() => setPhoneTouched(true)}
                       aria-invalid={!!phoneError || undefined}
                       aria-describedby="phone-help"
@@ -229,7 +237,7 @@ export default function Login() {
                     />
                   </div>
                   <span id="phone-help" className={`min-h-5 text-sm leading-snug ${phoneError ? "font-medium text-danger" : "text-muted"}`}>
-                    {phoneError ?? "Curaçao numbers work as they are (+599). For another country start with +."}
+                    {phoneError ?? "Pick your country, then type your number without the country code."}
                   </span>
                 </div>
 
