@@ -6,6 +6,7 @@ import { Empty, ErrorNote, Loading } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { isValidStake } from "../lib/entry";
 import { fmtXcg } from "../lib/money";
+import { PAY_INTRO, PAY_LINKS, PAY_NOTE } from "../lib/topup";
 import { fmtDateTime } from "../lib/time";
 import { useWallet } from "../lib/wallet";
 import type { LedgerEntry, Paginated } from "../lib/types";
@@ -29,6 +30,7 @@ export default function Balance() {
   const [opening, setOpening] = useState(false);
   const [amount, setAmount] = useState("");
   const [amountTouched, setAmountTouched] = useState(false);
+  const [paying, setPaying] = useState(false);
   const amountOk = isValidStake(amount);
 
   const load = useCallback(async (pageToLoad: number) => {
@@ -48,12 +50,16 @@ export default function Balance() {
     void refresh();
   }, [load, refresh]);
 
-  const topUp = async () => {
-    if (opening) return;
+  const topUp = () => {
     if (!amountOk) {
       setAmountTouched(true);
       return;
     }
+    setPaying(true);
+  };
+
+  const paid = async () => {
+    if (opening) return;
     setOpening(true);
     setTopupError(null);
     try {
@@ -107,14 +113,31 @@ export default function Balance() {
             </div>
             {amountTouched && !amountOk && <p role="alert" className="text-sm font-medium text-gold-400">Enter an amount, for example 25 or 25.50.</p>}
           </div>
-          <button onClick={() => void topUp()} disabled={opening} className="btn-buy mt-4 h-12 w-full">
-            {opening ? <Spinner /> : <ChatIcon size={18} />}
-            {opening ? "Opening WhatsApp…" : "Top Up on WhatsApp"}
+          <button onClick={topUp} className="btn-buy mt-4 h-12 w-full">
+            <PlusIcon size={18} />
+            Top Up
           </button>
         </div>
+        {paying && (
+          <div className="card grid gap-3 p-4 text-sm text-ink-700" data-testid="pay-panel">
+            <p>{PAY_INTRO}</p>
+            <div className="grid gap-2">
+              {PAY_LINKS.map((l) => (
+                <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="btn-buy h-11 w-full">
+                  {l.label}
+                </a>
+              ))}
+            </div>
+            <p>{PAY_NOTE}</p>
+            <button onClick={() => void paid()} disabled={opening} className="btn-buy h-12 w-full">
+              {opening ? <Spinner /> : <ChatIcon size={18} />}
+              {opening ? "Opening WhatsApp…" : "I have paid"}
+            </button>
+          </div>
+        )}
         {topupError && <ErrorNote>{topupError}</ErrorNote>}
         <ol className="card grid gap-3 p-4 text-sm text-ink-700">
-          {["Enter the amount and tap Top Up. WhatsApp opens with your amount ready; send your payment details.", "We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
+          {["Enter the amount, tap Top Up and pay with one of the links.", "Tap I have paid to tell us on WhatsApp. We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
             <li key={step} className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand">{i + 1}</span>
               {step}
