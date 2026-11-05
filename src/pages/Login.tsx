@@ -10,6 +10,7 @@ import { useAuth } from "../lib/auth";
 import CountrySelect from "../components/CountrySelect";
 import { cleanPhoneInput, COUNTRIES, DEFAULT_COUNTRY, examplePhone, hasTooManyDigits, isValidPhone, prettyPhone, toE164 } from "../lib/phone";
 import type { CountryCode } from "libphonenumber-js/min";
+import { Link } from "react-router-dom";
 import type { Customer } from "../lib/types";
 
 type Step = "phone" | "code";
@@ -303,6 +304,9 @@ export default function Login() {
             )}
           </main>
           <p className="mt-5 hidden text-center text-xs text-white/50 sm:block">All times are Curaçao time · Play responsibly</p>
+          <p className="mt-4 text-center text-xs text-white/60">
+            <Link to="/privacy" className="underline underline-offset-2 hover:text-white">Privacy policy</Link>
+          </p>
         </section>
       </div>
     </div>

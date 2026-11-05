@@ -5,6 +5,7 @@ import Balance from "./pages/Balance";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Messages from "./pages/Messages";
+import Privacy from "./pages/Privacy";
 import Results from "./pages/Results";
 import Tickets from "./pages/Tickets";
 import { LogoMark } from "./components/Logo";
@@ -41,6 +42,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/privacy" element={<Privacy />} />
           <Route element={<GuestOnly />}>
             <Route path="/login" element={<Login />} />
           </Route>
