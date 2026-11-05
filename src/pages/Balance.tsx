@@ -137,7 +137,7 @@ export default function Balance() {
         )}
         {topupError && <ErrorNote>{topupError}</ErrorNote>}
         <ol className="card grid gap-3 p-4 text-sm text-ink-700">
-          {["Enter the amount, tap Top Up and pay with one of the links.", "Tap I have paid to tell us on WhatsApp. We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
+          {["Enter the amount, tap Top Up and pay with one of the links in Dollars, Euro or XCG. Your payment is converted and credited to your HopiSuerte balance in XCG. All prizes are originally in XCG.", "When your payment is done, tap I have paid to tell us on WhatsApp. We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
             <li key={step} className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand">{i + 1}</span>
               {step}
