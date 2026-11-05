@@ -101,7 +101,7 @@ export default function Balance() {
             <div className="flex flex-wrap gap-2">
               {QUICK_AMOUNTS.map((q) => (
                 <button key={q} type="button" onClick={() => { setAmount(q); setAmountTouched(true); }} className="h-9 rounded-full bg-white/15 px-4 text-sm font-semibold text-white transition hover:bg-white/25">
-                  {q}
+                  XCG {q}
                 </button>
               ))}
             </div>

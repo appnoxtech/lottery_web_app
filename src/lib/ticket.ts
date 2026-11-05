@@ -81,7 +81,7 @@ export async function ticketImage(ticket: Ticket): Promise<Blob> {
     c.fillStyle = "#14213d";
     c.font = "22px sans-serif";
     c.textAlign = "right";
-    c.fillText(e.stake, W - 40, y);
+    c.fillText(`XCG ${e.stake}`, W - 40, y);
     c.textAlign = "left";
     y += rowH;
   }

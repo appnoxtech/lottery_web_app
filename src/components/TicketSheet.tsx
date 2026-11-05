@@ -151,7 +151,7 @@ export default function TicketSheet({ ticket, onClose, justBought = false }: { t
                             </span>
                           ))}
                         </span>
-                        <span className="text-right font-medium text-ink-700">{e.stake}</span>
+                        <span className="text-right font-medium text-ink-700">XCG {e.stake}</span>
                       </div>
                     ))}
                   </div>

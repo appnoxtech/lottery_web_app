@@ -12,7 +12,7 @@ import { useServerClock } from "../lib/useServerClock";
 import { useWallet } from "../lib/wallet";
 import type { Customer, Preview, PurchaseRules, Ticket } from "../lib/types";
 
-const DEFAULT_STAKE = "0.50";
+const DEFAULT_STAKE = "1.00";
 
 export default function Home() {
   const { session, setCustomer, isNew } = useAuth();
