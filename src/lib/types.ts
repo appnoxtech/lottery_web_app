@@ -145,6 +145,9 @@ export interface MyPrize {
   id: number;
   rank: 1 | 2 | 3;
   amount: string;
+  /** Split of the prize: while waiting it is what the winner asked for (null if nothing yet), after that what was done. */
+  credit: string | null;
+  cash: string | null;
   currency: string;
   status: "pending" | "credited" | "paid_out";
   ticket_serial: string;

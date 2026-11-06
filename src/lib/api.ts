@@ -61,7 +61,7 @@ function toApiError(e: unknown): ApiError {
   return new ApiError("network_error", "Cannot reach the server. Check your connection and try again.", 0);
 }
 
-async function request<T>(method: "get" | "post" | "patch" | "delete", url: string, data?: unknown, headers?: Record<string, string>): Promise<T> {
+async function request<T>(method: "get" | "post" | "put" | "patch" | "delete", url: string, data?: unknown, headers?: Record<string, string>): Promise<T> {
   try {
     const response = await http.request({ method, url, data, headers });
     return response.data.data as T;
@@ -76,6 +76,7 @@ async function request<T>(method: "get" | "post" | "patch" | "delete", url: stri
 export const api = {
   get: <T>(url: string) => request<T>("get", url),
   post: <T>(url: string, data?: unknown, headers?: Record<string, string>) => request<T>("post", url, data, headers),
+  put: <T>(url: string, data?: unknown) => request<T>("put", url, data),
   patch: <T>(url: string, data?: unknown) => request<T>("patch", url, data),
   delete: <T>(url: string, data?: unknown) => request<T>("delete", url, data),
 };

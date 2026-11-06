@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { TrophyIcon } from "../components/Icons";
+import PrizePayout from "../components/PrizePayout";
 import TicketSheet from "../components/TicketSheet";
 import { Empty, ErrorNote, Loading, PageTitle } from "../components/ui";
 import { WinningNumbers } from "../components/WinningNumbers";
 import { api, ApiError } from "../lib/api";
+import { payoutSummary } from "../lib/prize";
 import { prettySerial } from "../lib/ticket";
 import { fmtBusinessDate } from "../lib/time";
 import type { MyPrize, Paginated, ResultItem, Ticket } from "../lib/types";
@@ -74,21 +76,19 @@ export default function Results() {
           </div>
         )}
         {prizes?.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => void showTicket(p.ticket_serial)}
-            data-testid="prize-row"
-            className="card grid gap-1.5 border-gold-400/60 bg-gradient-to-br from-gold-100/70 to-white p-4 text-left transition hover:shadow-raised"
-          >
-            <span className="flex items-center justify-between gap-2">
-              <span className="font-display text-2xl font-extrabold text-ok-ink">XCG {p.amount}</span>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[p.status]}`}>{STATUS[p.status]}</span>
-            </span>
-            <span className="text-sm text-muted">
-              {p.game_code} · {fmtBusinessDate(p.draw_date)} · {ORDINAL[p.rank - 1]} prize with <span className="font-mono font-bold text-ink">{p.number}</span> · {prettySerial(p.ticket_serial)}
-            </span>
-          </button>
+          <div key={p.id} className="card grid gap-3 border-gold-400/60 bg-gradient-to-br from-gold-100/70 to-white p-4 transition hover:shadow-raised">
+            <button type="button" onClick={() => void showTicket(p.ticket_serial)} data-testid="prize-row" className="grid gap-1.5 text-left">
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-display text-2xl font-extrabold text-ok-ink">XCG {p.amount}</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[p.status]}`}>{STATUS[p.status]}</span>
+              </span>
+              <span className="text-sm text-muted">
+                {p.game_code} · {fmtBusinessDate(p.draw_date)} · {ORDINAL[p.rank - 1]} prize with <span className="font-mono font-bold text-ink">{p.number}</span> · {prettySerial(p.ticket_serial)}
+              </span>
+              {payoutSummary(p) && <span className="text-sm text-ink-700">{payoutSummary(p)}</span>}
+            </button>
+            <PrizePayout prize={p} onSaved={(saved) => setPrizes((prev) => prev?.map((x) => (x.id === saved.id ? saved : x)) ?? prev)} />
+          </div>
         ))}
         {prizes && prizes.length < prizeTotal && (
           <button type="button" onClick={() => void loadPrizes(prizePage + 1)} className="btn-secondary h-12">
