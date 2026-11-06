@@ -160,7 +160,7 @@ function Shell() {
       {/* Open: overflow is clipped so the labels never spill out while the menu widens. Collapsed: visible, so the tooltips can stick out to the right. */}
       <aside
         id="side-menu"
-        className={`sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-white/70 bg-canvas py-5 text-ink transition-[width] duration-200 lg:flex ${collapsed ? "w-20 px-3" : "w-64 overflow-hidden px-5"}`}
+        className={`sticky top-0 z-30 hidden h-screen shrink-0 flex-col border-r border-white/70 bg-canvas py-5 text-ink transition-[width] duration-200 lg:flex ${collapsed ? "w-20 px-3" : "w-64 overflow-hidden px-5"}`}
       >
         <Link to="/" className={`mb-8 rounded-[10px] ${collapsed ? "self-center" : "px-1"}`} aria-label="HopiSuerte, games">
           {collapsed ? <LogoMark size={40} /> : <Logo size={40} tone="dark" as="h1" />}
