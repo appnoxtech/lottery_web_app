@@ -38,6 +38,8 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [buyError, setBuyError] = useState<ApiError | null>(null);
   const [rejected, setRejected] = useState<Set<string>>(new Set());
+  // Numbers whose amount was lowered to what is left: the "sold out" message stays next to the new amount.
+  const [capped, setCapped] = useState<Record<string, string>>({}); // number -> the amount that was asked for
   const [ticket, setTicket] = useState<Ticket | null>(null);
 
   // "Repeat" on a ticket sends the old games and numbers here. The customer reviews them; nothing is bought.
@@ -100,6 +102,18 @@ export default function Home() {
     setRejected(new Set());
   };
 
+  // When the amount typed for a number changes (new default amount, or 1234x5), the auto-filled maximum no longer applies.
+  const typedStakes = useRef<Record<string, string>>({});
+  useEffect(() => {
+    const now = Object.fromEntries(deriveLines(tokens, digits, defaultStake, {}).lines.map((l) => [l.number, l.stake]));
+    const changed = Object.keys(now).filter((n) => typedStakes.current[n] !== undefined && typedStakes.current[n] !== now[n]);
+    typedStakes.current = now;
+    if (!changed.length) return;
+    setOverrides((prev) => Object.fromEntries(Object.entries(prev).filter(([n]) => !changed.includes(n) || capped[n] === undefined)));
+    setCapped((prev) => Object.fromEntries(Object.entries(prev).filter(([n]) => !changed.includes(n))));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokens, digits, defaultStake]);
+
   const payload = useMemo(
     () => ({ games: [...games].sort(), lines: lines.filter((l) => isValidStake(l.stake)).map((l) => ({ number: l.number, stake: l.stake })) }),
     [games, lines],
@@ -122,6 +136,7 @@ export default function Home() {
         const p = await api.post<Preview>("purchase/preview", payload);
         if (mine !== seq.current) return;
         setPreview(p);
+        capToWhatIsLeft(p.lines.filter((l) => l.problem === "not_accepted"));
         setPreviewError(null);
       } catch (e) {
         if (mine !== seq.current) return;
@@ -135,6 +150,14 @@ export default function Home() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payloadKey, loadRules]);
+
+  // Asked for more than is left: put in the most that can still be bought (if any), and keep the sold-out message.
+  const capToWhatIsLeft = (items: { number: string; max_stake_cents?: number | null }[]) => {
+    const fill = items.filter((i) => (i.max_stake_cents ?? 0) > 0);
+    if (!fill.length) return;
+    setOverrides((prev) => ({ ...prev, ...Object.fromEntries(fill.map((i) => [i.number, ((i.max_stake_cents as number) / 100).toFixed(2)])) }));
+    setCapped((prev) => ({ ...prev, ...Object.fromEntries(fill.map((i) => [i.number, payload.lines.find((x) => x.number === i.number)?.stake ?? ""])) }));
+  };
 
   const problemOf = (number: string) => preview?.lines.find((l) => l.number === number);
   const hasServerProblem = preview?.lines.some((l) => l.problem) ?? false;
@@ -170,14 +193,16 @@ export default function Home() {
       setOverrides({});
       setRemoved(new Set());
       setRejected(new Set());
+      setCapped({});
       setPreview(null);
       void refreshWallet();
     } catch (e) {
       const err = e as ApiError;
       setBuyError(err);
       if (err.code === "number_not_accepted") {
-        const details = err.details as unknown as { rejected?: { number: string }[] } | undefined;
+        const details = err.details as unknown as { rejected?: { number: string; max_stake_cents?: number }[] } | undefined;
         setRejected(new Set((details?.rejected ?? []).map((r) => r.number)));
+        capToWhatIsLeft(details?.rejected ?? []);
         setConfirming(false);
       }
       if (err.code === "sales_closed") {
@@ -351,7 +376,7 @@ export default function Home() {
               </div>
               {lines.map((l) => {
                 const server = problemOf(l.number);
-                const message = !isValidStake(l.stake) ? "Enter an amount, for example 1 or 0.50." : rejected.has(l.number) ? `The number ${l.number} is sold out.` : server?.message;
+                const message = !isValidStake(l.stake) ? "Enter an amount, for example 1 or 0.50." : capped[l.number] !== undefined ? `The number ${l.number} is sold out. You asked for XCG ${Number(capped[l.number]).toFixed(2)}, so XCG ${Number(l.stake).toFixed(2)} (the most you can buy now) was filled in.` : rejected.has(l.number) ? `The number ${l.number} is sold out.` : server?.message;
                 return (
                   <div key={l.number} data-testid="line" className={`border-b border-line px-4 py-3 last:border-b-0 sm:px-5 ${message ? "bg-danger-soft/50" : ""}`}>
                     <div className="flex items-center gap-3">
@@ -366,6 +391,7 @@ export default function Home() {
                           onChange={(e) => {
                             setOverrides({ ...overrides, [l.number]: e.target.value.replace(",", ".") });
                             setRejected(new Set());
+                            setCapped(({ [l.number]: _gone, ...rest }) => rest);
                           }}
                           aria-invalid={!!message || undefined}
                           className="field h-11 w-full pl-12 text-right font-semibold"

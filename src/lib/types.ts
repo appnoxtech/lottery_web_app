@@ -83,6 +83,8 @@ export interface PreviewLine {
   stake_cents: number;
   problem: "stake_invalid" | "not_accepted" | null;
   message: string | null;
+  /** Largest stake this number can still take (0 = nothing), only set when the number is sold out for the asked stake. */
+  max_stake_cents?: number | null;
 }
 
 export interface Preview {
