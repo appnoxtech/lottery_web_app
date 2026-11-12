@@ -6,7 +6,7 @@ import { Empty, ErrorNote, Loading } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { isValidStake } from "../lib/entry";
 import { fmtXcg } from "../lib/money";
-import { PAY_INTRO, PAY_LINKS, PAY_NOTE } from "../lib/topup";
+import { CURRENCY_LABEL, PAY_NOTE, priceLabel, type TopupOption } from "../lib/topup";
 import { fmtDateTime } from "../lib/time";
 import { useWallet } from "../lib/wallet";
 import type { LedgerEntry, Paginated } from "../lib/types";
@@ -22,6 +22,10 @@ const ICON: Record<LedgerEntry["type"], { icon: typeof WalletIcon; style: string
 
 export default function Balance() {
   const { wallet, refresh } = useWallet();
+  const [options, setOptions] = useState<TopupOption[]>([]);
+  const [currency, setCurrency] = useState<TopupOption["currency"]>("XCG");
+  const [redirecting, setRedirecting] = useState(false);
+  const [returned, setReturned] = useState<"success" | "cancelled" | null>(null);
   const [items, setItems] = useState<LedgerEntry[] | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -30,7 +34,6 @@ export default function Balance() {
   const [opening, setOpening] = useState(false);
   const [amount, setAmount] = useState("");
   const [amountTouched, setAmountTouched] = useState(false);
-  const [paying, setPaying] = useState(false);
   const amountOk = isValidStake(amount);
 
   const load = useCallback(async (pageToLoad: number) => {
@@ -50,12 +53,34 @@ export default function Balance() {
     void refresh();
   }, [load, refresh]);
 
-  const topUp = () => {
+  useEffect(() => {
+    api.get<{ items: TopupOption[] }>("topup/options").then((r) => setOptions(r.items)).catch(() => setOptions([]));
+    // Stripe sends the customer back here with ?topup=success or ?topup=cancelled.
+    const back = new URLSearchParams(window.location.search).get("topup");
+    if (back === "success" || back === "cancelled") {
+      setReturned(back);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
+  const option = options.find((o) => o.currency === currency) ?? options[0];
+  const price = amountOk && option ? priceLabel(amount, option) : "";
+
+  const topUp = async () => {
     if (!amountOk) {
       setAmountTouched(true);
       return;
     }
-    setPaying(true);
+    if (redirecting) return;
+    setRedirecting(true);
+    setTopupError(null);
+    try {
+      const { url } = await api.post<{ url: string }>("topup/checkout", { amount: amount.trim(), currency });
+      window.location.href = url; // Stripe sends the customer back to this page when done
+    } catch (e) {
+      setTopupError((e as ApiError).message);
+      setRedirecting(false);
+    }
   };
 
   const paid = async () => {
@@ -113,22 +138,45 @@ export default function Balance() {
             </div>
             {amountTouched && !amountOk && <p role="alert" className="text-sm font-medium text-gold-400">Enter an amount, for example 25 or 25.50.</p>}
           </div>
-          <button onClick={topUp} className="btn-buy mt-4 h-12 w-full">
-            <PlusIcon size={18} />
-            Top Up
+          {options.length > 1 && (
+            <div className="mt-3 grid gap-2">
+              <span className="text-sm font-medium text-white/90">Pay in</span>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Currency">
+                {options.map((o) => (
+                  <button
+                    key={o.currency}
+                    type="button"
+                    role="radio"
+                    aria-checked={o.currency === currency}
+                    onClick={() => setCurrency(o.currency)}
+                    className={`h-9 rounded-full px-4 text-sm font-semibold transition ${o.currency === currency ? "bg-white text-brand" : "bg-white/15 text-white hover:bg-white/25"}`}
+                  >
+                    {CURRENCY_LABEL[o.currency]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {price && (
+            <p className="mt-3 text-sm text-white/90" data-testid="topup-price">
+              You pay <strong className="text-base text-white">{price}</strong> for XCG {Number(amount).toFixed(2)}
+            </p>
+          )}
+          <button onClick={() => void topUp()} disabled={redirecting} className="btn-buy mt-4 h-12 w-full">
+            {redirecting ? <Spinner /> : <PlusIcon size={18} />}
+            {redirecting ? "Opening payment…" : "Top Up"}
           </button>
         </div>
-        {paying && (
+        {returned === "success" && (
+          <div role="status" className="card p-4 text-sm text-ink-700" data-testid="topup-success">
+            Thank you, your payment was received. Your balance is updated here as soon as we confirm it.
+          </div>
+        )}
+        {returned === "cancelled" && (
+          <div role="status" className="card p-4 text-sm text-ink-700">The payment was cancelled. You have not been charged.</div>
+        )}
+        {returned === "success" && (
           <div className="card grid gap-3 p-4 text-sm text-ink-700" data-testid="pay-panel">
-            <p>{PAY_INTRO}</p>
-            <div className="grid gap-2">
-              {PAY_LINKS.map((l) => (
-                <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="btn-buy h-11 w-full">
-                  {l.label}
-                </a>
-              ))}
-            </div>
-            <p>{PAY_NOTE}</p>
             <button onClick={() => void paid()} disabled={opening} className="btn-buy h-12 w-full">
               {opening ? <Spinner /> : <ChatIcon size={18} />}
               {opening ? "Opening WhatsApp…" : "I have paid"}
@@ -137,7 +185,7 @@ export default function Balance() {
         )}
         {topupError && <ErrorNote>{topupError}</ErrorNote>}
         <ol className="card grid gap-3 p-4 text-sm text-ink-700">
-          {["Enter the amount, tap Top Up and pay with one of the links in Dollars, Euro or XCG. Your payment is converted and credited to your HopiSuerte balance in XCG. All prizes are originally in XCG.", "When your payment is done, tap I have paid to tell us on WhatsApp. We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
+          {["Enter how much XCG you want, choose to pay in XCG, Dollars or Euro, and tap Top Up. You pay the exact price shown, and the XCG amount is credited to your balance. All prizes are in XCG.", "Pay securely on the Stripe page. You come back here when you are done. We check your payment.", "Your balance is updated here as soon as we approve it."].map((step, i) => (
             <li key={step} className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand">{i + 1}</span>
               {step}
