@@ -177,6 +177,7 @@ export default function Balance() {
         )}
         {returned === "success" && (
           <div className="card grid gap-3 p-4 text-sm text-ink-700" data-testid="pay-panel">
+            <p>{PAY_NOTE}</p>
             <button onClick={() => void paid()} disabled={opening} className="btn-buy h-12 w-full">
               {opening ? <Spinner /> : <ChatIcon size={18} />}
               {opening ? "Opening WhatsApp…" : "I have paid"}
