@@ -6,7 +6,7 @@ import { Empty, ErrorNote, Loading } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 import { isValidStake } from "../lib/entry";
 import { fmtXcg } from "../lib/money";
-import { CURRENCY_LABEL, PAY_NOTE, priceLabel, type TopupOption } from "../lib/topup";
+import { CURRENCY_LABEL, FEE_NOTE, feeLabel, hasFee, PAY_NOTE, payLabel, useTopupQuote, type TopupOption } from "../lib/topup";
 import { fmtDateTime } from "../lib/time";
 import { useWallet } from "../lib/wallet";
 import type { LedgerEntry, Paginated } from "../lib/types";
@@ -63,8 +63,7 @@ export default function Balance() {
     }
   }, []);
 
-  const option = options.find((o) => o.currency === currency) ?? options[0];
-  const price = amountOk && option ? priceLabel(amount, option) : "";
+  const { quote, error: quoteError } = useTopupQuote(amount, currency, amountOk);
 
   const topUp = async () => {
     if (!amountOk) {
@@ -157,10 +156,27 @@ export default function Balance() {
               </div>
             </div>
           )}
-          {price && (
-            <p className="mt-3 text-sm text-white/90" data-testid="topup-price">
-              You pay <strong className="text-base text-white">{price}</strong> for XCG {Number(amount).toFixed(2)}
-            </p>
+          {quoteError && <p role="alert" className="mt-3 text-sm font-medium text-gold-400">{quoteError}</p>}
+          {quote && (
+            <div className="mt-3" data-testid="topup-price">
+            <dl className="grid gap-1 text-sm text-white/90">
+              <div className="flex justify-between gap-3">
+                <dt>Added to your balance</dt>
+                <dd className="font-semibold text-white">XCG {quote.credit}</dd>
+              </div>
+              {hasFee(quote) && (
+                <div className="flex justify-between gap-3" data-testid="topup-fee">
+                  <dt>Service fee</dt>
+                  <dd className="font-semibold text-white">{feeLabel(quote)}</dd>
+                </div>
+              )}
+              <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-white/25 pt-2">
+                <dt className="font-semibold text-white">You pay</dt>
+                <dd className="text-lg font-extrabold text-white">{payLabel(quote)}</dd>
+              </div>
+            </dl>
+            {hasFee(quote) && <p className="mt-2 text-xs text-white/80">{FEE_NOTE}</p>}
+            </div>
           )}
           <button onClick={() => void topUp()} disabled={redirecting} className="btn-buy mt-4 h-12 w-full">
             {redirecting ? <Spinner /> : <PlusIcon size={18} />}
