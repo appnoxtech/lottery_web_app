@@ -59,4 +59,4 @@ export function useTopupQuote(amount: string, currency: TopupOption["currency"],
 }
 
 export const PAY_NOTE = "Already paid and your balance has not changed? Tap \"I have paid\" and tell us on WhatsApp.";
-export const FEE_NOTE = "The service fee covers the card payment charges. It is not added to your balance.";
+export const FEE_NOTE = "The service fee covers the payment processing charges. It is not added to your balance.";
