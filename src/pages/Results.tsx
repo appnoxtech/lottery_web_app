@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { TrophyIcon } from "../components/Icons";
 import PrizePayout from "../components/PrizePayout";
+import PrizeProof from "../components/PrizeProof";
 import TicketSheet from "../components/TicketSheet";
 import { Empty, ErrorNote, Loading, PageTitle } from "../components/ui";
 import { WinningNumbers } from "../components/WinningNumbers";
@@ -87,6 +88,7 @@ export default function Results() {
               </span>
               {payoutSummary(p) && <span className="text-sm text-ink-700">{payoutSummary(p)}</span>}
             </button>
+            <PrizeProof prize={p} />
             <PrizePayout prize={p} onSaved={(saved) => setPrizes((prev) => prev?.map((x) => (x.id === saved.id ? saved : x)) ?? prev)} />
           </div>
         ))}

@@ -73,7 +73,17 @@ async function request<T>(method: "get" | "post" | "put" | "patch" | "delete", u
   }
 }
 
+/** An image behind the signed-in session (it cannot be an <img src>: the token is sent as a header). */
+async function blob(url: string): Promise<Blob> {
+  try {
+    return (await http.request({ method: "get", url, responseType: "blob" })).data as Blob;
+  } catch (e) {
+    throw toApiError(e);
+  }
+}
+
 export const api = {
+  blob,
   get: <T>(url: string) => request<T>("get", url),
   post: <T>(url: string, data?: unknown, headers?: Record<string, string>) => request<T>("post", url, data, headers),
   put: <T>(url: string, data?: unknown) => request<T>("put", url, data),

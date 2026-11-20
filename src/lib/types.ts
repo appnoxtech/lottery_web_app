@@ -143,6 +143,13 @@ export interface ResultItem {
   published_at: string | null;
 }
 
+export interface BankDetails {
+  bank_name: string;
+  account_holder: string;
+  account_number: string;
+  account_type: string | null;
+}
+
 export interface MyPrize {
   id: number;
   rank: 1 | 2 | 3;
@@ -150,6 +157,10 @@ export interface MyPrize {
   /** Split of the prize: while waiting it is what the winner asked for (null if nothing yet), after that what was done. */
   credit: string | null;
   cash: string | null;
+  /** The bank details given for the cash part (only while the prize waits). */
+  bank: BankDetails | null;
+  /** The team added a screenshot of the payment. */
+  has_proof: boolean;
   currency: string;
   status: "pending" | "credited" | "paid_out";
   ticket_serial: string;
