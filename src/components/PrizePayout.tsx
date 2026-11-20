@@ -34,6 +34,7 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
   const [bank, setBank] = useState<BankDetails>(EMPTY);
+  const [otherOpen, setOtherOpen] = useState<{ bank_name?: boolean; account_type?: boolean }>({});
   const [save, setSave] = useState(true);
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,6 +54,7 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
     setValue(prize.credit ?? prize.amount);
     setError(null);
     setTouched(false);
+    setOtherOpen({});
     setSave(true);
     setBank(prize.bank ? { ...EMPTY, ...prize.bank, account_type: prize.bank.account_type ?? "" } : EMPTY);
     setEditing(true);
@@ -115,7 +117,7 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
     );
   }
 
-  const text = (name: keyof BankDetails, label: string, extra?: { optional?: boolean; autoComplete?: string; list?: string; inputMode?: "text" | "numeric" }) => (
+  const text = (name: keyof BankDetails, label: string, extra?: { optional?: boolean; autoComplete?: string; inputMode?: "text" | "numeric" }) => (
     <div className="grid gap-1">
       <label htmlFor={`bank-${prize.id}-${name}`} className="text-sm font-semibold text-ink">
         {label}
@@ -128,7 +130,6 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
         disabled={loadingBank}
         maxLength={name === "account_number" ? 50 : name === "account_type" ? 30 : name === "bank_name" ? 80 : 120}
         autoComplete={extra?.autoComplete ?? "off"}
-        list={extra?.list}
         onChange={(e) => setBank((b) => ({ ...b, [name]: e.target.value }))}
         aria-invalid={!!fieldError(name as keyof typeof problems) || undefined}
         className="field h-11 w-full"
@@ -136,6 +137,62 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
       {fieldError(name as keyof typeof problems) && <p className="text-xs text-danger">{fieldError(name as keyof typeof problems)}</p>}
     </div>
   );
+
+  const OTHER = "__other__";
+  /** A real dropdown. A value that is not in the list (a saved bank, or one typed under "Other") shows as "Other" with a text box. */
+  const choice = (name: "bank_name" | "account_type", label: string, options: string[], opts: { optional?: boolean; otherLabel?: string; emptyLabel?: string }) => {
+    const current = bank[name] ?? "";
+    const other = otherOpen[name] || (current !== "" && !options.includes(current));
+    const id = `bank-${prize.id}-${name}`;
+    const err = fieldError(name as keyof typeof problems);
+    return (
+      <div className="grid gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-ink">
+          {label}
+          {opts.optional && <span className="font-normal text-muted"> (optional)</span>}
+        </label>
+        <select
+          id={id}
+          data-testid={`bank-${name}`}
+          value={other ? OTHER : current}
+          disabled={loadingBank}
+          aria-invalid={!!err || undefined}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === OTHER) {
+              setOtherOpen((o) => ({ ...o, [name]: true }));
+              setBank((b) => ({ ...b, [name]: options.includes(b[name] ?? "") ? "" : b[name] ?? "" }));
+            } else {
+              setOtherOpen((o) => ({ ...o, [name]: false }));
+              setBank((b) => ({ ...b, [name]: v }));
+            }
+          }}
+          className="field h-11 w-full"
+        >
+          <option value="">{opts.emptyLabel ?? "Choose..."}</option>
+          {options.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+          <option value={OTHER}>{opts.otherLabel ?? "Other"}</option>
+        </select>
+        {other && (
+          <input
+            data-testid={`bank-${name}-other`}
+            aria-label={label}
+            value={current}
+            maxLength={name === "bank_name" ? 80 : 30}
+            autoComplete="off"
+            placeholder={name === "bank_name" ? "Type the name of your bank" : "Type the account type"}
+            onChange={(e) => setBank((b) => ({ ...b, [name]: e.target.value }))}
+            className="field h-11 w-full"
+          />
+        )}
+        {err && <p className="text-xs text-danger">{err}</p>}
+      </div>
+    );
+  };
 
   return (
     <div className="grid gap-2 text-sm text-ink-700">
@@ -168,20 +225,10 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
       {needsBank && (
         <fieldset className="grid gap-3 rounded-xl border border-ink-300 p-3" data-testid="bank-form">
           <legend className="px-1 font-semibold text-ink">Where should we send XCG {rest}?</legend>
-          {text("bank_name", "Bank (choose from the list or type it)", { list: "bank-options" })}
-          <datalist id="bank-options">
-            {BANKS.map((b) => (
-              <option key={b} value={b} />
-            ))}
-          </datalist>
+          {choice("bank_name", "Bank", BANKS, { otherLabel: "Other bank (type it)", emptyLabel: "Choose your bank" })}
           {text("account_holder", "Name on the account", { autoComplete: "name" })}
           {text("account_number", "Account number")}
-          {text("account_type", "Account type", { optional: true, list: "account-types" })}
-          <datalist id="account-types">
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
+          {choice("account_type", "Account type", ACCOUNT_TYPES, { optional: true, otherLabel: "Other (type it)", emptyLabel: "Not specified" })}
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} data-testid="bank-save" className="h-4 w-4" />
             Save these details for next time
