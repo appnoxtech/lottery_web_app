@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChatIcon, PlusIcon, Spinner, TicketIcon, TrophyIcon, WalletIcon } from "../components/Icons";
+import CashOut from "../components/CashOut";
 import DeleteAccount from "../components/DeleteAccount";
 import { LogoMark } from "../components/Logo";
 import { Empty, ErrorNote, Loading } from "../components/ui";
@@ -11,13 +12,15 @@ import { fmtDateTime } from "../lib/time";
 import { useWallet } from "../lib/wallet";
 import type { LedgerEntry, Paginated } from "../lib/types";
 
-const LABEL: Record<LedgerEntry["type"], string> = { topup: "Top-up", purchase: "Ticket purchase", prize: "Prize", adjustment: "Adjustment" };
+const LABEL: Record<LedgerEntry["type"], string> = { topup: "Top-up", purchase: "Ticket purchase", prize: "Prize", adjustment: "Adjustment", cashout: "Cash out", cashout_refund: "Cash out returned" };
 const QUICK_AMOUNTS = ["10", "25", "50", "100"];
 const ICON: Record<LedgerEntry["type"], { icon: typeof WalletIcon; style: string }> = {
   topup: { icon: PlusIcon, style: "bg-ok-soft text-ok-ink" },
   purchase: { icon: TicketIcon, style: "bg-brand-50 text-brand" },
   prize: { icon: TrophyIcon, style: "bg-gold-100 text-gold-ink" },
   adjustment: { icon: WalletIcon, style: "bg-ink-100 text-ink-700" },
+  cashout: { icon: WalletIcon, style: "bg-ink-100 text-ink-700" },
+  cashout_refund: { icon: WalletIcon, style: "bg-ok-soft text-ok-ink" },
 };
 
 export default function Balance() {
@@ -209,6 +212,7 @@ export default function Balance() {
             </li>
           ))}
         </ol>
+        <CashOut balanceCents={wallet?.balance_cents ?? 0} onChanged={() => { void refresh(); void load(1); }} />
         <DeleteAccount />
       </section>
 

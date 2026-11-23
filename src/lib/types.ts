@@ -41,7 +41,7 @@ export interface Wallet {
 
 export interface LedgerEntry {
   id: number;
-  type: "topup" | "purchase" | "prize" | "adjustment";
+  type: "topup" | "purchase" | "prize" | "adjustment" | "cashout" | "cashout_refund";
   amount_cents: number;
   balance_after_cents: number;
   created_at: string;
@@ -176,4 +176,24 @@ export interface Announcement {
   title: string;
   body: string;
   created_at: string;
+}
+
+export type CashoutStatus = "pending" | "paid" | "rejected" | "cancelled";
+
+/** A request to take part of the balance out as a bank transfer. */
+export interface Cashout {
+  id: number;
+  status: CashoutStatus;
+  amount_cents: number;
+  amount: string;
+  bank: BankDetails | null;
+  /** Why it was rejected (only for a rejected request). */
+  reason: string | null;
+  has_proof: boolean;
+  created_at: string;
+  decided_at: string | null;
+}
+
+export interface CashoutList extends Paginated<Cashout> {
+  min: string;
 }
