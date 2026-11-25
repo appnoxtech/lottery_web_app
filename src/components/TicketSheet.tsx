@@ -8,7 +8,8 @@ import type { Ticket } from "../lib/types";
 import { CheckIcon, DownloadIcon, RepeatIcon, ShareIcon, TrophyIcon } from "./Icons";
 import { LogoMark } from "./Logo";
 import { Sheet } from "./ui";
-import { MEDAL, WinningNumbers } from "./WinningNumbers";
+import { MEDAL } from "./medal";
+import { WinningNumbers } from "./WinningNumbers";
 
 const PRIZE_STATUS = { pending: "being paid", credited: "added to your balance", paid_out: "paid out" } as const;
 const ORDINAL = ["1st", "2nd", "3rd"];

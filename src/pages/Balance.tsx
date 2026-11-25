@@ -133,7 +133,7 @@ export default function Balance() {
             </div>
             <div className="flex flex-wrap gap-2">
               {QUICK_AMOUNTS.map((q) => (
-                <button key={q} type="button" onClick={() => { setAmount(q); setAmountTouched(true); }} className="h-9 rounded-full bg-white/15 px-4 text-sm font-semibold text-white transition hover:bg-white/25">
+                <button key={q} type="button" onClick={() => { setAmount(q); setAmountTouched(true); }} className="h-11 rounded-full bg-white/15 px-4 text-sm font-semibold text-white transition hover:bg-white/25">
                   XCG {q}
                 </button>
               ))}
@@ -151,7 +151,7 @@ export default function Balance() {
                     role="radio"
                     aria-checked={o.currency === currency}
                     onClick={() => setCurrency(o.currency)}
-                    className={`h-9 rounded-full px-4 text-sm font-semibold transition ${o.currency === currency ? "bg-white text-brand" : "bg-white/15 text-white hover:bg-white/25"}`}
+                    className={`h-11 rounded-full px-4 text-sm font-semibold transition ${o.currency === currency ? "bg-white text-brand" : "bg-white/15 text-white hover:bg-white/25"}`}
                   >
                     {CURRENCY_LABEL[o.currency]}
                   </button>

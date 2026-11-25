@@ -292,7 +292,7 @@ export default function CashOut({ balanceCents, onChanged }: { balanceCents: num
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => setAmount((balanceCents / 100).toFixed(2))} className="h-8 rounded-full border border-ink-300 bg-white px-3 text-xs font-semibold text-ink-700 hover:bg-ink-100">
+              <button type="button" onClick={() => setAmount((balanceCents / 100).toFixed(2))} className="h-11 rounded-full border border-ink-300 bg-white px-3 text-xs font-semibold text-ink-700 hover:bg-ink-100">
                 All ({fmtXcg(balanceCents)})
               </button>
               <span className="text-xs text-muted">Smallest amount: XCG {list?.min ?? "0.50"}</span>
@@ -306,7 +306,7 @@ export default function CashOut({ balanceCents, onChanged }: { balanceCents: num
             {text("account_holder", "Name on the account", "name")}
             {text("account_number", "Account number")}
             {choice("account_type", "Account type", ACCOUNT_TYPES, { optional: true, otherLabel: "Other (type it)", emptyLabel: "Not specified" })}
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex min-h-11 items-center gap-2 text-sm">
               <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} data-testid="cashout-save" className="h-4 w-4" />
               Save these details for next time
             </label>
@@ -346,7 +346,7 @@ export default function CashOut({ balanceCents, onChanged }: { balanceCents: num
               )}
               {c.reason && <div className="text-xs text-ink-700">Reason: {c.reason}</div>}
               {c.status === "pending" && (
-                <button type="button" onClick={() => void cancel(c)} disabled={busy} data-testid="cashout-cancel" className="btn-secondary h-9 justify-self-start px-3 text-sm">
+                <button type="button" onClick={() => void cancel(c)} disabled={busy} data-testid="cashout-cancel" className="btn-secondary h-11 justify-self-start px-3 text-sm">
                   Cancel and keep it in my balance
                 </button>
               )}

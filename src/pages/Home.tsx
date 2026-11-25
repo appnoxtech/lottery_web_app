@@ -391,7 +391,11 @@ export default function Home() {
                           onChange={(e) => {
                             setOverrides({ ...overrides, [l.number]: e.target.value.replace(",", ".") });
                             setRejected(new Set());
-                            setCapped(({ [l.number]: _gone, ...rest }) => rest);
+                            setCapped((c) => {
+                              const next = { ...c };
+                              delete next[l.number];
+                              return next;
+                            });
                           }}
                           aria-invalid={!!message || undefined}
                           className="field h-11 w-full pl-12 text-right font-semibold"
@@ -442,7 +446,7 @@ export default function Home() {
             <div className="truncate text-xs text-muted">
               {games.size === 0 ? "Pick a game" : lines.length === 0 ? "Type a number" : `${games.size} ${games.size === 1 ? "game" : "games"} × ${lines.length} ${lines.length === 1 ? "number" : "numbers"}`}
             </div>
-            <div className="font-display text-2xl font-extrabold tracking-tight" data-testid="total">
+            <div className="font-display text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl" data-testid="total">
               {previewing ? "…" : preview ? `XCG ${preview.total}` : "XCG 0.00"}
             </div>
             {preview && !preview.enough_balance && !previewing && (
@@ -454,7 +458,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <button type="button" data-testid="confirm" disabled={!canConfirm} onClick={openConfirm} className="btn-buy h-14 shrink-0 px-5 text-base sm:px-7 sm:text-lg">
+          <button type="button" data-testid="confirm" disabled={!canConfirm} onClick={openConfirm} className="btn-buy h-14 shrink-0 px-4 text-base sm:px-7 sm:text-lg">
             Confirm Purchase
           </button>
         </div>

@@ -134,6 +134,13 @@ body {
   height: 0;
 }
 
+/* A grid with no columns set gets one implicit column that grows to its widest child, so a nowrap price or a long number pushes the whole page sideways on a phone. One shrinkable column instead; grid-cols-* utilities still win. */
+@layer base {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Big, readable controls: this app is used on phones, often outdoors. */
 button,
 input,

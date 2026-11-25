@@ -67,7 +67,7 @@ export default function DeleteAccount() {
           </div>
         </>
       ) : (
-        <button onClick={() => setConfirming(true)} className="justify-self-start font-semibold text-danger hover:underline">
+        <button onClick={() => setConfirming(true)} className="justify-self-start py-3 font-semibold text-danger hover:underline">
           Delete my account
         </button>
       )}

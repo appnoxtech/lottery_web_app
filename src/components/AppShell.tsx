@@ -212,14 +212,14 @@ function Shell() {
               <NavLink
                 to="/messages"
                 aria-label={messagesLabel}
-                className={({ isActive }) => `relative grid h-11 w-11 place-items-center rounded-[10px] active:bg-white/60 ${isActive ? "bg-white text-brand" : "text-ink-700"}`}
+                className={({ isActive }) => `relative grid h-11 w-11 shrink-0 place-items-center rounded-[10px] active:bg-white/60 ${isActive ? "bg-white text-brand" : "text-ink-700"}`}
               >
                 <BellIcon size={20} />
                 {unread && <UnreadDot className="top-2 right-2" />}
               </NavLink>
-              <button onClick={() => void signOut()} className="flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-ink-700 active:bg-white/60">
+              <button onClick={() => void signOut()} aria-label="Sign out" className="flex h-11 shrink-0 items-center gap-1.5 rounded-[10px] px-3 whitespace-nowrap text-sm font-semibold text-ink-700 active:bg-white/60">
                 <LogoutIcon size={18} />
-                Sign out
+                <span className="hidden min-[400px]:inline">Sign out</span>
               </button>
             </div>
           </div>

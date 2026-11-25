@@ -43,7 +43,7 @@ export default function Privacy() {
           <span className="font-display text-xl font-extrabold tracking-tight">
             Hopi<span className="text-gold-400">Suerte</span>
           </span>
-          <Link to="/" className="ml-auto text-sm font-medium text-white/80 hover:text-white">Back to the app</Link>
+          <Link to="/" className="ml-auto py-3 text-sm font-medium text-white/80 hover:text-white">Back to the app</Link>
         </div>
       </header>
 

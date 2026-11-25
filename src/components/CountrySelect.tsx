@@ -51,7 +51,7 @@ export default function CountrySelect({ value, onChange }: Props) {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Country: ${selected.name}, +${selected.dial}. Change country`}
-        className="flex h-10 items-center gap-2 rounded-[10px] bg-ink-100 px-2.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-200/70"
+        className="flex h-11 items-center gap-2 rounded-[10px] bg-ink-100 px-2.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-200/70"
       >
         <Flag code={selected.code} />
         +{selected.dial}

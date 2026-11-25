@@ -229,7 +229,7 @@ export default function PrizePayout({ prize, onSaved }: { prize: MyPrize; onSave
           {text("account_holder", "Name on the account", { autoComplete: "name" })}
           {text("account_number", "Account number")}
           {choice("account_type", "Account type", ACCOUNT_TYPES, { optional: true, otherLabel: "Other (type it)", emptyLabel: "Not specified" })}
-          <label className="flex items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2">
             <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} data-testid="bank-save" className="h-4 w-4" />
             Save these details for next time
           </label>

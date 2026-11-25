@@ -207,13 +207,13 @@ export default function Login() {
             )}
 
             {step === "phone" ? (
-              <form onSubmit={requestCode} noValidate className="grid gap-6">
+              <form onSubmit={requestCode} noValidate className="grid grid-cols-1 gap-6">
                 <div>
 <h2 className="font-display text-[1.75rem] leading-tight font-bold tracking-tight sm:text-3xl">Sign in</h2>
                   <p className="mt-1.5 text-muted">Enter your phone number. We send you a <span className="whitespace-nowrap">4-digit</span> code.</p>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   <label htmlFor="phone" className="text-sm font-semibold">
                     Phone number
                   </label>
@@ -257,7 +257,7 @@ export default function Login() {
                 </p>
               </form>
             ) : (
-              <div className="grid gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <button
                     type="button"
@@ -305,7 +305,7 @@ export default function Login() {
           </main>
           <p className="mt-5 hidden text-center text-xs text-white/50 sm:block">All times are Curaçao time · Play responsibly</p>
           <p className="mt-4 text-center text-xs text-white/60">
-            <Link to="/privacy" className="underline underline-offset-2 hover:text-white">Privacy policy</Link>
+            <Link to="/privacy" className="inline-block py-3 underline underline-offset-2 hover:text-white">Privacy policy</Link>
           </p>
         </section>
       </div>

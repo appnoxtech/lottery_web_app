@@ -97,6 +97,12 @@
 .auth-ball--wide {
   display: none;
 }
+/* On phones the balls sit on top of the logo and headline: decoration is not worth hiding text. */
+@media (max-width: 639px) {
+  .auth-ball {
+    display: none;
+  }
+}
 @media (min-width: 1024px) {
   .auth-ball--wide {
     display: grid;
